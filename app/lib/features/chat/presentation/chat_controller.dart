@@ -27,12 +27,21 @@ class ChatController extends Notifier<ChatState> {
   Future<void> send(String text) async {
     if (text.trim().isEmpty) return;
 
+    // Captured before appending the new message, so it's exactly "the
+    // transcript so far" — what the backend needs to answer as a
+    // continuation instead of a fresh, memoryless reply.
+    final historyBeforeThisTurn = state.messages;
+
     final userMessage = ChatMessage(sender: ChatSender.user, text: text.trim());
     state = state.copyWith(messages: [...state.messages, userMessage], sending: true, error: null);
 
     try {
       final userId = ref.read(currentUserIdProvider);
-      final reply = await ref.read(chatApiProvider).sendMessage(userId: userId, message: text.trim());
+      final reply = await ref.read(chatApiProvider).sendMessage(
+            userId: userId,
+            message: text.trim(),
+            history: historyBeforeThisTurn,
+          );
       final assistantMessage = ChatMessage(
         sender: ChatSender.assistant,
         text: reply.reply,

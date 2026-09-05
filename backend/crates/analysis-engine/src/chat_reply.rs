@@ -17,8 +17,19 @@ pub struct ChatReplyResult {
 /// are expected to already be scoped to a short window (a few days) by
 /// the caller so the prompt doesn't grow unbounded over a long-lived
 /// account.
+///
+/// `conversation_history` is the visible transcript so far (oldest
+/// first, not including `user_message`), as kept by the Flutter client.
+/// Without it every turn would be answered with no memory of what was
+/// just said — a real conversation ("tell me more about that") is
+/// impossible if the model can't see what "that" refers to. There is no
+/// server-side session store on purpose: the client already holds the
+/// transcript for display, so resending it is simpler than adding
+/// stateful sessions, at the cost of the caller needing to cap its
+/// length (see `ChatApi` on the Flutter side).
 pub async fn generate_chat_reply(
     user_message: &str,
+    conversation_history: &[ChatMessage],
     recent_moods: &[MoodEntry],
     recent_journal_entries: &[JournalEntry],
     llm: &dyn LlmProvider,
@@ -66,12 +77,13 @@ pub async fn generate_chat_reply(
             .join("\n"),
     );
 
-    let messages = vec![
+    let mut messages = vec![
         ChatMessage { role: Role::System, content: prompts::SAFETY_SYSTEM_PROMPT.to_string() },
         ChatMessage { role: Role::System, content: prompts::chat_instruction().to_string() },
         ChatMessage { role: Role::System, content: format!("User context:\n{context}") },
-        ChatMessage { role: Role::User, content: user_message.to_string() },
     ];
+    messages.extend(conversation_history.iter().cloned());
+    messages.push(ChatMessage { role: Role::User, content: user_message.to_string() });
 
     let response = llm.chat(ChatRequest { messages, tools: vec![], temperature: None }).await?;
 
