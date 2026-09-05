@@ -1,0 +1,22 @@
+[server]
+host = "127.0.0.1"
+port = 8787
+
+[database]
+url = "sqlite://data/mental_ai.db?mode=rwc"
+
+[llm]
+# "openai-compatible" works against OpenAI itself, Azure OpenAI, or any
+# self-hosted endpoint that speaks the OpenAI Chat Completions schema.
+provider = "openai-compatible"
+base_url = "https://api.openai.com/v1"
+chat_model = "gpt-5.6"
+embedding_model = "text-embedding-3-large"
+# Name of the environment variable holding the API key. Never put the key
+# itself in this file.
+api_key_env = "MENTAL_AI_LLM_API_KEY"
+
+[research_ingest]
+enabled = true
+interval_hours = 6
+sources = ["pubmed", "who"]

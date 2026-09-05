@@ -1,0 +1,38 @@
+# --- Rust / backend ---
+/backend/target/
+/backend/data/
+/backend/config/local.toml
+**/*.rs.bk
+Cargo.lock.bak
+
+# --- Flutter / app ---
+/app/build/
+/app/.dart_tool/
+/app/.flutter-plugins
+/app/.flutter-plugins-dependencies
+/app/.packages
+/app/.pub-cache/
+/app/.pub/
+/app/android/.gradle
+/app/android/local.properties
+/app/ios/Flutter/.last_build_id
+/app/ios/Pods/
+/app/ios/.symlinks/
+/app/linux/flutter/ephemeral
+/app/macos/Flutter/ephemeral
+/app/windows/flutter/ephemeral
+*.g.dart
+*.freezed.dart
+
+# --- Secrets / env ---
+.env
+.env.*
+*.pem
+*.key
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

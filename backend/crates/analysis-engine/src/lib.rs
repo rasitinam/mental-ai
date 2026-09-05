@@ -1,0 +1,13 @@
+//! Orchestrates the LLM + knowledge base to turn raw mood/journal data
+//! into user-facing artifacts (daily report, life analysis, chat turns).
+//! This crate owns the RAG prompt-assembly logic and the safety pass;
+//! it is the only place that decides *what* gets sent to the LLM, while
+//! `llm-connector` only knows *how* to send it.
+
+pub mod daily_report;
+pub mod life_analysis;
+pub mod safety;
+
+pub use daily_report::generate_daily_report;
+pub use life_analysis::generate_life_analysis;
+pub use safety::{screen_for_crisis_language, CrisisScreenResult};

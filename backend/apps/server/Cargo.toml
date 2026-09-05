@@ -1,0 +1,30 @@
+[package]
+name = "mental-ai-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "mental-ai-server"
+path = "src/main.rs"
+
+[dependencies]
+mental-common.workspace = true
+mental-domain.workspace = true
+mental-storage.workspace = true
+mental-llm-connector.workspace = true
+mental-knowledge-base.workspace = true
+mental-research-ingest.workspace = true
+mental-analysis-engine.workspace = true
+
+tokio.workspace = true
+axum = "0.7"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tokio-cron-scheduler = "0.13"

@@ -1,0 +1,47 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/common",
+    "crates/domain",
+    "crates/storage",
+    "crates/llm-connector",
+    "crates/knowledge-base",
+    "crates/research-ingest",
+    "crates/analysis-engine",
+    "apps/server",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "UNLICENSED"
+publish = false
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+async-trait = "0.1"
+thiserror = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "migrate"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+config = "0.14"
+
+# workspace-internal crates
+mental-common = { path = "crates/common" }
+mental-domain = { path = "crates/domain" }
+mental-storage = { path = "crates/storage" }
+mental-llm-connector = { path = "crates/llm-connector" }
+mental-knowledge-base = { path = "crates/knowledge-base" }
+mental-research-ingest = { path = "crates/research-ingest" }
+mental-analysis-engine = { path = "crates/analysis-engine" }
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true

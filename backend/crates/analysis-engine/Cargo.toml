@@ -1,0 +1,17 @@
+[package]
+name = "mental-analysis-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+mental-domain.workspace = true
+mental-llm-connector.workspace = true
+mental-knowledge-base.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+anyhow.workspace = true
+tracing.workspace = true

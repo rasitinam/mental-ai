@@ -1,0 +1,21 @@
+[package]
+name = "mental-research-ingest"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+mental-domain.workspace = true
+mental-knowledge-base.workspace = true
+reqwest.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+quick-xml = { version = "0.36", features = ["serialize"] }
+urlencoding = "2"
