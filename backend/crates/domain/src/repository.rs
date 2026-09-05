@@ -9,12 +9,21 @@ use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::report::LifeAnalysis;
-use crate::{DailyMentalReport, Insight, JournalEntry, MoodEntry, ResearchArticle, User};
+use crate::{Credentials, DailyMentalReport, Insight, JournalEntry, MoodEntry, ResearchArticle, Session, User};
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {
     async fn get(&self, id: Uuid) -> anyhow::Result<Option<User>>;
     async fn upsert(&self, user: &User) -> anyhow::Result<()>;
+}
+
+#[async_trait]
+pub trait AuthRepository: Send + Sync {
+    async fn create_credentials(&self, credentials: &Credentials) -> anyhow::Result<()>;
+    async fn find_credentials_by_email(&self, email: &str) -> anyhow::Result<Option<Credentials>>;
+    async fn create_session(&self, session: &Session) -> anyhow::Result<()>;
+    async fn find_session(&self, token: &str) -> anyhow::Result<Option<Session>>;
+    async fn delete_session(&self, token: &str) -> anyhow::Result<()>;
 }
 
 #[async_trait]

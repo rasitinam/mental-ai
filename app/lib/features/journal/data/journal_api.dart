@@ -9,7 +9,7 @@ class JournalApi {
   final Dio _dio;
   JournalApi(this._dio);
 
-  Future<void> addEntry({required String userId, required String body}) async {
-    await _dio.post('/journal', data: {'user_id': userId, 'body': body});
+  Future<void> addEntry({required String body}) async {
+    await _dio.post('/journal', data: {'body': body});
   }
 }

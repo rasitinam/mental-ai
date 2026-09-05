@@ -10,14 +10,14 @@ class ReportApi {
   final Dio _dio;
   ReportApi(this._dio);
 
-  Future<DailyReport?> latest(String userId) async {
-    final response = await _dio.get('/reports/$userId/latest');
+  Future<DailyReport?> latest() async {
+    final response = await _dio.get('/reports/latest');
     if (response.data == null) return null;
     return DailyReport.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<DailyReport> generate(String userId) async {
-    final response = await _dio.post('/reports/$userId/generate');
+  Future<DailyReport> generate() async {
+    final response = await _dio.post('/reports/generate');
     return DailyReport.fromJson(response.data as Map<String, dynamic>);
   }
 }

@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::State,
     routing::{get, post},
     Json, Router,
 };
@@ -7,24 +7,23 @@ use chrono::{Duration, Utc};
 use mental_analysis_engine::generate_life_analysis;
 use mental_domain::repository::{JournalRepository, LifeAnalysisRepository, MoodRepository};
 use mental_domain::report::LifeAnalysis;
-use uuid::Uuid;
 
+use crate::auth::AuthUser;
 use crate::state::AppState;
-use crate::users::ensure_user;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/life-analysis/:user_id/latest", get(latest_analysis))
-        .route("/life-analysis/:user_id/generate", post(generate_analysis))
+        .route("/life-analysis/latest", get(latest_analysis))
+        .route("/life-analysis/generate", post(generate_analysis))
 }
 
 async fn latest_analysis(
     State(state): State<AppState>,
-    Path(user_id): Path<Uuid>,
+    auth: AuthUser,
 ) -> Result<Json<Option<LifeAnalysis>>, (axum::http::StatusCode, String)> {
     let analysis = state
         .life_analyses
-        .latest_for_user(user_id)
+        .latest_for_user(auth.user_id)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
@@ -37,28 +36,24 @@ async fn latest_analysis(
 /// ("show me my last month") rather than a background job.
 async fn generate_analysis(
     State(state): State<AppState>,
-    Path(user_id): Path<Uuid>,
+    auth: AuthUser,
 ) -> Result<Json<LifeAnalysis>, (axum::http::StatusCode, String)> {
-    ensure_user(&state, user_id)
-        .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
     let period_end = Utc::now();
     let period_start = period_end - Duration::days(30);
 
     let moods = state
         .moods
-        .list_between(user_id, period_start, period_end)
+        .list_between(auth.user_id, period_start, period_end)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     let journal_entries = state
         .journals
-        .list_between(user_id, period_start, period_end)
+        .list_between(auth.user_id, period_start, period_end)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     let analysis = generate_life_analysis(
-        user_id,
+        auth.user_id,
         period_start,
         period_end,
         &moods,

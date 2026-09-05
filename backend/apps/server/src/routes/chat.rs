@@ -4,10 +4,9 @@ use mental_analysis_engine::generate_chat_reply;
 use mental_domain::repository::{JournalRepository, MoodRepository};
 use mental_llm_connector::ChatMessage;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
+use crate::auth::AuthUser;
 use crate::state::AppState;
-use crate::users::ensure_user;
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/chat", post(send_message))
@@ -15,7 +14,6 @@ pub fn router() -> Router<AppState> {
 
 #[derive(Debug, Deserialize)]
 struct ChatTurnRequest {
-    user_id: Uuid,
     message: String,
     /// The visible transcript so far, oldest first, NOT including
     /// `message`. `mental_llm_connector::Role` deserializes from
@@ -47,23 +45,20 @@ const MAX_HISTORY_MESSAGES: usize = 16;
 /// duplicate state.
 async fn send_message(
     State(state): State<AppState>,
+    auth: AuthUser,
     Json(req): Json<ChatTurnRequest>,
 ) -> Result<Json<ChatTurnResponse>, (axum::http::StatusCode, String)> {
-    ensure_user(&state, req.user_id)
-        .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
     let now = Utc::now();
     let since = now - Duration::days(3);
 
     let recent_moods = state
         .moods
-        .list_between(req.user_id, since, now)
+        .list_between(auth.user_id, since, now)
         .await
         .unwrap_or_default();
     let recent_journal_entries = state
         .journals
-        .list_between(req.user_id, since, now)
+        .list_between(auth.user_id, since, now)
         .await
         .unwrap_or_default();
 

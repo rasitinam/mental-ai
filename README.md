@@ -32,6 +32,24 @@ cargo run -p mental-ai-server
 
 Varsayılan olarak `http://127.0.0.1:8787` üzerinde dinler ve `backend/data/mental_ai.db` SQLite dosyasını (migration'ları otomatik uygulayarak) oluşturur. Ayarlar için `backend/config/default.toml` ve `backend/config/README.md`'ye bakın.
 
+### API'yi elle deneme (auth gerekli)
+
+`/mood`, `/journal`, `/chat`, `/reports/*`, `/life-analysis/*` artık kimlik doğrulama istiyor — önce bir hesap açıp token almanız gerekiyor:
+
+```bash
+curl -X POST http://127.0.0.1:8787/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"sen@example.com","password":"en-az-8-karakter"}'
+# -> {"user_id":"...","token":"...","expires_at":"..."}
+
+curl -X POST http://127.0.0.1:8787/mood \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <yukarıdaki token>" \
+  -d '{"valence":0.3,"arousal":-0.1}'
+```
+
+Flutter uygulaması bunu kendisi hallediyor — bkz. aşağı.
+
 ## Uygulamayı çalıştırma
 
 ```bash
@@ -41,6 +59,8 @@ flutter run -d chrome   # hızlı yerel test için; gerçek cihaz/emulator da ku
 ```
 
 Backend farklı bir adreste çalışıyorsa: `flutter run --dart-define=API_BASE_URL=http://<host>:8787`.
+
+Uygulama ilk açılışta görünmez şekilde bir hesap açar (rastgele e-posta + güçlü rastgele şifre) ve token'ı cihazda saklar — henüz görünür bir giriş ekranı yok, bkz. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#hesaplar-ve-kimlik-doğrulama).
 
 ## iOS / App Store
 

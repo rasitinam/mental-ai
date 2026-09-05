@@ -22,14 +22,12 @@ class ChatApi {
   /// last 16 matter to the backend anyway, but there's no reason to ship
   /// more than that over the wire either.
   Future<ChatReply> sendMessage({
-    required String userId,
     required String message,
     List<ChatMessage> history = const [],
   }) async {
     final trimmed = history.length > 16 ? history.sublist(history.length - 16) : history;
 
     final response = await _dio.post('/chat', data: {
-      'user_id': userId,
       'message': message,
       'history': [
         for (final m in trimmed)

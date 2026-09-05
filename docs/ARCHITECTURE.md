@@ -36,7 +36,9 @@ backend/
 
 **LLM bağlantısı ("MCP benzeri")**: `llm-connector::LlmProvider` trait'i tek soyutlama noktası. Bugün `OpenAiCompatibleProvider` bunu OpenAI Chat Completions şemasıyla konuşan herhangi bir uç nokta için implemente ediyor (OpenAI, Azure OpenAI, uyumlu bir self-host). Model adı (`chat_model`) `config/default.toml`'da düz metin — yeni bir model çıktığında kod değil config değişir. `tools.rs` içindeki `Tool`/`ToolCall` tipleri, backend fonksiyonlarını (örn. ruh hali geçmişini getir) modele çağrılabilir "araç" olarak sunmak için MCP'nin function-calling fikrini taşıyor.
 
-**Kullanıcı kaydı**: Ayrı bir "hesap oluştur" adımı yok — Flutter istemcisi ilk açılışta yerel bir UUID üretir ve doğrudan kullanmaya başlar. Bu id'yi kullanan her istek (`/mood`, `/journal`, `/chat`, `/reports/*/generate`, `/life-analysis/*/generate`) `apps/server/src/users.rs::ensure_user` ile `users` tablosuna sessizce upsert eder, böylece hiçbir yabancı anahtar referansı sahipsiz kalmaz.
+**Hesaplar ve kimlik doğrulama**: `/auth/register` (email + şifre, argon2 ile hash'lenir) ve `/auth/login` bir oturum token'ı (`sessions` tablosunda, 30 gün geçerli, opak rastgele token — imzalı bir JWT değil, çünkü bir satırı silerek sunucu tarafında iptal edilebilmesi gerekiyordu) döndürür. `mood`/`journal`/`chat`/`reports`/`life-analysis` altındaki **hiçbir** endpoint artık `user_id`'yi istekten almıyor — hepsi `apps/server/src/auth.rs::AuthUser` extractor'ı ile `Authorization: Bearer <token>` header'ından doğrulanmış kimliği okuyor. Bu, önceki tasarımdaki gerçek bir güvenlik açığını kapatıyor: eskiden herhangi biri rastgele bir UUID'yi `user_id` olarak göndererek başka birinin verisine yazabilir/okuyabilirdi.
+
+Flutter tarafında henüz görünür bir giriş/kayıt ekranı yok — `core/session/session_bootstrap.dart::ensureSession`, ilk açılışta arka planda rastgele bir e-posta + güçlü bir rastgele şifreyle sessizce `/auth/register` çağırır, dönen token'ı `SharedPreferences`'ta saklar ve her isteğe `apiClientProvider`'ın interceptor'ı üzerinden ekler. Yani kullanıcı hiçbir şey görmüyor ama verisi artık gerçek, doğrulanmış bir hesaba bağlı — sadece "başka bir cihazdan aynı hesaba gir" gibi bir akış için gerçek bir giriş ekranı eklenmesi gerekiyor (doğal bir sonraki adım).
 
 ## Uygulama (`app/`, Flutter)
 
@@ -45,8 +47,9 @@ Feature-first + katmanlı (data/domain/presentation) yapı, Riverpod ile state m
 ```
 app/lib/
   app/            # MaterialApp kurulumu, tema, router
-  core/           # paylaşılan network client, local storage, sabitler, Result tipi
+  core/           # paylaşılan network client (auth interceptor'lı), oturum bootstrap, local storage, sabitler
   features/
+    auth/           # register/login API client + Session modeli (henüz giriş ekranı yok, bkz. yukarı)
     onboarding/
     daily_report/   # data + domain + presentation
     mood_tracking/

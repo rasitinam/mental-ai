@@ -1,11 +1,13 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mental_domain::repository::{
-    InsightRepository, JournalRepository, LifeAnalysisRepository, MoodRepository, ReportRepository,
-    ResearchRepository, UserRepository,
+    AuthRepository, InsightRepository, JournalRepository, LifeAnalysisRepository, MoodRepository,
+    ReportRepository, ResearchRepository, UserRepository,
 };
 use mental_domain::report::LifeAnalysis;
-use mental_domain::{DailyMentalReport, Insight, JournalEntry, MoodEntry, ResearchArticle, User};
+use mental_domain::{
+    Credentials, DailyMentalReport, Insight, JournalEntry, MoodEntry, ResearchArticle, Session, User,
+};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -403,5 +405,87 @@ impl LifeAnalysisRepository for SqliteLifeAnalysisRepository {
                 generated_at,
             },
         ))
+    }
+}
+
+pub struct SqliteAuthRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteAuthRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl AuthRepository for SqliteAuthRepository {
+    async fn create_credentials(&self, credentials: &Credentials) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO credentials (user_id, email, password_hash, created_at) VALUES (?1, ?2, ?3, ?4)",
+        )
+        .bind(credentials.user_id.to_string())
+        .bind(&credentials.email)
+        .bind(&credentials.password_hash)
+        .bind(credentials.created_at)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn find_credentials_by_email(&self, email: &str) -> anyhow::Result<Option<Credentials>> {
+        let row = sqlx::query_as::<_, (String, String, String, DateTime<Utc>)>(
+            "SELECT user_id, email, password_hash, created_at FROM credentials WHERE email = ?1",
+        )
+        .bind(email)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|(user_id, email, password_hash, created_at)| Credentials {
+            user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+            email,
+            password_hash,
+            created_at,
+        }))
+    }
+
+    async fn create_session(&self, session: &Session) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?1, ?2, ?3, ?4)",
+        )
+        .bind(&session.token)
+        .bind(session.user_id.to_string())
+        .bind(session.created_at)
+        .bind(session.expires_at)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn find_session(&self, token: &str) -> anyhow::Result<Option<Session>> {
+        let row = sqlx::query_as::<_, (String, String, DateTime<Utc>, DateTime<Utc>)>(
+            "SELECT token, user_id, created_at, expires_at FROM sessions WHERE token = ?1",
+        )
+        .bind(token)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|(token, user_id, created_at, expires_at)| Session {
+            token,
+            user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+            created_at,
+            expires_at,
+        }))
+    }
+
+    async fn delete_session(&self, token: &str) -> anyhow::Result<()> {
+        sqlx::query("DELETE FROM sessions WHERE token = ?1")
+            .bind(token)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
     }
 }

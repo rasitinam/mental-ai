@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::State,
     routing::{get, post},
     Json, Router,
 };
@@ -7,24 +7,23 @@ use chrono::{Duration, Utc};
 use mental_analysis_engine::generate_daily_report;
 use mental_domain::repository::{JournalRepository, MoodRepository, ReportRepository};
 use mental_domain::DailyMentalReport;
-use uuid::Uuid;
 
+use crate::auth::AuthUser;
 use crate::state::AppState;
-use crate::users::ensure_user;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/reports/:user_id/latest", get(latest_report))
-        .route("/reports/:user_id/generate", post(generate_report))
+        .route("/reports/latest", get(latest_report))
+        .route("/reports/generate", post(generate_report))
 }
 
 async fn latest_report(
     State(state): State<AppState>,
-    Path(user_id): Path<Uuid>,
+    auth: AuthUser,
 ) -> Result<Json<Option<DailyMentalReport>>, (axum::http::StatusCode, String)> {
     let report = state
         .reports
-        .latest_for_user(user_id)
+        .latest_for_user(auth.user_id)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
@@ -36,28 +35,24 @@ async fn latest_report(
 /// actual LLM + RAG work to `mental-analysis-engine`, then persists it.
 async fn generate_report(
     State(state): State<AppState>,
-    Path(user_id): Path<Uuid>,
+    auth: AuthUser,
 ) -> Result<Json<DailyMentalReport>, (axum::http::StatusCode, String)> {
-    ensure_user(&state, user_id)
-        .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
     let now = Utc::now();
     let since = now - Duration::hours(24);
 
     let moods = state
         .moods
-        .list_between(user_id, since, now)
+        .list_between(auth.user_id, since, now)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     let journal_entries = state
         .journals
-        .list_between(user_id, since, now)
+        .list_between(auth.user_id, since, now)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     let report = generate_daily_report(
-        user_id,
+        auth.user_id,
         &moods,
         &journal_entries,
         state.llm.as_ref(),

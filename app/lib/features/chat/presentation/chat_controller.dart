@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/storage/local_prefs.dart';
 import '../data/chat_api.dart';
 import '../domain/chat_message.dart';
 
@@ -36,9 +35,7 @@ class ChatController extends Notifier<ChatState> {
     state = state.copyWith(messages: [...state.messages, userMessage], sending: true, error: null);
 
     try {
-      final userId = ref.read(currentUserIdProvider);
       final reply = await ref.read(chatApiProvider).sendMessage(
-            userId: userId,
             message: text.trim(),
             history: historyBeforeThisTurn,
           );

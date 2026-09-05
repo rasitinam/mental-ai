@@ -4,6 +4,10 @@
 
 Backend local-first tasarlandı: tüm kullanıcı verisi (ruh hali kayıtları, günlük, raporlar) kullanıcının kendi cihazında/bilgisayarında çalışan SQLite veritabanında tutulur (`backend/config/default.toml` → `database.url`). Sunucuya veri göndermenin tek yolu, kullanıcının kendi seçtiği LLM sağlayıcısına (OpenAI vb.) analiz için yapılan API çağrılarıdır — bkz. `docs/ARCHITECTURE.md`.
 
+## Hesaplar ve şifreler
+
+Şifreler asla düz metin saklanmaz — `argon2` (bellek-zorlu, kaba kuvvet saldırılarına karşı endüstri standardı bir hash algoritması) ile hash'lenip `credentials.password_hash` sütununda tutulur. Oturum token'ları (`sessions` tablosu) rastgele 256-bit değerlerdir, JWT gibi imzalı/kendinden-doğrulanan bir yapı değildir — bilinçli bir tercih: bir oturumu iptal etmek için sadece ilgili satırı silmek yeterli, ayrı bir "denylist" mekanizması gerekmiyor. Detaylar için `backend/apps/server/src/auth.rs`.
+
 ## Kriz taraması (`analysis-engine::safety`)
 
 Her günlük girişi ve sohbet mesajı, LLM'e gitmeden önce basit bir anahtar kelime taramasından geçer (`screen_for_crisis_language`). Bu **klinik bir değerlendirme değildir** — yüksek recall hedefleyen kaba bir güvenlik ağıdır. Yanlış pozitif (gereksiz yere kriz bandı gösterme) kabul edilebilir bir maliyettir; asıl önemli olan yanlış negatifleri (gerçek bir krizi kaçırmayı) minimize etmek.

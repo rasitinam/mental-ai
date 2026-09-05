@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/storage/local_prefs.dart';
 import '../data/mood_api.dart';
 
 class MoodState {
@@ -46,9 +45,7 @@ class MoodController extends Notifier<MoodState> {
   Future<void> submit({String? note}) async {
     state = state.copyWith(submitting: true, error: null);
     try {
-      final userId = ref.read(currentUserIdProvider);
       await ref.read(moodApiProvider).addMood(
-            userId: userId,
             valence: state.valence,
             arousal: state.arousal,
             note: note,

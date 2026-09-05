@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/storage/local_prefs.dart';
 import '../data/report_api.dart';
 import '../domain/daily_report.dart';
 
@@ -31,8 +30,7 @@ class DailyReportController extends Notifier<DailyReportState> {
   Future<void> loadLatest() async {
     state = state.copyWith(loading: true, error: null);
     try {
-      final userId = ref.read(currentUserIdProvider);
-      final report = await ref.read(reportApiProvider).latest(userId);
+      final report = await ref.read(reportApiProvider).latest();
       state = state.copyWith(report: report, loading: false);
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
@@ -42,8 +40,7 @@ class DailyReportController extends Notifier<DailyReportState> {
   Future<void> generateNow() async {
     state = state.copyWith(loading: true, error: null);
     try {
-      final userId = ref.read(currentUserIdProvider);
-      final report = await ref.read(reportApiProvider).generate(userId);
+      final report = await ref.read(reportApiProvider).generate();
       state = state.copyWith(report: report, loading: false);
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());

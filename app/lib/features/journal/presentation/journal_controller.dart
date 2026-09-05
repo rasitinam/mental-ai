@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/storage/local_prefs.dart';
 import '../data/journal_api.dart';
 
 class JournalState {
@@ -28,8 +27,7 @@ class JournalController extends Notifier<JournalState> {
     if (body.trim().isEmpty) return;
     state = state.copyWith(submitting: true, error: null);
     try {
-      final userId = ref.read(currentUserIdProvider);
-      await ref.read(journalApiProvider).addEntry(userId: userId, body: body.trim());
+      await ref.read(journalApiProvider).addEntry(body: body.trim());
       state = state.copyWith(submitting: false, submitted: true);
     } catch (e) {
       state = state.copyWith(submitting: false, error: e.toString());

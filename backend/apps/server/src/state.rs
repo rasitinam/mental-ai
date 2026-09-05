@@ -3,8 +3,9 @@ use std::sync::Arc;
 use mental_knowledge_base::{Embedder, SqliteVectorStore};
 use mental_llm_connector::LlmProvider;
 use mental_storage::{
-    SqliteInsightRepository, SqliteJournalRepository, SqliteLifeAnalysisRepository,
-    SqliteMoodRepository, SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
+    SqliteAuthRepository, SqliteInsightRepository, SqliteJournalRepository,
+    SqliteLifeAnalysisRepository, SqliteMoodRepository, SqliteReportRepository,
+    SqliteResearchRepository, SqliteUserRepository,
 };
 
 /// Composition root: the one place that knows every concrete
@@ -15,6 +16,7 @@ use mental_storage::{
 #[derive(Clone)]
 pub struct AppState {
     pub users: Arc<SqliteUserRepository>,
+    pub auth: Arc<SqliteAuthRepository>,
     pub moods: Arc<SqliteMoodRepository>,
     pub journals: Arc<SqliteJournalRepository>,
     pub reports: Arc<SqliteReportRepository>,

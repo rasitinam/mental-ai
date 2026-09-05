@@ -3,6 +3,7 @@
 //! layer, background jobs, and tests without pulling in I/O concerns.
 //! Concrete implementations of the repository traits live in `mental-storage`.
 
+pub mod auth;
 pub mod insight;
 pub mod journal;
 pub mod mood;
@@ -11,6 +12,7 @@ pub mod report;
 pub mod research;
 pub mod user;
 
+pub use auth::{Credentials, Session};
 pub use insight::Insight;
 pub use journal::JournalEntry;
 pub use mood::MoodEntry;

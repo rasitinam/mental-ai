@@ -1,3 +1,4 @@
+mod auth;
 mod chat;
 mod health;
 mod insights;
@@ -13,6 +14,7 @@ use crate::state::AppState;
 pub fn build_router(state: AppState) -> Router {
     Router::new()
         .merge(health::router())
+        .merge(auth::router())
         .merge(chat::router())
         .merge(mood::router())
         .merge(journal::router())

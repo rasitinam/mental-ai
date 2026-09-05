@@ -10,14 +10,12 @@ class MoodApi {
   MoodApi(this._dio);
 
   Future<void> addMood({
-    required String userId,
     required double valence,
     required double arousal,
     List<String> tags = const [],
     String? note,
   }) async {
     await _dio.post('/mood', data: {
-      'user_id': userId,
       'valence': valence,
       'arousal': arousal,
       'tags': tags,

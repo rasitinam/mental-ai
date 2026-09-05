@@ -5,8 +5,8 @@ use mental_domain::MoodEntry;
 use serde::Deserialize;
 use uuid::Uuid;
 
+use crate::auth::AuthUser;
 use crate::state::AppState;
-use crate::users::ensure_user;
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/mood", post(add_mood))
@@ -14,7 +14,6 @@ pub fn router() -> Router<AppState> {
 
 #[derive(Debug, Deserialize)]
 struct AddMoodRequest {
-    user_id: Uuid,
     valence: f32,
     arousal: f32,
     #[serde(default)]
@@ -24,15 +23,12 @@ struct AddMoodRequest {
 
 async fn add_mood(
     State(state): State<AppState>,
+    auth: AuthUser,
     Json(req): Json<AddMoodRequest>,
 ) -> Result<Json<MoodEntry>, (axum::http::StatusCode, String)> {
-    ensure_user(&state, req.user_id)
-        .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
     let entry = MoodEntry {
         id: Uuid::new_v4(),
-        user_id: req.user_id,
+        user_id: auth.user_id,
         valence: req.valence.clamp(-1.0, 1.0),
         arousal: req.arousal.clamp(-1.0, 1.0),
         tags: req.tags,
