@@ -4,6 +4,7 @@
 /backend/config/local.toml
 **/*.rs.bk
 Cargo.lock.bak
+*.log
 
 # --- Flutter / app ---
 /app/build/
