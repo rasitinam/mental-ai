@@ -1,0 +1,57 @@
+name: Release - Android
+
+# Template only until the signing secrets below exist in the repo
+# (Settings → Secrets and variables → Actions) — see docs/CI_CD.md for
+# exactly what each one is and how to generate it. Runs on demand or when
+# you push a version tag, never on every push, since it needs real
+# signing keys to do anything useful.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-signed-android:
+    name: Build signed AAB
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+
+      - name: Decode upload keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      - name: Write key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storeFile=upload-keystore.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: Build release App Bundle
+        run: flutter build appbundle --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release.aab
+          path: app/build/app/outputs/bundle/release/app-release.aab
+
+      # Uncomment once the app has a Google Play Console listing and a
+      # service-account JSON key has been created and added as the
+      # PLAY_STORE_SERVICE_ACCOUNT_JSON secret — see docs/CI_CD.md.
+      # - name: Upload to Play Store (internal testing track)
+      #   uses: r0adkll/upload-google-play@v1
+      #   with:
+      #     serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+      #     packageName: com.mentalai.mental_ai
+      #     releaseFiles: app/build/app/outputs/bundle/release/app-release.aab
+      #     track: internal

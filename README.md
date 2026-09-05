@@ -46,6 +46,10 @@ Backend farklı bir adreste çalışıyorsa: `flutter run --dart-define=API_BASE
 
 iOS derlemesi ve App Store'a gönderim **Xcode + macOS** gerektirir (bu proje Windows'ta geliştiriliyor). `flutter create` ile oluşturulan `app/ios/` klasörü bir Mac'e (veya macOS CI runner'ına) taşınıp doğrudan derlenebilir. Detaylar için [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#ios--app-store-notu).
 
+## CI/CD
+
+`.github/workflows/` altında üç workflow var: her push'ta çalışan, secret gerektirmeyen `ci.yml` (build+test, Android/iOS derleme doğrulaması dahil), ve elle tetiklenen `release-android.yml` / `release-ios.yml` şablonları — imzalama secret'larını eklediğinde gerçek yayın build'i üretirler. Hangi secret'ı nereden alacağını gösteren tam kontrol listesi: [docs/CI_CD.md](docs/CI_CD.md).
+
 ## Test
 
 ```bash

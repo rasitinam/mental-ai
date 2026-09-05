@@ -30,6 +30,13 @@ Cargo.lock.bak
 .env.*
 *.pem
 *.key
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+/app/android/key.properties
+/ios_signing/
+/android_signing/
 
 # --- Editors / OS ---
 .vscode/

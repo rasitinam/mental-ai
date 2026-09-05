@@ -36,19 +36,34 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 
-  # iOS builds (and App Store submission) require Xcode, which only runs on
-  # macOS. Uncomment and fill in signing details when ready to build for
-  # TestFlight/App Store — see docs/ARCHITECTURE.md.
-  # ios:
-  #   name: iOS build
-  #   runs-on: macos-latest
-  #   defaults:
-  #     run:
-  #       working-directory: app
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: subosito/flutter-action@v2
-  #       with:
-  #         channel: stable
-  #     - run: flutter pub get
-  #     - run: flutter build ios --no-codesign
+  # Unsigned build-verification only — catches "the Android/iOS build is
+  # actually broken" on every push/PR without needing any signing secrets.
+  # The signed, publishable build lives in release-android.yml /
+  # release-ios.yml and only runs when you trigger it — see docs/CI_CD.md.
+  app-build-android:
+    name: Flutter app (Android build check)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build apk --debug
+
+  app-build-ios:
+    name: Flutter app (iOS build check)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build ios --no-codesign
