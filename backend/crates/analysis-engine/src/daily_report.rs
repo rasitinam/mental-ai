@@ -63,7 +63,10 @@ pub async fn generate_daily_report(
         .chat(ChatRequest {
             messages,
             tools: vec![],
-            temperature: Some(0.5),
+            // Left unset: some chat models reject a non-default
+            // temperature outright (see llm-connector's OpenAI-compatible
+            // provider for details).
+            temperature: None,
         })
         .await?;
 

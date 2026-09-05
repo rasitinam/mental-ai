@@ -64,8 +64,15 @@ impl LlmProvider for OpenAiCompatibleProvider {
         let mut body = json!({
             "model": self.chat_model,
             "messages": messages,
-            "temperature": request.temperature.unwrap_or(0.7),
         });
+        // Newer "reasoning" models (o1/o3-style, and some GPT-5.x chat
+        // models) reject any `temperature` other than the default (1) and
+        // return a 400. Only send it when a caller explicitly opted in;
+        // otherwise let the API use its own default so this works across
+        // both classic and reasoning-style chat models.
+        if let Some(temperature) = request.temperature {
+            body["temperature"] = json!(temperature);
+        }
         if !tools.is_empty() {
             body["tools"] = json!(tools);
         }

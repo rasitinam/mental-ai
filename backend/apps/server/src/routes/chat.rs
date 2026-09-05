@@ -49,7 +49,9 @@ async fn send_message(
         .chat(ChatRequest {
             messages,
             tools: vec![],
-            temperature: Some(0.7),
+            // Left unset: see openai_compatible.rs's note on reasoning
+            // models rejecting a non-default temperature.
+            temperature: None,
         })
         .await
         .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()))?;
