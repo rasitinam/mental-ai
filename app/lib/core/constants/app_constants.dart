@@ -12,4 +12,5 @@ class AppConstants {
 
   static const String prefsUserIdKey = 'mental_ai.user_id';
   static const String prefsSessionTokenKey = 'mental_ai.session_token';
+  static const String prefsSessionExpiresAtKey = 'mental_ai.session_expires_at';
 }

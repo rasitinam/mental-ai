@@ -10,32 +10,46 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
 class StoredSession {
   final String userId;
   final String token;
-  const StoredSession({required this.userId, required this.token});
+  final DateTime? expiresAt;
+  const StoredSession({required this.userId, required this.token, this.expiresAt});
 }
 
 StoredSession? readStoredSession(SharedPreferences prefs) {
   final userId = prefs.getString(AppConstants.prefsUserIdKey);
   final token = prefs.getString(AppConstants.prefsSessionTokenKey);
   if (userId == null || token == null) return null;
-  return StoredSession(userId: userId, token: token);
+
+  final expiresAtRaw = prefs.getString(AppConstants.prefsSessionExpiresAtKey);
+  final expiresAt = expiresAtRaw != null ? DateTime.tryParse(expiresAtRaw) : null;
+
+  // A locally-expired session is treated the same as no session — the
+  // classic-session behavior the user asked for ("önceden giriş yaptıysa
+  // uygulama direkt açılsın") only applies while the token is still good.
+  if (expiresAt != null && expiresAt.isBefore(DateTime.now())) return null;
+
+  return StoredSession(userId: userId, token: token, expiresAt: expiresAt);
 }
 
 Future<void> saveSession(SharedPreferences prefs, StoredSession session) async {
   await prefs.setString(AppConstants.prefsUserIdKey, session.userId);
   await prefs.setString(AppConstants.prefsSessionTokenKey, session.token);
+  if (session.expiresAt != null) {
+    await prefs.setString(AppConstants.prefsSessionExpiresAtKey, session.expiresAt!.toIso8601String());
+  }
 }
 
 Future<void> clearSession(SharedPreferences prefs) async {
   await prefs.remove(AppConstants.prefsUserIdKey);
   await prefs.remove(AppConstants.prefsSessionTokenKey);
+  await prefs.remove(AppConstants.prefsSessionExpiresAtKey);
 }
 
-/// In-memory copy of the current bearer token, set once by
-/// `ensureSession()` before the app's first frame (see
-/// `core/session/session_bootstrap.dart`) and read synchronously by
-/// `apiClientProvider`'s request interceptor on every call. The
-/// source of truth is still `SharedPreferences` (`saveSession`) — this
-/// just avoids an async read on every single HTTP request.
+/// In-memory copy of the current bearer token. `null` means "not signed
+/// in" and is what `app/router.dart`'s redirect logic and
+/// `apiClientProvider`'s request interceptor both key off of — set once
+/// at startup from the stored session (see `main.dart`), updated on
+/// login/register (`AuthController`) and cleared on logout or a 401
+/// response (`apiClientProvider`'s response interceptor).
 final sessionTokenProvider = StateProvider<String?>((ref) => null);
 
 /// The signed-in account's id, for display only (Settings screen).

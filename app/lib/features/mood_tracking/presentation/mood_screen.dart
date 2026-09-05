@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,14 +12,49 @@ import 'mood_controller.dart';
 /// stars" scalar or two separate sliders — one direct gesture lets
 /// someone place "calm and content" at a different point from "content
 /// and excited" rather than collapsing both onto the same number.
-class MoodScreen extends ConsumerWidget {
+///
+/// Once-per-day: the backend rejects a second check-in inside 24h (see
+/// `apps/server/src/routes/mood.rs`), so this screen shows a live
+/// countdown and disables the pad/button instead of letting someone fill
+/// it out just to get an error on submit.
+class MoodScreen extends ConsumerStatefulWidget {
   const MoodScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MoodScreen> createState() => _MoodScreenState();
+}
+
+class _MoodScreenState extends ConsumerState<MoodScreen> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    // Only drives the countdown label + re-enabling the form when the
+    // cooldown lapses — the actual gate is server-side.
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  String _formatRemaining(Duration d) {
+    final hours = d.inHours;
+    final minutes = d.inMinutes.remainder(60);
+    if (hours > 0) return '$hours sa $minutes dk';
+    final seconds = d.inSeconds.remainder(60);
+    return '$minutes dk $seconds sn';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(moodControllerProvider);
     final controller = ref.read(moodControllerProvider.notifier);
     final palette = AppPalette.of(context);
+    final onCooldown = state.isOnCooldown;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ruh Hali')),
@@ -27,12 +64,14 @@ class MoodScreen extends ConsumerWidget {
           child: Column(
             children: [
               Text(
-                'Şu an nasılsın?',
+                onCooldown ? 'Bugünkü kaydın alındı' : 'Şu an nasılsın?',
                 style: AppTypography.title2.copyWith(color: palette.textPrimary),
               ),
               const SizedBox(height: 4),
               Text(
-                'Noktayı hissettiğin yere sürükle',
+                onCooldown
+                    ? 'Sonraki kayıt ${_formatRemaining(state.cooldownUntil!.difference(DateTime.now()))} sonra açılıyor'
+                    : 'Noktayı hissettiğin yere sürükle',
                 style: AppTypography.footnote.copyWith(color: palette.textTertiary),
               ),
               const SizedBox(height: 24),
@@ -40,13 +79,20 @@ class MoodScreen extends ConsumerWidget {
                 child: Center(
                   child: AspectRatio(
                     aspectRatio: 1,
-                    child: _MoodPad(
-                      valence: state.valence,
-                      arousal: state.arousal,
-                      onChanged: (v, a) {
-                        controller.setValence(v);
-                        controller.setArousal(a);
-                      },
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 200),
+                      opacity: onCooldown ? 0.45 : 1,
+                      child: IgnorePointer(
+                        ignoring: onCooldown,
+                        child: _MoodPad(
+                          valence: state.valence,
+                          arousal: state.arousal,
+                          onChanged: (v, a) {
+                            controller.setValence(v);
+                            controller.setArousal(a);
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -57,16 +103,17 @@ class MoodScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(state.error!, style: TextStyle(color: palette.warning)),
                 ),
-              if (state.submitted)
+              if (state.submitted && !onCooldown)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text('Kaydedildi. Teşekkürler!',
                       style: AppTypography.subheadline.copyWith(color: palette.accent)),
                 ),
               AppPrimaryButton(
-                label: 'Kaydet',
-                loading: state.submitting,
-                onPressed: () => controller.submit(),
+                label: onCooldown ? 'Yarın tekrar dene' : 'Kaydet',
+                loading: state.submitting || state.loadingCooldown,
+                icon: onCooldown ? Icons.schedule_rounded : null,
+                onPressed: onCooldown ? null : () => controller.submit(),
               ),
             ],
           ),

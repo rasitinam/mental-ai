@@ -1,9 +1,11 @@
 use axum::{extract::State, routing::post, Json, Router};
 use chrono::{Duration, Utc};
 use mental_analysis_engine::generate_chat_reply;
-use mental_domain::repository::{JournalRepository, MoodRepository};
+use mental_domain::repository::{ChatRepository, JournalRepository, MoodRepository};
+use mental_domain::{ChatMessageRecord, ChatRole};
 use mental_llm_connector::ChatMessage;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::auth::AuthUser;
 use crate::state::AppState;
@@ -39,10 +41,14 @@ const MAX_HISTORY_MESSAGES: usize = 16;
 /// Chat with the wellness companion, personalized with the last few days
 /// of the user's own mood/journal history, grounded with research
 /// relevant to their message, and now with real conversational memory —
-/// see `mental_analysis_engine::generate_chat_reply`. No server-side
-/// session store: the client already keeps the transcript for display,
-/// so it resends the tail of it each turn instead of the backend holding
-/// duplicate state.
+/// see `mental_analysis_engine::generate_chat_reply`. There is still no
+/// server-side *live* session store (the client resends the tail of its
+/// transcript each turn, as above) — but every turn is now durably
+/// persisted to `chat_messages` regardless, so a conversation survives
+/// an app reinstall/restart even though it isn't replayed automatically
+/// yet. A failure to persist is logged and swallowed rather than failing
+/// the request: losing the durable copy of a message the user already
+/// received is much better than losing the reply itself over a DB hiccup.
 async fn send_message(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -77,5 +83,22 @@ async fn send_message(
     .await
     .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()))?;
 
+    persist_turn(&state, auth.user_id, ChatRole::User, &req.message, false).await;
+    persist_turn(&state, auth.user_id, ChatRole::Assistant, &result.reply, result.crisis_flag).await;
+
     Ok(Json(ChatTurnResponse { reply: result.reply, crisis_flag: result.crisis_flag }))
+}
+
+async fn persist_turn(state: &AppState, user_id: Uuid, role: ChatRole, content: &str, crisis_flag: bool) {
+    let record = ChatMessageRecord {
+        id: Uuid::new_v4(),
+        user_id,
+        role,
+        content: content.to_string(),
+        crisis_flag,
+        created_at: Utc::now(),
+    };
+    if let Err(err) = state.chats.add(&record).await {
+        tracing::warn!(error = %err, "failed to persist chat message");
+    }
 }

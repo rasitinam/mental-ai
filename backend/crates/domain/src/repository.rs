@@ -9,7 +9,10 @@ use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::report::LifeAnalysis;
-use crate::{Credentials, DailyMentalReport, Insight, JournalEntry, MoodEntry, ResearchArticle, Session, User};
+use crate::{
+    ChatMessageRecord, Credentials, DailyMentalReport, Insight, JournalEntry, MoodEntry,
+    ResearchArticle, Session, User,
+};
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {
@@ -35,6 +38,15 @@ pub trait MoodRepository: Send + Sync {
         from: DateTime<Utc>,
         to: DateTime<Utc>,
     ) -> anyhow::Result<Vec<MoodEntry>>;
+    /// Most recent check-in regardless of window — used to enforce the
+    /// once-per-24h cooldown (see `apps/server/src/routes/mood.rs`)
+    /// without needing the caller to guess a `list_between` range.
+    async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<MoodEntry>>;
+}
+
+#[async_trait]
+pub trait ChatRepository: Send + Sync {
+    async fn add(&self, message: &ChatMessageRecord) -> anyhow::Result<()>;
 }
 
 #[async_trait]

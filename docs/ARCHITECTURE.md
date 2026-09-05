@@ -34,11 +34,15 @@ backend/
 
 **Ton ve güvenlik dengesi**: `llm-connector::prompts::SAFETY_SYSTEM_PROMPT`, modelin varsayılan tavrını "hemen 'ben yardımcı olamam, bir uzmana git' de" değil, "gerçekten yardımcı ol, PTSD/bipolar gibi konularda araştırmaya dayalı bilgi ve başa çıkma stratejileri sun, kullanıcıyı uygulamada tut" olarak kuruyor. Tek sabit sınır: resmi bir tanı koymamak/ilaç önermemek ve gerçek kriz sinyallerinde (kendine zarar, intihar düşüncesi, acil durum) sohbeti sürdürmek yerine doğrudan acil yardım/kriz kaynaklarına yönlendirmek. Bu sınır App Store politikaları ve hukuki sorumluluk için gerekli; geri kalan her şeyde amaç kullanıcıyı başka bir yere yönlendirip bırakmak değil, sorununa gerçekten çözüm ortağı olmak.
 
+**Günlük ruh hali kaydı ve bekleme süresi**: "Günlük" ruh hali fikrini ciddiye alarak `POST /mood`, kullanıcının son kaydından 24 saat geçmediyse `429 Too Many Requests` (bir sonraki uygun zamanı `retry_after` alanında) döndürür — bkz. `apps/server/src/routes/mood.rs`. Flutter tarafında `MoodScreen` bunu bir geri sayımla gösterir ve kaydet düğmesini/pad'i o süre boyunca devre dışı bırakır; asıl kısıtlama sunucuda olduğu için istemci tarafı bunu atlatamaz.
+
+**Sohbetin kalıcılığı**: Her sohbet turu (hem kullanıcı mesajı hem model yanıtı) artık `chat_messages` tablosuna kalıcı olarak yazılıyor (`apps/server/src/routes/chat.rs::persist_turn`) — daha önce sohbet sadece Flutter'ın bellek-içi durumunda yaşıyordu ve uygulama kapanınca kayboluyordu. Canlı konuşma hafızası hâlâ istemcinin gönderdiği `history` alanından geliyor (yukarıya bakın); bu tablo onun kalıcı/yedek kopyası.
+
 **LLM bağlantısı ("MCP benzeri")**: `llm-connector::LlmProvider` trait'i tek soyutlama noktası. Bugün `OpenAiCompatibleProvider` bunu OpenAI Chat Completions şemasıyla konuşan herhangi bir uç nokta için implemente ediyor (OpenAI, Azure OpenAI, uyumlu bir self-host). Model adı (`chat_model`) `config/default.toml`'da düz metin — yeni bir model çıktığında kod değil config değişir. `tools.rs` içindeki `Tool`/`ToolCall` tipleri, backend fonksiyonlarını (örn. ruh hali geçmişini getir) modele çağrılabilir "araç" olarak sunmak için MCP'nin function-calling fikrini taşıyor.
 
 **Hesaplar ve kimlik doğrulama**: `/auth/register` (email + şifre, argon2 ile hash'lenir) ve `/auth/login` bir oturum token'ı (`sessions` tablosunda, 30 gün geçerli, opak rastgele token — imzalı bir JWT değil, çünkü bir satırı silerek sunucu tarafında iptal edilebilmesi gerekiyordu) döndürür. `mood`/`journal`/`chat`/`reports`/`life-analysis` altındaki **hiçbir** endpoint artık `user_id`'yi istekten almıyor — hepsi `apps/server/src/auth.rs::AuthUser` extractor'ı ile `Authorization: Bearer <token>` header'ından doğrulanmış kimliği okuyor. Bu, önceki tasarımdaki gerçek bir güvenlik açığını kapatıyor: eskiden herhangi biri rastgele bir UUID'yi `user_id` olarak göndererek başka birinin verisine yazabilir/okuyabilirdi.
 
-Flutter tarafında henüz görünür bir giriş/kayıt ekranı yok — `core/session/session_bootstrap.dart::ensureSession`, ilk açılışta arka planda rastgele bir e-posta + güçlü bir rastgele şifreyle sessizce `/auth/register` çağırır, dönen token'ı `SharedPreferences`'ta saklar ve her isteğe `apiClientProvider`'ın interceptor'ı üzerinden ekler. Yani kullanıcı hiçbir şey görmüyor ama verisi artık gerçek, doğrulanmış bir hesaba bağlı — sadece "başka bir cihazdan aynı hesaba gir" gibi bir akış için gerçek bir giriş ekranı eklenmesi gerekiyor (doğal bir sonraki adım).
+Flutter tarafında artık gerçek, görünür bir giriş/kayıt ekranı var (`features/auth/presentation/auth_screen.dart`) — uygulama ilk açıldığında `app/router.dart`'ın `redirect` mantığı, geçerli (süresi dolmamış) bir oturum yoksa doğrudan `/login`'e yönlendirir; klasik oturum davranışı: `core/session/session_bootstrap.dart::loadStoredSession` her açılışta yerel olarak (ağ çağrısı yapmadan) saklı token'ı okur, süresi geçmemişse oturum otomatik açılır. Giriş/kayıt başarılı olduğunda `sessionTokenProvider` değişir, bu da `GoRouter`'ın `refreshListenable`'ını tetikleyip kullanıcıyı uygulamanın içine yönlendirir — ayrı bir "navigate on success" kodu yazmaya gerek kalmadan. `Ayarlar > Çıkış yap` oturumu hem sunucuda (`/auth/logout`) hem yerelde temizler. Ayrıca `apiClientProvider`'ın response interceptor'ı herhangi bir istekte 401 alırsa oturumu otomatik temizleyip kullanıcıyı `/login`'e geri düşürür (sunucu tarafında bir oturum iptal edilmişse diye).
 
 ## Uygulama (`app/`, Flutter)
 
@@ -49,8 +53,7 @@ app/lib/
   app/            # MaterialApp kurulumu, tema, router
   core/           # paylaşılan network client (auth interceptor'lı), oturum bootstrap, local storage, sabitler
   features/
-    auth/           # register/login API client + Session modeli (henüz giriş ekranı yok, bkz. yukarı)
-    onboarding/
+    auth/           # gerçek giriş/kayıt ekranı + controller + API client (bkz. yukarı)
     daily_report/   # data + domain + presentation
     mood_tracking/
     journal/

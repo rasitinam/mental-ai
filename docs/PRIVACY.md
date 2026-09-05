@@ -8,6 +8,10 @@ Backend local-first tasarlandı: tüm kullanıcı verisi (ruh hali kayıtları, 
 
 Şifreler asla düz metin saklanmaz — `argon2` (bellek-zorlu, kaba kuvvet saldırılarına karşı endüstri standardı bir hash algoritması) ile hash'lenip `credentials.password_hash` sütununda tutulur. Oturum token'ları (`sessions` tablosu) rastgele 256-bit değerlerdir, JWT gibi imzalı/kendinden-doğrulanan bir yapı değildir — bilinçli bir tercih: bir oturumu iptal etmek için sadece ilgili satırı silmek yeterli, ayrı bir "denylist" mekanizması gerekmiyor. Detaylar için `backend/apps/server/src/auth.rs`.
 
+## "Kendini geliştiren yapay zeka" burada tam olarak ne anlama geliyor
+
+Kullanıcının kendi verisiyle (ruh hali, günlük, sohbet geçmişi) bir **modeli yeniden eğitmek (fine-tuning)** bu projenin kapsamında değil — hem ciddi bir eğitim altyapısı (GPU, veri hattı) gerektirir hem de kişisel ruh sağlığı verisini model eğitiminde kullanmak, kullanıcıdan çok daha açık ve ayrıntılı bir onay süreci gerektiren, ayrıca ele alınması gereken bir gizlilik konusudur. Şu an yapılan ve gerçekten çalışan şey şu: her sohbet/rapor/yaşam analizi isteğinde, kullanıcının **kendi** son ruh hali/günlük/sohbet verisi bağlam (RAG) olarak modele veriliyor (bkz. `docs/ARCHITECTURE.md`), yani uygulama zamanla kişiye özel hale geliyor — ama bu "kişiselleştirme", "model eğitimi" değil. Artık her sohbet turu `chat_messages` tablosuna kalıcı olarak yazılıyor, böylece bu veri uygulama yeniden başlatılsa/silinip kurulsa bile (aynı hesapla giriş yapıldığında) kaybolmuyor.
+
 ## Kriz taraması (`analysis-engine::safety`)
 
 Her günlük girişi ve sohbet mesajı, LLM'e gitmeden önce basit bir anahtar kelime taramasından geçer (`screen_for_crisis_language`). Bu **klinik bir değerlendirme değildir** — yüksek recall hedefleyen kaba bir güvenlik ağıdır. Yanlış pozitif (gereksiz yere kriz bandı gösterme) kabul edilebilir bir maliyettir; asıl önemli olan yanlış negatifleri (gerçek bir krizi kaçırmayı) minimize etmek.

@@ -6,13 +6,27 @@ import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/local_prefs.dart';
+import '../../auth/data/auth_api.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(authApiProvider).logout();
+    } catch (_) {
+      // Best-effort: even if the network call fails, clearing the local
+      // session still logs the person out of this device.
+    }
+    final prefs = ref.read(sharedPreferencesProvider);
+    await clearSession(prefs);
+    ref.read(sessionTokenProvider.notifier).state = null;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userId = ref.watch(currentUserIdProvider);
+    final palette = AppPalette.of(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ayarlar')),
@@ -40,6 +54,18 @@ class SettingsScreen extends ConsumerWidget {
                 label: 'Yasal uyarı',
                 description: 'Mental AI lisanslı bir sağlık uzmanının yerini tutmaz. '
                     'Acil bir durumdaysan 112\'yi ara.',
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _SettingsGroup(
+            title: 'Hesap',
+            rows: [
+              _SettingsRow(
+                icon: Icons.logout_rounded,
+                label: 'Çıkış yap',
+                iconColor: palette.warning,
+                onTap: () => _logout(context, ref),
               ),
             ],
           ),
@@ -90,41 +116,56 @@ class _SettingsRow extends StatelessWidget {
   final String label;
   final String? value;
   final String? description;
+  final Color? iconColor;
+  final VoidCallback? onTap;
 
-  const _SettingsRow({required this.icon, required this.label, this.value, this.description});
+  const _SettingsRow({
+    required this.icon,
+    required this.label,
+    this.value,
+    this.description,
+    this.iconColor,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: palette.accent),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
-                if (value != null) ...[
-                  const SizedBox(height: 3),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 20, color: iconColor ?? palette.accent),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    value!,
-                    style: AppTypography.footnote.copyWith(color: palette.textSecondary),
-                    overflow: TextOverflow.ellipsis,
+                    label,
+                    style: AppTypography.headline.copyWith(color: iconColor ?? palette.textPrimary),
                   ),
+                  if (value != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      value!,
+                      style: AppTypography.footnote.copyWith(color: palette.textSecondary),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (description != null) ...[
+                    const SizedBox(height: 3),
+                    Text(description!, style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                  ],
                 ],
-                if (description != null) ...[
-                  const SizedBox(height: 3),
-                  Text(description!, style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
-                ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -42,7 +42,8 @@ pub async fn generate_life_analysis(
             role: Role::System,
             content: "Write a compassionate narrative (5-8 sentences) describing the \
                       patterns you notice across this period, followed by 3-5 short \
-                      bullet points naming the key recurring patterns. Do not diagnose."
+                      bullet points naming the key recurring patterns. Do not diagnose. \
+                      Write the entire thing in Turkish."
                 .to_string(),
         },
         ChatMessage {

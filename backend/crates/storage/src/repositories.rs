@@ -1,12 +1,13 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mental_domain::repository::{
-    AuthRepository, InsightRepository, JournalRepository, LifeAnalysisRepository, MoodRepository,
-    ReportRepository, ResearchRepository, UserRepository,
+    AuthRepository, ChatRepository, InsightRepository, JournalRepository, LifeAnalysisRepository,
+    MoodRepository, ReportRepository, ResearchRepository, UserRepository,
 };
 use mental_domain::report::LifeAnalysis;
 use mental_domain::{
-    Credentials, DailyMentalReport, Insight, JournalEntry, MoodEntry, ResearchArticle, Session, User,
+    ChatMessageRecord, Credentials, DailyMentalReport, Insight, JournalEntry, MoodEntry,
+    ResearchArticle, Session, User,
 };
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -121,6 +122,26 @@ impl MoodRepository for SqliteMoodRepository {
                 recorded_at,
             })
             .collect())
+    }
+
+    async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<MoodEntry>> {
+        let row = sqlx::query_as::<_, (String, String, f32, f32, String, Option<String>, DateTime<Utc>)>(
+            "SELECT id, user_id, valence, arousal, tags, note, recorded_at FROM mood_entries
+             WHERE user_id = ?1 ORDER BY recorded_at DESC LIMIT 1",
+        )
+        .bind(user_id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|(id, user_id, valence, arousal, tags, note, recorded_at)| MoodEntry {
+            id: Uuid::parse_str(&id).unwrap_or_default(),
+            user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+            valence,
+            arousal,
+            tags: tags_from_json(&tags),
+            note,
+            recorded_at,
+        }))
     }
 }
 
@@ -485,6 +506,36 @@ impl AuthRepository for SqliteAuthRepository {
             .bind(token)
             .execute(&self.pool)
             .await?;
+
+        Ok(())
+    }
+}
+
+pub struct SqliteChatRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteChatRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl ChatRepository for SqliteChatRepository {
+    async fn add(&self, message: &ChatMessageRecord) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO chat_messages (id, user_id, role, content, crisis_flag, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        )
+        .bind(message.id.to_string())
+        .bind(message.user_id.to_string())
+        .bind(message.role.as_str())
+        .bind(&message.content)
+        .bind(message.crisis_flag)
+        .bind(message.created_at)
+        .execute(&self.pool)
+        .await?;
 
         Ok(())
     }

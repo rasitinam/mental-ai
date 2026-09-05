@@ -14,10 +14,7 @@ Future<void> main() async {
     overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
   );
 
-  // Must resolve before the first frame: every API call needs a bearer
-  // token, and there is no "loading" state in the UI for "not signed in
-  // yet" — see core/session/session_bootstrap.dart.
-  await ensureSession(container);
+  loadStoredSession(container);
 
   runApp(
     UncontrolledProviderScope(

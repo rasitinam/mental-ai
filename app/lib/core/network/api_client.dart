@@ -30,6 +30,18 @@ final apiClientProvider = Provider<Dio>((ref) {
         }
         handler.next(options);
       },
+      onError: (error, handler) {
+        // A 401 on an authenticated call means the session was revoked
+        // or expired server-side since it was loaded — clear it so the
+        // router's redirect logic takes the user back to /login instead
+        // of leaving them stuck on a screen that can never load.
+        if (error.response?.statusCode == 401 && ref.read(sessionTokenProvider) != null) {
+          ref.read(sessionTokenProvider.notifier).state = null;
+          final prefs = ref.read(sharedPreferencesProvider);
+          clearSession(prefs);
+        }
+        handler.next(error);
+      },
     ),
   );
 
