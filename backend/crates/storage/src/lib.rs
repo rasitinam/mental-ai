@@ -9,6 +9,6 @@ pub mod repositories;
 
 pub use pool::init_pool;
 pub use repositories::{
-    SqliteInsightRepository, SqliteJournalRepository, SqliteMoodRepository,
-    SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
+    SqliteInsightRepository, SqliteJournalRepository, SqliteLifeAnalysisRepository,
+    SqliteMoodRepository, SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
 };

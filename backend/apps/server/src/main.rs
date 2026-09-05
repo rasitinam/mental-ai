@@ -1,6 +1,7 @@
 mod routes;
 mod scheduler;
 mod state;
+mod users;
 
 use std::sync::Arc;
 
@@ -9,8 +10,8 @@ use mental_knowledge_base::{Embedder, SqliteVectorStore};
 use mental_llm_connector::openai_compatible::OpenAiCompatibleProvider;
 use mental_llm_connector::LlmProvider;
 use mental_storage::{
-    init_pool, SqliteInsightRepository, SqliteJournalRepository, SqliteMoodRepository,
-    SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
+    init_pool, SqliteInsightRepository, SqliteJournalRepository, SqliteLifeAnalysisRepository,
+    SqliteMoodRepository, SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
 };
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
@@ -47,6 +48,7 @@ async fn main() -> anyhow::Result<()> {
         reports: Arc::new(SqliteReportRepository::new(pool.clone())),
         research: Arc::new(SqliteResearchRepository::new(pool.clone())),
         insights: Arc::new(SqliteInsightRepository::new(pool.clone())),
+        life_analyses: Arc::new(SqliteLifeAnalysisRepository::new(pool.clone())),
         vector_store: Arc::new(SqliteVectorStore::new(pool.clone())),
         embedder: Arc::new(Embedder::new(llm.clone())),
         llm,

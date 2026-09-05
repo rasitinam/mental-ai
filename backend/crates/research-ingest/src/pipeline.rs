@@ -13,6 +13,11 @@ pub struct IngestSummary {
     pub fetched: usize,
     pub new_articles: usize,
     pub errors: Vec<String>,
+    /// The articles actually stored this cycle (i.e. previously unseen),
+    /// across all sources. `apps/server`'s scheduler feeds these into
+    /// insight synthesis right after ingestion so new research shows up
+    /// as an insight card without a separate pass over the whole corpus.
+    pub added_articles: Vec<ResearchArticle>,
 }
 
 /// Runs one ingestion pass across all configured sources: fetch, dedup
@@ -81,6 +86,7 @@ pub async fn run_ingest_cycle(
         }
 
         summary.new_articles += fresh.len();
+        summary.added_articles.extend(fresh);
     }
 
     summary

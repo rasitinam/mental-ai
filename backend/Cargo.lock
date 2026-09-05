@@ -1109,6 +1109,7 @@ dependencies = [
  "mental-domain",
  "mental-knowledge-base",
  "mental-llm-connector",
+ "serde_json",
  "tokio",
  "tracing",
  "uuid",

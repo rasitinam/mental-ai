@@ -1,10 +1,12 @@
 use axum::{extract::State, routing::post, Json, Router};
-use mental_analysis_engine::screen_for_crisis_language;
-use mental_llm_connector::{prompts, ChatMessage, ChatRequest, Role};
+use chrono::{Duration, Utc};
+use mental_analysis_engine::generate_chat_reply;
+use mental_domain::repository::{JournalRepository, MoodRepository};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::state::AppState;
+use crate::users::ensure_user;
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/chat", post(send_message))
@@ -12,7 +14,6 @@ pub fn router() -> Router<AppState> {
 
 #[derive(Debug, Deserialize)]
 struct ChatTurnRequest {
-    #[allow(dead_code)]
     user_id: Uuid,
     message: String,
 }
@@ -23,41 +24,46 @@ struct ChatTurnResponse {
     crisis_flag: bool,
 }
 
-/// Single-turn chat with the wellness companion. Deliberately stateless
-/// at this layer (no server-side conversation history yet) — the Flutter
-/// app keeps the visible transcript and resends what's needed as context
-/// once multi-turn memory is added.
+/// Single-turn chat with the wellness companion, personalized with the
+/// last few days of the user's own mood/journal history and grounded
+/// with research relevant to their message — see
+/// `mental_analysis_engine::generate_chat_reply`. Deliberately stateless
+/// at the *conversation* layer (no server-side message history yet): the
+/// Flutter app keeps the visible transcript, and personalization instead
+/// comes from the user's mood/journal data, not from replaying prior
+/// chat turns.
 async fn send_message(
     State(state): State<AppState>,
     Json(req): Json<ChatTurnRequest>,
 ) -> Result<Json<ChatTurnResponse>, (axum::http::StatusCode, String)> {
-    let crisis = screen_for_crisis_language(&req.message);
-
-    let messages = vec![
-        ChatMessage {
-            role: Role::System,
-            content: prompts::SAFETY_SYSTEM_PROMPT.to_string(),
-        },
-        ChatMessage {
-            role: Role::User,
-            content: req.message,
-        },
-    ];
-
-    let response = state
-        .llm
-        .chat(ChatRequest {
-            messages,
-            tools: vec![],
-            // Left unset: see openai_compatible.rs's note on reasoning
-            // models rejecting a non-default temperature.
-            temperature: None,
-        })
+    ensure_user(&state, req.user_id)
         .await
-        .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()))?;
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    Ok(Json(ChatTurnResponse {
-        reply: response.message.content,
-        crisis_flag: crisis.flagged,
-    }))
+    let now = Utc::now();
+    let since = now - Duration::days(3);
+
+    let recent_moods = state
+        .moods
+        .list_between(req.user_id, since, now)
+        .await
+        .unwrap_or_default();
+    let recent_journal_entries = state
+        .journals
+        .list_between(req.user_id, since, now)
+        .await
+        .unwrap_or_default();
+
+    let result = generate_chat_reply(
+        &req.message,
+        &recent_moods,
+        &recent_journal_entries,
+        state.llm.as_ref(),
+        state.vector_store.as_ref(),
+        state.embedder.as_ref(),
+    )
+    .await
+    .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()))?;
+
+    Ok(Json(ChatTurnResponse { reply: result.reply, crisis_flag: result.crisis_flag }))
 }

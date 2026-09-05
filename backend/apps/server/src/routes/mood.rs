@@ -6,6 +6,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::state::AppState;
+use crate::users::ensure_user;
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/mood", post(add_mood))
@@ -25,6 +26,10 @@ async fn add_mood(
     State(state): State<AppState>,
     Json(req): Json<AddMoodRequest>,
 ) -> Result<Json<MoodEntry>, (axum::http::StatusCode, String)> {
+    ensure_user(&state, req.user_id)
+        .await
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
     let entry = MoodEntry {
         id: Uuid::new_v4(),
         user_id: req.user_id,

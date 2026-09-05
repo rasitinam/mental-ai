@@ -1,9 +1,10 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mental_domain::repository::{
-    InsightRepository, JournalRepository, MoodRepository, ReportRepository, ResearchRepository,
-    UserRepository,
+    InsightRepository, JournalRepository, LifeAnalysisRepository, MoodRepository, ReportRepository,
+    ResearchRepository, UserRepository,
 };
+use mental_domain::report::LifeAnalysis;
 use mental_domain::{DailyMentalReport, Insight, JournalEntry, MoodEntry, ResearchArticle, User};
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -349,5 +350,58 @@ impl InsightRepository for SqliteInsightRepository {
                 created_at,
             })
             .collect())
+    }
+}
+
+pub struct SqliteLifeAnalysisRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteLifeAnalysisRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl LifeAnalysisRepository for SqliteLifeAnalysisRepository {
+    async fn save(&self, analysis: &LifeAnalysis) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO life_analyses (id, user_id, period_start, period_end, narrative, key_patterns, generated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        )
+        .bind(analysis.id.to_string())
+        .bind(analysis.user_id.to_string())
+        .bind(analysis.period_start)
+        .bind(analysis.period_end)
+        .bind(&analysis.narrative)
+        .bind(tags_to_json(&analysis.key_patterns))
+        .bind(analysis.generated_at)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<LifeAnalysis>> {
+        let row = sqlx::query_as::<_, (String, String, DateTime<Utc>, DateTime<Utc>, String, String, DateTime<Utc>)>(
+            "SELECT id, user_id, period_start, period_end, narrative, key_patterns, generated_at
+             FROM life_analyses WHERE user_id = ?1 ORDER BY generated_at DESC LIMIT 1",
+        )
+        .bind(user_id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(
+            |(id, user_id, period_start, period_end, narrative, key_patterns, generated_at)| LifeAnalysis {
+                id: Uuid::parse_str(&id).unwrap_or_default(),
+                user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+                period_start,
+                period_end,
+                narrative,
+                key_patterns: tags_from_json(&key_patterns),
+                generated_at,
+            },
+        ))
     }
 }

@@ -11,16 +11,27 @@ use super::{RawArticle, ResearchSource};
 /// a failure there doesn't lose the whole batch.
 pub struct PubMedSource {
     client: reqwest::Client,
+    /// Log-friendly label for this query (e.g. "pubmed:ptsd") — several
+    /// `PubMedSource` instances with different queries/tags run per
+    /// ingest cycle (see `apps/server/src/scheduler.rs::build_sources`),
+    /// so this disambiguates them in logs even though they all write rows
+    /// under the shared `source = "pubmed"` (that sharing is intentional:
+    /// it lets the same PMID found by two different topic queries dedupe
+    /// to one stored row instead of two).
+    label: &'static str,
     query: String,
     max_results: u32,
+    tags: Vec<String>,
 }
 
 impl PubMedSource {
-    pub fn new(query: impl Into<String>, max_results: u32) -> Self {
+    pub fn new(label: &'static str, query: impl Into<String>, max_results: u32, tags: Vec<String>) -> Self {
         Self {
             client: reqwest::Client::new(),
+            label,
             query: query.into(),
             max_results,
+            tags,
         }
     }
 }
@@ -40,7 +51,7 @@ const EUTILS_BASE: &str = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 #[async_trait]
 impl ResearchSource for PubMedSource {
     fn name(&self) -> &'static str {
-        "pubmed"
+        self.label
     }
 
     async fn fetch_recent(&self) -> anyhow::Result<Vec<RawArticle>> {
@@ -64,11 +75,11 @@ impl ResearchSource for PubMedSource {
         let fetch_url = format!("{EUTILS_BASE}/efetch.fcgi?db=pubmed&retmode=xml&id={ids}");
         let xml = self.client.get(&fetch_url).send().await?.text().await?;
 
-        Ok(parse_pubmed_xml(&xml, self.max_results as usize))
+        Ok(parse_pubmed_xml(&xml, self.max_results as usize, &self.tags))
     }
 }
 
-fn parse_pubmed_xml(xml: &str, max_results: usize) -> Vec<RawArticle> {
+fn parse_pubmed_xml(xml: &str, max_results: usize, tags: &[String]) -> Vec<RawArticle> {
     use quick_xml::events::Event;
     use quick_xml::reader::Reader;
 
@@ -109,7 +120,7 @@ fn parse_pubmed_xml(xml: &str, max_results: usize) -> Vec<RawArticle> {
                             abstract_text: abstract_text.clone(),
                             url: format!("https://pubmed.ncbi.nlm.nih.gov/{pmid}/"),
                             published_at: Some(Utc::now()),
-                            tags: vec!["psychology".to_string()],
+                            tags: tags.to_vec(),
                         });
                     }
                     pmid.clear();

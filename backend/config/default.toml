@@ -19,4 +19,11 @@ api_key_env = "MENTAL_AI_LLM_API_KEY"
 [research_ingest]
 enabled = true
 interval_hours = 6
-sources = ["pubmed", "who"]
+sources = [
+    "pubmed_general",
+    "pubmed_ptsd",
+    "pubmed_bipolar",
+    "pubmed_anxiety_depression",
+    "pubmed_recovery",
+    "who",
+]

@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+use crate::report::LifeAnalysis;
 use crate::{DailyMentalReport, Insight, JournalEntry, MoodEntry, ResearchArticle, User};
 
 #[async_trait]
@@ -55,4 +56,10 @@ pub trait ResearchRepository: Send + Sync {
 pub trait InsightRepository: Send + Sync {
     async fn save(&self, insight: &Insight) -> anyhow::Result<()>;
     async fn recent(&self, limit: u32) -> anyhow::Result<Vec<Insight>>;
+}
+
+#[async_trait]
+pub trait LifeAnalysisRepository: Send + Sync {
+    async fn save(&self, analysis: &LifeAnalysis) -> anyhow::Result<()>;
+    async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<LifeAnalysis>>;
 }
