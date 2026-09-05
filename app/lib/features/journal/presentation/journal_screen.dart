@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_typography.dart';
+import '../../../app/theme/glass.dart';
 import 'journal_controller.dart';
 
 class JournalScreen extends ConsumerStatefulWidget {
@@ -23,6 +26,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(journalControllerProvider);
     final journalController = ref.read(journalControllerProvider.notifier);
+    final palette = AppPalette.of(context);
 
     ref.listen(journalControllerProvider, (prev, next) {
       if (next.submitted && prev?.submitted != true) {
@@ -36,33 +40,45 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Günlük')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
-                decoration: const InputDecoration(
-                  hintText: 'Bugün aklından ne geçti?',
-                  border: OutlineInputBorder(),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: GlassSurface(
+                  radius: 26,
+                  padding: const EdgeInsets.all(4),
+                  child: TextField(
+                    controller: _controller,
+                    maxLines: null,
+                    expands: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    style: AppTypography.body.copyWith(color: palette.textPrimary),
+                    cursorColor: palette.accent,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.all(18),
+                      hintText: 'Bugün aklından ne geçti?',
+                      hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
+                      border: InputBorder.none,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            if (state.error != null)
-              Text(state.error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            FilledButton(
-              onPressed: state.submitting ? null : () => journalController.submit(_controller.text),
-              child: state.submitting
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Kaydet'),
-            ),
-          ],
+              const SizedBox(height: 16),
+              if (state.error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(state.error!, style: TextStyle(color: palette.warning)),
+                ),
+              AppPrimaryButton(
+                label: 'Kaydet',
+                loading: state.submitting,
+                onPressed: () => journalController.submit(_controller.text),
+              ),
+            ],
+          ),
         ),
       ),
     );

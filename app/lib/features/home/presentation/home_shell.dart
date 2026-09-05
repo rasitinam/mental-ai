@@ -1,35 +1,105 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Wraps every top-level tab in a persistent bottom nav bar. Receives the
-/// [StatefulShellRoute]'s navigation shell from `router.dart` so switching
-/// tabs doesn't rebuild each tab's widget tree from scratch.
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/glass.dart';
+
+/// Wraps every top-level tab in a floating glass tab bar instead of a
+/// full-width Material [NavigationBar] — closer to how iOS floats a
+/// control surface over content than to the edge-to-edge bar most
+/// Material/AI-generated UIs default to. Icon-only by design: seven
+/// destinations is already past Apple's own five-tab guidance, so adding
+/// labels on top would force everything to shrink into unreadable text;
+/// each screen already states its own name in its app bar.
 class HomeShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   const HomeShell({super.key, required this.navigationShell});
 
   static const _destinations = [
-    NavigationDestination(icon: Icon(Icons.today_outlined), selectedIcon: Icon(Icons.today), label: 'Rapor'),
-    NavigationDestination(icon: Icon(Icons.mood_outlined), selectedIcon: Icon(Icons.mood), label: 'Ruh Hali'),
-    NavigationDestination(icon: Icon(Icons.book_outlined), selectedIcon: Icon(Icons.book), label: 'Günlük'),
-    NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble), label: 'Sohbet'),
-    NavigationDestination(icon: Icon(Icons.lightbulb_outline), selectedIcon: Icon(Icons.lightbulb), label: 'İçgörüler'),
-    NavigationDestination(icon: Icon(Icons.timeline_outlined), selectedIcon: Icon(Icons.timeline), label: 'Yaşam'),
-    NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Ayarlar'),
+    (icon: Icons.event_note_outlined, activeIcon: Icons.event_note, tooltip: 'Günlük Rapor'),
+    (icon: Icons.emoji_emotions_outlined, activeIcon: Icons.emoji_emotions, tooltip: 'Ruh Hali'),
+    (icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book, tooltip: 'Günlük'),
+    (icon: Icons.forum_outlined, activeIcon: Icons.forum, tooltip: 'Sohbet'),
+    (icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, tooltip: 'İçgörüler'),
+    (icon: Icons.insights_outlined, activeIcon: Icons.insights, tooltip: 'Yaşam'),
+    (icon: Icons.tune_outlined, activeIcon: Icons.tune, tooltip: 'Ayarlar'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
     return Scaffold(
+      extendBody: true,
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) => navigationShell.goBranch(
-          index,
-          initialLocation: index == navigationShell.currentIndex,
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        child: GlassSurface(
+          radius: 26,
+          blurSigma: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (var i = 0; i < _destinations.length; i++)
+                _TabIcon(
+                  data: _destinations[i],
+                  selected: i == navigationShell.currentIndex,
+                  color: palette.accent,
+                  inactiveColor: palette.textTertiary,
+                  onTap: () => navigationShell.goBranch(
+                    i,
+                    initialLocation: i == navigationShell.currentIndex,
+                  ),
+                ),
+            ],
+          ),
         ),
-        destinations: _destinations,
+      ),
+    );
+  }
+}
+
+class _TabIcon extends StatelessWidget {
+  final ({IconData icon, IconData activeIcon, String tooltip}) data;
+  final bool selected;
+  final Color color;
+  final Color inactiveColor;
+  final VoidCallback onTap;
+
+  const _TabIcon({
+    required this.data,
+    required this.selected,
+    required this.color,
+    required this.inactiveColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: data.tooltip,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 28,
+        highlightShape: BoxShape.circle,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: selected ? color.withValues(alpha: 0.14) : Colors.transparent,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            selected ? data.activeIcon : data.icon,
+            size: 22,
+            color: selected ? color : inactiveColor,
+          ),
+        ),
       ),
     );
   }
