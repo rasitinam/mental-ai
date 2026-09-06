@@ -47,6 +47,10 @@ pub trait MoodRepository: Send + Sync {
 #[async_trait]
 pub trait ChatRepository: Send + Sync {
     async fn add(&self, message: &ChatMessageRecord) -> anyhow::Result<()>;
+    /// The full durable transcript for a user, oldest first — used to
+    /// rehydrate the chat screen on login/app restart so the conversation
+    /// reads as one continuous thread instead of resetting every session.
+    async fn history_for_user(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<ChatMessageRecord>>;
 }
 
 #[async_trait]
@@ -71,6 +75,12 @@ pub trait ReportRepository: Send + Sync {
 pub trait ResearchRepository: Send + Sync {
     async fn upsert_many(&self, articles: &[ResearchArticle]) -> anyhow::Result<()>;
     async fn exists(&self, source: &str, external_id: &str) -> anyhow::Result<bool>;
+    /// Most recently ingested articles regardless of when — used to
+    /// manually (re)synthesize insights from what's already in the
+    /// knowledge base, for when a scheduled ingest cycle finds nothing
+    /// "new" (everything was already fetched once) but the insight feed
+    /// is still empty.
+    async fn recent(&self, limit: u32) -> anyhow::Result<Vec<ResearchArticle>>;
 }
 
 #[async_trait]

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/storage/local_prefs.dart';
 import '../data/mood_api.dart';
 
 class MoodState {
@@ -51,6 +52,9 @@ final moodControllerProvider = NotifierProvider<MoodController, MoodState>(MoodC
 class MoodController extends Notifier<MoodState> {
   @override
   MoodState build() {
+    // Watched so an account switch re-checks that account's own cooldown
+    // instead of carrying over the previous account's.
+    ref.watch(sessionTokenProvider);
     Future.microtask(_loadCooldown);
     return const MoodState();
   }

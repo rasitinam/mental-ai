@@ -17,6 +17,7 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
+  int _lastMessageCount = 0;
 
   void _send() {
     final text = _inputController.text;
@@ -25,33 +26,47 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     ref.read(chatControllerProvider.notifier).send(text);
   }
 
+  void _scrollToBottomSoon() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(chatControllerProvider);
     final palette = AppPalette.of(context);
+
+    if (state.messages.length != _lastMessageCount) {
+      _lastMessageCount = state.messages.length;
+      _scrollToBottomSoon();
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Sohbet')),
       body: Column(
         children: [
           Expanded(
-            child: state.messages.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Text(
-                        'Bir şey paylaşmak ister misin?',
-                        style: AppTypography.body.copyWith(color: palette.textTertiary),
-                        textAlign: TextAlign.center,
+            child: state.loadingHistory && state.messages.isEmpty
+                ? Center(child: CircularProgressIndicator(color: palette.accent))
+                : state.messages.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Text(
+                            'Bir şey paylaşmak ister misin?',
+                            style: AppTypography.body.copyWith(color: palette.textTertiary),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        itemCount: state.messages.length,
+                        itemBuilder: (context, index) => _ChatBubble(message: state.messages[index]),
                       ),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    itemCount: state.messages.length,
-                    itemBuilder: (context, index) => _ChatBubble(message: state.messages[index]),
-                  ),
           ),
           if (state.sending)
             Padding(

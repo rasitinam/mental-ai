@@ -8,10 +8,14 @@
 | `pubmed_ptsd` | NCBI E-utilities | PTSD, travma sonrası stres — tedavi/terapi/iyileşme | `ptsd`, `trauma` |
 | `pubmed_bipolar` | NCBI E-utilities | Bipolar bozukluk — tedavi/yönetim/iyileşme | `bipolar` |
 | `pubmed_anxiety_depression` | NCBI E-utilities | Anksiyete/depresyon — başa çıkma, BDT | `anxiety`, `depression` |
+| `pubmed_borderline` | NCBI E-utilities | Borderline kişilik bozukluğu — tedavi/yönetim/iyileşme | `borderline`, `personality-disorder` |
+| `pubmed_ocd` | NCBI E-utilities | Obsesif-kompulsif bozukluk — tedavi/terapi/yönetim | `ocd` |
+| `pubmed_schizophrenia` | NCBI E-utilities | Şizofreni — tedavi/terapi/yönetim/iyileşme | `schizophrenia`, `psychosis` |
 | `pubmed_recovery` | NCBI E-utilities | Yayınlanmış nitel araştırma: "lived experience" / "recovery narrative" | `recovery-story`, `lived-experience` |
-| `who` | Ruh sağlığı haberleri RSS akışı | Genel duyurular | — |
 
 Her biri `backend/apps/server/src/scheduler.rs::build_sources` içinde ayrı bir `PubMedSource` örneği; saklanan alanlar hepsinde aynı: başlık, özet (abstract) metni, PMID, yayın tarihi, `url`, etiketler.
+
+**`who` (WHO genel haber RSS'i) neden varsayılan listede değil**: Bu kaynak sağlık alanındaki her konuyu kapsıyor (salgınlar, aşılar, politika duyuruları...) — spesifik olarak ruh sağlığı/mental hastalık değil. İçgörü akışını "BBC News tarzı" alakasız genel haberlerle sulandırdığı için varsayılan `sources` listesinden çıkarıldı; kod hâlâ `scheduler.rs`'te duruyor, istenirse config'e geri eklenebilir.
 
 ## "İnsanların hikayeleri" neden sosyal medyadan toplanmıyor
 

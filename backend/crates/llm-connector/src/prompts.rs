@@ -30,12 +30,14 @@ The one boundary that does not move:
 pub fn daily_report_instruction() -> &'static str {
     "Using the mood entries, journal excerpts, and research snippets provided, \
      write a short daily mental-state summary (3-5 sentences) that engages with \
-     the specifics of what the person wrote, one sentence noting the mood trend, \
-     and 2-3 concrete, low-effort recommendations for today grounded in coping \
-     strategies or research context. Do not state a formal diagnosis. Cite which \
-     provided research snippet(s), if any, informed each recommendation. Write \
-     the entire report in Turkish, regardless of what language the underlying \
-     journal excerpts or research snippets are in."
+     the specifics of what the person wrote, grounded in coping strategies or \
+     research context. Do not state a formal diagnosis. Separately, list 2-3 \
+     concrete, low-effort recommendations for today; cite which provided \
+     research snippet(s), if any, informed each one.\n\n\
+     Respond as JSON: {\"summary\": \"...\", \"recommendations\": [\"...\", \
+     \"...\"]}. Both the summary and every recommendation must be written in \
+     Turkish, regardless of what language the underlying journal excerpts or \
+     research snippets are in."
 }
 
 /// Modeled on how an actual first/early psychotherapy session runs (open,
@@ -74,14 +76,31 @@ pub fn chat_instruction() -> &'static str {
      language."
 }
 
+/// Deliberately steers away from generic "here's an interesting study"
+/// news-brief framing (that's what a raw WHO news feed reads like, which
+/// is exactly the wrong tone for this feed — see docs/DATA_SOURCES.md).
+/// Every card should read like a fact sheet entry about one specific
+/// condition: what it is / how it develops, and what actually helps.
 pub fn insight_synthesis_instruction() -> &'static str {
     "Turn the research abstract below (likely in English) into one short, \
-     user-facing educational card for a mental-wellness app whose users are \
-     Turkish speakers. Write a plain-language Turkish title (under 8 words) \
-     and a 2-4 sentence Turkish body that explains what this research found \
-     and why it's practically useful — no jargon, no hedging filler. Respond \
-     as JSON: {\"title\": \"...\", \"body\": \"...\", \"tags\": [\"...\"]}. \
-     The title and body must be in Turkish; tags stay short lowercase English \
-     topic words for consistent filtering (e.g. \"ptsd\", \"sleep\", \
-     \"coping-strategies\")."
+     user-facing educational card about a specific mental-health condition \
+     (e.g. PTSD, bipolar disorder, borderline personality disorder, OCD, \
+     schizophrenia, anxiety, depression) for a Turkish-speaking audience. \
+     This is a fact sheet about the condition, not a news brief about a \
+     study — ground everything in what this abstract actually supports, \
+     never invent claims beyond it.\n\n\
+     Write a plain-language Turkish title (under 8 words) naming the \
+     specific condition or mechanism this card is about, and a 3-5 \
+     sentence Turkish body that, to the extent the abstract supports it, \
+     covers: (1) what this tells us about the condition itself — symptoms, \
+     how it develops, or its underlying mechanism — and (2) what it means \
+     for treatment, coping, or a newly-studied technique, stated concretely \
+     rather than abstractly. Skip whichever of the two the abstract doesn't \
+     actually address rather than padding to fill both. No jargon, no \
+     hedging filler, no \"researchers found interesting results\" framing.\n\n\
+     Respond as JSON: {\"title\": \"...\", \"body\": \"...\", \"tags\": \
+     [\"...\"]}. Title and body must be in Turkish; tags stay short \
+     lowercase English topic words naming the condition and theme (e.g. \
+     \"bipolar\", \"borderline-personality-disorder\", \"emotion-regulation\", \
+     \"new-treatment\")."
 }

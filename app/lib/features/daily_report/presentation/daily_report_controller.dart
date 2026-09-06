@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/storage/local_prefs.dart';
 import '../data/report_api.dart';
 import '../domain/daily_report.dart';
 
@@ -23,6 +24,9 @@ final dailyReportControllerProvider =
 class DailyReportController extends Notifier<DailyReportState> {
   @override
   DailyReportState build() {
+    // Watched so an account switch resets to a blank state and reloads
+    // that account's own report instead of showing the previous one.
+    ref.watch(sessionTokenProvider);
     Future.microtask(loadLatest);
     return const DailyReportState(loading: true);
   }

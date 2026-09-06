@@ -70,29 +70,52 @@ pub async fn generate_daily_report(
         })
         .await?;
 
+    let (summary, recommendations) = parse_report_json(&response.message.content)
+        .unwrap_or_else(|| (response.message.content.clone(), vec![]));
+
     Ok(DailyMentalReport {
         id: Uuid::new_v4(),
         user_id,
         report_date: Utc::now(),
-        summary: response.message.content,
+        summary,
         mood_trend_note: mood_summary,
-        recommendations: vec![],
+        recommendations,
         cited_insight_ids: vec![],
         crisis_flag: crisis.flagged,
         generated_at: Utc::now(),
     })
 }
 
+/// Computed directly from the actual mood entries rather than asked of
+/// the LLM - the numbers should reflect real data, not a model's
+/// restatement of data it was already given.
 fn summarize_moods(moods: &[MoodEntry]) -> String {
     if moods.is_empty() {
-        return "No mood check-ins recorded today.".to_string();
+        return "Bugün için kaydedilmiş bir ruh hali yok.".to_string();
     }
     let avg_valence: f32 = moods.iter().map(|m| m.valence).sum::<f32>() / moods.len() as f32;
     let avg_arousal: f32 = moods.iter().map(|m| m.arousal).sum::<f32>() / moods.len() as f32;
     format!(
-        "{} check-ins, average valence {:.2}, average arousal {:.2}",
+        "{} kayıt, ortalama keyif düzeyi {:.2}, ortalama enerji düzeyi {:.2}",
         moods.len(),
         avg_valence,
         avg_arousal
     )
+}
+
+/// Mirrors `insight_synthesis::parse_insight_json` - the model is asked
+/// for strict JSON but occasionally wraps it in a markdown fence anyway,
+/// so that's stripped defensively before parsing.
+fn parse_report_json(raw: &str) -> Option<(String, Vec<String>)> {
+    let cleaned = raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+
+    let value: serde_json::Value = serde_json::from_str(cleaned).ok()?;
+    let summary = value.get("summary")?.as_str()?.to_string();
+    let recommendations = value
+        .get("recommendations")
+        .and_then(|r| r.as_array())
+        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+        .unwrap_or_default();
+
+    Some((summary, recommendations))
 }

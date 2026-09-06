@@ -1,8 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Flutter's debug/profile manifest variants add this automatically
+         (for the VM service), which is why this was never missed while
+         testing with `flutter run` - but a release build only uses this
+         main manifest, so without it a release APK has no network access
+         at all. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="mental_ai"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -6,7 +6,7 @@ use mental_domain::repository::{
 };
 use mental_domain::report::LifeAnalysis;
 use mental_domain::{
-    ChatMessageRecord, Credentials, DailyMentalReport, Insight, JournalEntry, MoodEntry,
+    ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, Insight, JournalEntry, MoodEntry,
     ResearchArticle, Session, User,
 };
 use sqlx::SqlitePool;
@@ -322,6 +322,36 @@ impl ResearchRepository for SqliteResearchRepository {
 
         Ok(row.is_some())
     }
+
+    async fn recent(&self, limit: u32) -> anyhow::Result<Vec<ResearchArticle>> {
+        let rows = sqlx::query_as::<
+            _,
+            (String, String, String, String, String, String, Option<DateTime<Utc>>, String, DateTime<Utc>),
+        >(
+            "SELECT id, source, external_id, title, abstract_text, url, published_at, tags, ingested_at
+             FROM research_articles ORDER BY ingested_at DESC LIMIT ?1",
+        )
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(
+                |(id, source, external_id, title, abstract_text, url, published_at, tags, ingested_at)| ResearchArticle {
+                    id: Uuid::parse_str(&id).unwrap_or_default(),
+                    source,
+                    external_id,
+                    title,
+                    abstract_text,
+                    url,
+                    published_at,
+                    tags: tags_from_json(&tags),
+                    ingested_at,
+                },
+            )
+            .collect())
+    }
 }
 
 pub struct SqliteInsightRepository {
@@ -538,5 +568,28 @@ impl ChatRepository for SqliteChatRepository {
         .await?;
 
         Ok(())
+    }
+
+    async fn history_for_user(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<ChatMessageRecord>> {
+        let rows = sqlx::query_as::<_, (String, String, String, String, bool, DateTime<Utc>)>(
+            "SELECT id, user_id, role, content, crisis_flag, created_at FROM chat_messages
+             WHERE user_id = ?1 ORDER BY created_at ASC LIMIT ?2",
+        )
+        .bind(user_id.to_string())
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(id, user_id, role, content, crisis_flag, created_at)| ChatMessageRecord {
+                id: Uuid::parse_str(&id).unwrap_or_default(),
+                user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+                role: if role == "assistant" { ChatRole::Assistant } else { ChatRole::User },
+                content,
+                crisis_flag,
+                created_at,
+            })
+            .collect())
     }
 }

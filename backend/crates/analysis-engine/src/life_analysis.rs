@@ -41,9 +41,12 @@ pub async fn generate_life_analysis(
         ChatMessage {
             role: Role::System,
             content: "Write a compassionate narrative (5-8 sentences) describing the \
-                      patterns you notice across this period, followed by 3-5 short \
-                      bullet points naming the key recurring patterns. Do not diagnose. \
-                      Write the entire thing in Turkish."
+                      patterns you notice across this period. Do not diagnose. \
+                      Separately, list 3-5 short bullet points naming the key \
+                      recurring patterns.\n\n\
+                      Respond as JSON: {\"narrative\": \"...\", \"key_patterns\": \
+                      [\"...\", \"...\"]}. Both the narrative and every pattern must \
+                      be written in Turkish."
                 .to_string(),
         },
         ChatMessage {
@@ -63,13 +66,33 @@ pub async fn generate_life_analysis(
         })
         .await?;
 
+    let (narrative, key_patterns) = parse_analysis_json(&response.message.content)
+        .unwrap_or_else(|| (response.message.content.clone(), vec![]));
+
     Ok(LifeAnalysis {
         id: Uuid::new_v4(),
         user_id,
         period_start,
         period_end,
-        narrative: response.message.content,
-        key_patterns: vec![],
+        narrative,
+        key_patterns,
         generated_at: Utc::now(),
     })
+}
+
+/// Mirrors `insight_synthesis::parse_insight_json` - the model is asked
+/// for strict JSON but occasionally wraps it in a markdown fence anyway,
+/// so that's stripped defensively before parsing.
+fn parse_analysis_json(raw: &str) -> Option<(String, Vec<String>)> {
+    let cleaned = raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+
+    let value: serde_json::Value = serde_json::from_str(cleaned).ok()?;
+    let narrative = value.get("narrative")?.as_str()?.to_string();
+    let key_patterns = value
+        .get("key_patterns")
+        .and_then(|r| r.as_array())
+        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+        .unwrap_or_default();
+
+    Some((narrative, key_patterns))
 }

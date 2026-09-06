@@ -15,8 +15,15 @@ final apiClientProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
       baseUrl: AppConstants.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30),
+      // Generous on purpose: several endpoints (chat, daily report, life
+      // analysis, insight synthesis) wait on a real LLM round-trip, and
+      // `gpt-5.6` is a reasoning-style model that can legitimately take
+      // well past 10-30s on a longer prompt (life analysis alone reviews
+      // 30 days of mood/journal data). A short timeout here doesn't make
+      // those calls faster, it just turns a slow-but-successful request
+      // into a client-side failure.
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 90),
       contentType: 'application/json',
     ),
   );

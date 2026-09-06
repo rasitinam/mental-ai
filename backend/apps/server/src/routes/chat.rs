@@ -1,4 +1,8 @@
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{
+    extract::State,
+    routing::{get, post},
+    Json, Router,
+};
 use chrono::{Duration, Utc};
 use mental_analysis_engine::generate_chat_reply;
 use mental_domain::repository::{ChatRepository, JournalRepository, MoodRepository};
@@ -11,8 +15,16 @@ use crate::auth::AuthUser;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/chat", post(send_message))
+    Router::new()
+        .route("/chat", post(send_message))
+        .route("/chat/history", get(chat_history))
 }
+
+/// How much of the durable transcript to hand back when the client
+/// rehydrates on login/app start. Generous compared to the 16-message
+/// window sent to the LLM per turn — this is just for rendering the
+/// scrollback, not prompt cost.
+const HISTORY_LIMIT: u32 = 500;
 
 #[derive(Debug, Deserialize)]
 struct ChatTurnRequest {
@@ -87,6 +99,22 @@ async fn send_message(
     persist_turn(&state, auth.user_id, ChatRole::Assistant, &result.reply, result.crisis_flag).await;
 
     Ok(Json(ChatTurnResponse { reply: result.reply, crisis_flag: result.crisis_flag }))
+}
+
+/// Full persisted transcript for the signed-in user, oldest first — the
+/// chat screen loads this once on start so a conversation reads as one
+/// continuous thread across logins/app restarts instead of resetting.
+async fn chat_history(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Json<Vec<ChatMessageRecord>>, (axum::http::StatusCode, String)> {
+    let history = state
+        .chats
+        .history_for_user(auth.user_id, HISTORY_LIMIT)
+        .await
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(history))
 }
 
 async fn persist_turn(state: &AppState, user_id: Uuid, role: ChatRole, content: &str, crisis_flag: bool) {

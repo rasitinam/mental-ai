@@ -28,49 +28,57 @@ pub async fn spawn_research_ingest_job(
     let sources = build_sources(&config.sources);
     let schedule = format!("0 0 */{} * * *", config.interval_hours.max(1));
 
+    // Run one cycle immediately on startup instead of waiting for the next
+    // cron tick (up to `interval_hours` away) — otherwise the insight feed
+    // would sit empty for hours after every fresh install/restart.
+    {
+        let state = state.clone();
+        let sources = sources.clone();
+        tokio::spawn(async move {
+            run_cycle(&state, &sources).await;
+        });
+    }
+
     let scheduler = JobScheduler::new().await?;
     let job = Job::new_async(schedule.as_str(), move |_uuid, _lock| {
         let state = state.clone();
         let sources = sources.clone();
-        Box::pin(async move {
-            let summary = run_ingest_cycle(
-                &sources,
-                state.research.as_ref(),
-                state.vector_store.as_ref(),
-                state.embedder.as_ref(),
-            )
-            .await;
-
-            tracing::info!(
-                fetched = summary.fetched,
-                new_articles = summary.new_articles,
-                errors = ?summary.errors,
-                "research ingest cycle complete"
-            );
-
-            if !summary.added_articles.is_empty() {
-                let insights = synthesize_insights(
-                    &summary.added_articles,
-                    MAX_INSIGHTS_PER_CYCLE,
-                    state.llm.as_ref(),
-                )
-                .await;
-
-                for insight in &insights {
-                    if let Err(err) = state.insights.save(insight).await {
-                        tracing::warn!(error = %err, "failed to save synthesized insight");
-                    }
-                }
-
-                tracing::info!(generated = insights.len(), "insight synthesis complete");
-            }
-        })
+        Box::pin(async move { run_cycle(&state, &sources).await })
     })?;
 
     scheduler.add(job).await?;
     scheduler.start().await?;
 
     Ok(())
+}
+
+async fn run_cycle(state: &AppState, sources: &[Arc<dyn ResearchSource>]) {
+    let summary = run_ingest_cycle(
+        sources,
+        state.research.as_ref(),
+        state.vector_store.as_ref(),
+        state.embedder.as_ref(),
+    )
+    .await;
+
+    tracing::info!(
+        fetched = summary.fetched,
+        new_articles = summary.new_articles,
+        errors = ?summary.errors,
+        "research ingest cycle complete"
+    );
+
+    if !summary.added_articles.is_empty() {
+        let insights = synthesize_insights(&summary.added_articles, MAX_INSIGHTS_PER_CYCLE, state.llm.as_ref()).await;
+
+        for insight in &insights {
+            if let Err(err) = state.insights.save(insight).await {
+                tracing::warn!(error = %err, "failed to save synthesized insight");
+            }
+        }
+
+        tracing::info!(generated = insights.len(), "insight synthesis complete");
+    }
 }
 
 /// Each topic below runs as its own PubMed query so a person struggling
@@ -111,6 +119,27 @@ fn build_sources(names: &[String]) -> Vec<Arc<dyn ResearchSource>> {
                 "(\"lived experience\" OR \"recovery narrative\" OR \"qualitative study\") AND (PTSD OR bipolar OR \"mental illness\")",
                 vec!["recovery-story", "lived-experience"],
             )),
+            "pubmed_borderline" => Some(pubmed(
+                "pubmed:borderline",
+                "\"borderline personality disorder\"[Title/Abstract] AND (treatment OR therapy OR management OR recovery)[Title/Abstract]",
+                vec!["borderline", "personality-disorder"],
+            )),
+            "pubmed_ocd" => Some(pubmed(
+                "pubmed:ocd",
+                "(\"obsessive-compulsive disorder\" OR OCD)[Title/Abstract] AND (treatment OR therapy OR management)[Title/Abstract]",
+                vec!["ocd"],
+            )),
+            "pubmed_schizophrenia" => Some(pubmed(
+                "pubmed:schizophrenia",
+                "schizophrenia[Title/Abstract] AND (treatment OR therapy OR management OR recovery)[Title/Abstract]",
+                vec!["schizophrenia", "psychosis"],
+            )),
+            // Kept available but not in the default source list: WHO's
+            // general news feed covers all of global health (outbreaks,
+            // vaccines, policy...), not specifically mental illness, so it
+            // was diluting the insight feed with content unrelated to any
+            // named condition. Re-add "who" to config/default.toml if a
+            // general-health-news card type is wanted again later.
             "who" => Some(Arc::new(WhoRssSource::new(
                 "https://www.who.int/rss-feeds/news-english.xml",
             )) as Arc<dyn ResearchSource>),

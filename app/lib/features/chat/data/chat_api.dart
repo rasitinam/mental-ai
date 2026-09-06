@@ -40,4 +40,14 @@ class ChatApi {
       crisisFlag: response.data['crisis_flag'] as bool? ?? false,
     );
   }
+
+  /// The full durable transcript for the signed-in account, oldest first —
+  /// loaded once when the chat screen starts so the conversation carries
+  /// over across logins/app restarts instead of resetting every time.
+  Future<List<ChatMessage>> history() async {
+    final response = await _dio.get('/chat/history');
+    return (response.data as List<dynamic>)
+        .map((e) => ChatMessage.fromRecordJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

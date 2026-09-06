@@ -1,5 +1,11 @@
 [server]
-host = "127.0.0.1"
+# 0.0.0.0 so phones/other devices on the same local network (e.g. the
+# Flutter app running on an Android device connected over Wi-Fi) can
+# reach it too, not just this machine. Every route except /health and
+# /insights (GET) requires a bearer token, but this does mean anyone on
+# the same network can attempt to hit /auth/login or /auth/register -
+# fine on a trusted home network, not on public Wi-Fi.
+host = "0.0.0.0"
 port = 8787
 
 [database]
@@ -24,6 +30,8 @@ sources = [
     "pubmed_ptsd",
     "pubmed_bipolar",
     "pubmed_anxiety_depression",
+    "pubmed_borderline",
+    "pubmed_ocd",
+    "pubmed_schizophrenia",
     "pubmed_recovery",
-    "who",
 ]
