@@ -49,3 +49,10 @@ class MoodApi {
     return MoodEntry.fromJson(response.data as Map<String, dynamic>);
   }
 }
+
+/// The most recent check-in, for screens that only need a quick read of
+/// "how are they doing right now" (the home screen's mood face) rather
+/// than the full cooldown-aware submit flow in [moodControllerProvider].
+final latestMoodProvider = FutureProvider<MoodEntry?>((ref) async {
+  return ref.watch(moodApiProvider).latest();
+});

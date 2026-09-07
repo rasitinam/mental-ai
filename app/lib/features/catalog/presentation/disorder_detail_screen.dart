@@ -5,6 +5,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../data/catalog_api.dart';
+import '../domain/disorder_category.dart';
 import '../domain/disorder_explainer.dart';
 
 /// Reference entry for one condition. The four sections map to what someone
@@ -18,6 +19,7 @@ class DisorderDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = AppPalette.of(context);
     final explainer = ref.watch(explainerProvider(slug));
+    final categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
 
     return Scaffold(
       appBar: AppBar(title: const Text('Bilgi Kartı')),
@@ -27,7 +29,10 @@ class DisorderDetailScreen extends ConsumerWidget {
           palette: palette,
           onRetry: () => ref.invalidate(explainerProvider(slug)),
         ),
-        data: (data) => _Content(explainer: data, palette: palette),
+        data: (data) {
+          final category = categories.where((c) => c.slug == data.category).firstOrNull;
+          return _Content(explainer: data, category: category, palette: palette);
+        },
       ),
     );
   }
@@ -35,16 +40,51 @@ class DisorderDetailScreen extends ConsumerWidget {
 
 class _Content extends StatelessWidget {
   final DisorderExplainer explainer;
+  final DisorderCategory? category;
   final AppPalette palette;
-  const _Content({required this.explainer, required this.palette});
+  const _Content({required this.explainer, required this.category, required this.palette});
 
   @override
   Widget build(BuildContext context) {
+    final emoji = category?.emoji ?? '🧠';
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
       children: [
-        Text(explainer.name, style: AppTypography.title1.copyWith(color: palette.textPrimary)),
-        const SizedBox(height: 18),
+        if (category != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+            decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(100)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(category!.emoji, style: const TextStyle(fontSize: 13)),
+                const SizedBox(width: 7),
+                Text(
+                  category!.name.toUpperCase(),
+                  style: AppTypography.caption.copyWith(color: palette.accent, letterSpacing: 0.6),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(20)),
+              alignment: Alignment.center,
+              child: Text(emoji, style: const TextStyle(fontSize: 26)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(explainer.name, style: AppTypography.title1.copyWith(color: palette.textPrimary)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 22),
         _Section(
           icon: Icons.help_outline_rounded,
           title: 'Nedir?',
@@ -64,7 +104,6 @@ class _Content extends StatelessWidget {
             icon: Icons.self_improvement_rounded,
             title: 'Günlük hayatta ne yardımcı olur?',
             items: explainer.copingPaths,
-            bulletColor: palette.accent,
             palette: palette,
           ),
         ],
@@ -74,22 +113,30 @@ class _Content extends StatelessWidget {
             icon: Icons.medical_services_outlined,
             title: 'Profesyonel destek neleri içerir?',
             items: explainer.treatmentPaths,
-            bulletColor: palette.accent,
             palette: palette,
           ),
         ],
         const SizedBox(height: 18),
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: palette.warningSoft,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline_rounded, size: 18, color: palette.warning),
-              const SizedBox(width: 10),
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: palette.warning.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                alignment: Alignment.center,
+                child: Icon(Icons.info_outline_rounded, size: 14, color: palette.warning),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Bu sayfa yalnızca bilgilendirme amaçlıdır ve tanı koymaz. '
@@ -101,6 +148,25 @@ class _Content extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Small circular icon badge used atop every section card — the visual
+/// anchor that lets someone scan the page by icon before reading titles.
+class _IconBadge extends StatelessWidget {
+  final IconData icon;
+  final AppPalette palette;
+  const _IconBadge({required this.icon, required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(11)),
+      alignment: Alignment.center,
+      child: Icon(icon, size: 16, color: palette.accent),
     );
   }
 }
@@ -126,12 +192,14 @@ class _Section extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: palette.accent),
-              const SizedBox(width: 8),
-              Text(title, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
+              _IconBadge(icon: icon, palette: palette),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(title, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
+              ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(body, style: AppTypography.body.copyWith(color: palette.textSecondary)),
         ],
       ),
@@ -143,13 +211,11 @@ class _ListSection extends StatelessWidget {
   final IconData icon;
   final String title;
   final List<String> items;
-  final Color bulletColor;
   final AppPalette palette;
   const _ListSection({
     required this.icon,
     required this.title,
     required this.items,
-    required this.bulletColor,
     required this.palette,
   });
 
@@ -162,29 +228,32 @@ class _ListSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: palette.accent),
-              const SizedBox(width: 8),
+              _IconBadge(icon: icon, palette: palette),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(title, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          for (final item in items)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+          const SizedBox(height: 6),
+          for (var i = 0; i < items.length; i++)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 11),
+              decoration: i == items.length - 1
+                  ? null
+                  : BoxDecoration(border: Border(bottom: BorderSide(color: palette.separator))),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     margin: const EdgeInsets.only(top: 7),
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(color: bulletColor, shape: BoxShape.circle),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(color: palette.accent, shape: BoxShape.circle),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: Text(item,
+                    child: Text(items[i],
                         style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
                   ),
                 ],

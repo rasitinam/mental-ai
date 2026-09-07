@@ -118,23 +118,40 @@ class InsightsScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
       ],
-      _SectionLabel(text: '${category.emoji}  ${category.name}', palette: palette),
-      const SizedBox(height: 10),
-      GlassSurface(
-        radius: 22,
-        padding: EdgeInsets.zero,
-        child: Column(
-          children: [
-            for (var i = 0; i < category.disorders.length; i++) ...[
-              _DisorderRow(
-                disorder: category.disorders[i],
-                palette: palette,
-                onTap: () => context.go('/insights/disorder/${category.disorders[i].slug}'),
-              ),
-              if (i != category.disorders.length - 1)
-                Divider(height: 1, indent: 20, color: palette.separator),
-            ],
-          ],
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              '${category.emoji}  ${category.name}',
+              style: AppTypography.headline.copyWith(color: palette.textPrimary),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(100)),
+            child: Text(
+              '${category.disorders.length} tanı',
+              style: AppTypography.caption.copyWith(color: palette.accent),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 14),
+      GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: category.disorders.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.35,
+        ),
+        itemBuilder: (context, i) => _DisorderCard(
+          disorder: category.disorders[i],
+          palette: palette,
+          onTap: () => context.go('/insights/disorder/${category.disorders[i].slug}'),
         ),
       ),
     ];
@@ -164,6 +181,7 @@ class _CategoryStrip extends StatelessWidget {
         children: [
           _CategoryChip(
             label: 'Genel',
+            icon: Icons.apps_rounded,
             selected: selected == null,
             palette: palette,
             onTap: () => onSelect(null),
@@ -183,12 +201,14 @@ class _CategoryStrip extends StatelessWidget {
 
 class _CategoryChip extends StatelessWidget {
   final String label;
+  final IconData? icon;
   final bool selected;
   final AppPalette palette;
   final VoidCallback onTap;
 
   const _CategoryChip({
     required this.label,
+    this.icon,
     required this.selected,
     required this.palette,
     required this.onTap,
@@ -196,6 +216,8 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fg = selected ? palette.canvasBottom : palette.textSecondary;
+
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
@@ -208,11 +230,15 @@ class _CategoryChip extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            child: Text(
-              label,
-              style: AppTypography.footnote.copyWith(
-                color: selected ? Colors.white : palette.textSecondary,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 14, color: fg),
+                  const SizedBox(width: 6),
+                ],
+                Text(label, style: AppTypography.footnote.copyWith(color: fg)),
+              ],
             ),
           ),
         ),
@@ -221,27 +247,48 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-class _DisorderRow extends StatelessWidget {
+class _DisorderCard extends StatelessWidget {
   final Disorder disorder;
   final AppPalette palette;
   final VoidCallback onTap;
 
-  const _DisorderRow({required this.disorder, required this.palette, required this.onTap});
+  const _DisorderCard({required this.disorder, required this.palette, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(disorder.name,
-                  style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
-            ),
-            Icon(Icons.chevron_right_rounded, size: 20, color: palette.textTertiary),
-          ],
+    return GlassSurface(
+      radius: 20,
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(12)),
+                alignment: Alignment.center,
+                child: Icon(Icons.psychology_outlined, size: 17, color: palette.accent),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                disorder.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.subheadline.copyWith(
+                  color: palette.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text('Bilgi kartını gör', style: AppTypography.caption.copyWith(color: palette.textTertiary)),
+            ],
+          ),
         ),
       ),
     );
