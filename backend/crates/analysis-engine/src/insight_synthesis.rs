@@ -1,4 +1,5 @@
 use chrono::Utc;
+use mental_domain::catalog;
 use mental_domain::{Insight, ResearchArticle};
 use mental_llm_connector::{prompts, ChatMessage, ChatRequest, LlmProvider, Role};
 use uuid::Uuid;
@@ -27,7 +28,7 @@ pub async fn synthesize_insights(
         let messages = vec![
             ChatMessage {
                 role: Role::System,
-                content: prompts::insight_synthesis_instruction().to_string(),
+                content: prompts::insight_synthesis_instruction(&catalog::category_menu()),
             },
             ChatMessage {
                 role: Role::User,
@@ -47,12 +48,13 @@ pub async fn synthesize_insights(
         };
 
         match parse_insight_json(&response.message.content) {
-            Some((title, body, tags)) => insights.push(Insight {
+            Some((title, body, tags, category)) => insights.push(Insight {
                 id: Uuid::new_v4(),
                 title,
                 body,
                 source_article_ids: vec![article.id],
                 tags,
+                category,
                 created_at: Utc::now(),
             }),
             None => {
@@ -64,7 +66,7 @@ pub async fn synthesize_insights(
     insights
 }
 
-fn parse_insight_json(raw: &str) -> Option<(String, String, Vec<String>)> {
+fn parse_insight_json(raw: &str) -> Option<(String, String, Vec<String>, Option<String>)> {
     // Models occasionally wrap JSON in a markdown fence despite the
     // instruction not to; strip it defensively rather than failing the
     // whole insight.
@@ -79,5 +81,15 @@ fn parse_insight_json(raw: &str) -> Option<(String, String, Vec<String>)> {
         .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
         .unwrap_or_default();
 
-    Some((title, body, tags))
+    // Validated against the catalog rather than trusted: an invented slug
+    // would create a category filter that matches nothing and silently hide
+    // the card. Unrecognized means "uncategorized", which still shows in the
+    // unfiltered feed.
+    let category = value
+        .get("category")
+        .and_then(|c| c.as_str())
+        .filter(|slug| catalog::is_category(slug))
+        .map(str::to_string);
+
+    Some((title, body, tags, category))
 }

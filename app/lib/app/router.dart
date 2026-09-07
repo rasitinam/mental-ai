@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/storage/local_prefs.dart';
 import '../features/auth/presentation/auth_screen.dart';
+import '../features/catalog/presentation/disorder_detail_screen.dart';
 import '../features/chat/presentation/chat_screen.dart';
 import '../features/daily_report/presentation/daily_report_screen.dart';
 import '../features/home/presentation/home_shell.dart';
@@ -11,6 +12,7 @@ import '../features/insights/presentation/insights_screen.dart';
 import '../features/journal/presentation/journal_screen.dart';
 import '../features/life_analysis/presentation/life_analysis_screen.dart';
 import '../features/mood_tracking/presentation/mood_screen.dart';
+import '../features/profile/presentation/diagnoses_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 
 /// Notifies [GoRouter] whenever the signed-in session changes, so
@@ -65,13 +67,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: '/insights', builder: (context, state) => const InsightsScreen()),
+            GoRoute(
+              path: '/insights',
+              builder: (context, state) => const InsightsScreen(),
+              routes: [
+                // Nested so the tab bar stays and Back returns to the
+                // category the person was browsing.
+                GoRoute(
+                  path: 'disorder/:slug',
+                  builder: (context, state) =>
+                      DisorderDetailScreen(slug: state.pathParameters['slug']!),
+                ),
+              ],
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(path: '/life-analysis', builder: (context, state) => const LifeAnalysisScreen()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+            GoRoute(
+              path: '/settings',
+              builder: (context, state) => const SettingsScreen(),
+              routes: [
+                GoRoute(path: 'diagnoses', builder: (context, state) => const DiagnosesScreen()),
+              ],
+            ),
           ]),
         ],
       ),

@@ -12,5 +12,8 @@ pub struct Insight {
     pub body: String,
     pub source_article_ids: Vec<Uuid>,
     pub tags: Vec<String>,
+    /// `catalog` category slug this card belongs to, when it could be placed
+    /// in one. `None` means it only appears in the unfiltered ("Genel") feed.
+    pub category: Option<String>,
     pub created_at: DateTime<Utc>,
 }

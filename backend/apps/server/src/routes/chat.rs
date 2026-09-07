@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::auth::AuthUser;
+use crate::routes::diagnoses_for;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -83,12 +84,16 @@ async fn send_message(
     let history_start = req.history.len().saturating_sub(MAX_HISTORY_MESSAGES);
     let history = &req.history[history_start..];
 
+    let diagnoses = diagnoses_for(&state, auth.user_id).await;
+
     let result = generate_chat_reply(
         &req.message,
         history,
         &recent_moods,
         &recent_journal_entries,
+        &diagnoses,
         state.llm.as_ref(),
+        state.research.as_ref(),
         state.vector_store.as_ref(),
         state.embedder.as_ref(),
     )

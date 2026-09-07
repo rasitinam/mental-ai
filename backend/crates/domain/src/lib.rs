@@ -4,7 +4,9 @@
 //! Concrete implementations of the repository traits live in `mental-storage`.
 
 pub mod auth;
+pub mod catalog;
 pub mod chat;
+pub mod explainer;
 pub mod insight;
 pub mod journal;
 pub mod mood;
@@ -14,7 +16,9 @@ pub mod research;
 pub mod user;
 
 pub use auth::{Credentials, Session};
+pub use catalog::{Disorder, DisorderCategory};
 pub use chat::{ChatMessageRecord, ChatRole};
+pub use explainer::DisorderExplainer;
 pub use insight::Insight;
 pub use journal::JournalEntry;
 pub use mood::MoodEntry;

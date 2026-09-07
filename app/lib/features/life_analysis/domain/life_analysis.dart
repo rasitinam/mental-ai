@@ -5,6 +5,8 @@ class LifeAnalysis {
   final DateTime periodEnd;
   final String narrative;
   final List<String> keyPatterns;
+  final List<String> doList;
+  final List<String> dontList;
   final DateTime generatedAt;
 
   const LifeAnalysis({
@@ -12,6 +14,8 @@ class LifeAnalysis {
     required this.periodEnd,
     required this.narrative,
     required this.keyPatterns,
+    required this.doList,
+    required this.dontList,
     required this.generatedAt,
   });
 
@@ -20,6 +24,8 @@ class LifeAnalysis {
         periodEnd: DateTime.parse(json['period_end'] as String),
         narrative: json['narrative'] as String,
         keyPatterns: (json['key_patterns'] as List<dynamic>? ?? []).cast<String>(),
+        doList: (json['do_list'] as List<dynamic>? ?? []).cast<String>(),
+        dontList: (json['dont_list'] as List<dynamic>? ?? []).cast<String>(),
         generatedAt: DateTime.parse(json['generated_at'] as String),
       );
 }

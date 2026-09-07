@@ -6,6 +6,7 @@ class Insight {
   final String title;
   final String body;
   final List<String> tags;
+  final String? category;
   final DateTime createdAt;
 
   const Insight({
@@ -13,6 +14,7 @@ class Insight {
     required this.title,
     required this.body,
     required this.tags,
+    required this.category,
     required this.createdAt,
   });
 
@@ -21,6 +23,7 @@ class Insight {
         title: json['title'] as String,
         body: json['body'] as String,
         tags: (json['tags'] as List<dynamic>? ?? []).cast<String>(),
+        category: json['category'] as String?,
         createdAt: DateTime.parse(json['created_at'] as String),
       );
 }

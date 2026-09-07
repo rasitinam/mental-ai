@@ -10,14 +10,18 @@ use uuid::Uuid;
 
 use crate::report::LifeAnalysis;
 use crate::{
-    ChatMessageRecord, Credentials, DailyMentalReport, Insight, JournalEntry, MoodEntry,
-    ResearchArticle, Session, User,
+    ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, Insight, JournalEntry,
+    MoodEntry, ResearchArticle, Session, User,
 };
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {
     async fn get(&self, id: Uuid) -> anyhow::Result<Option<User>>;
     async fn upsert(&self, user: &User) -> anyhow::Result<()>;
+    /// Replaces the whole self-reported diagnosis list — the profile screen
+    /// edits it as a set, so a partial update would just be a second way to
+    /// get the same result wrong.
+    async fn set_diagnoses(&self, user_id: Uuid, diagnoses: &[String]) -> anyhow::Result<()>;
 }
 
 #[async_trait]
@@ -42,6 +46,9 @@ pub trait MoodRepository: Send + Sync {
     /// once-per-24h cooldown (see `apps/server/src/routes/mood.rs`)
     /// without needing the caller to guess a `list_between` range.
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<MoodEntry>>;
+    /// Every check-in ever, oldest first — the life analysis covers the whole
+    /// history rather than a rolling window.
+    async fn list_all(&self, user_id: Uuid) -> anyhow::Result<Vec<MoodEntry>>;
 }
 
 #[async_trait]
@@ -63,12 +70,20 @@ pub trait JournalRepository: Send + Sync {
         from: DateTime<Utc>,
         to: DateTime<Utc>,
     ) -> anyhow::Result<Vec<JournalEntry>>;
+    /// Most recent entry, for the once-per-day cooldown.
+    async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<JournalEntry>>;
+    /// Whole history, newest first — backs the date-by-date archive screen
+    /// and the life analysis.
+    async fn list_all(&self, user_id: Uuid) -> anyhow::Result<Vec<JournalEntry>>;
 }
 
 #[async_trait]
 pub trait ReportRepository: Send + Sync {
     async fn save(&self, report: &DailyMentalReport) -> anyhow::Result<()>;
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<DailyMentalReport>>;
+    /// Past reports, newest first. Feeds two things: the "compared to previous
+    /// days" line in a new daily report, and the life analysis.
+    async fn list_recent(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<DailyMentalReport>>;
 }
 
 #[async_trait]
@@ -81,12 +96,24 @@ pub trait ResearchRepository: Send + Sync {
     /// "new" (everything was already fetched once) but the insight feed
     /// is still empty.
     async fn recent(&self, limit: u32) -> anyhow::Result<Vec<ResearchArticle>>;
+    /// Resolves vector-search hits back to their text. `VectorStore::search`
+    /// only returns ids and scores, so without this the "retrieval" half of
+    /// RAG hands the model bare UUIDs it can't read anything out of.
+    async fn get_many(&self, ids: &[Uuid]) -> anyhow::Result<Vec<ResearchArticle>>;
 }
 
 #[async_trait]
 pub trait InsightRepository: Send + Sync {
     async fn save(&self, insight: &Insight) -> anyhow::Result<()>;
     async fn recent(&self, limit: u32) -> anyhow::Result<Vec<Insight>>;
+    /// The feed filtered to one `catalog` category.
+    async fn recent_in_category(&self, category: &str, limit: u32) -> anyhow::Result<Vec<Insight>>;
+}
+
+#[async_trait]
+pub trait ExplainerRepository: Send + Sync {
+    async fn get(&self, slug: &str) -> anyhow::Result<Option<DisorderExplainer>>;
+    async fn save(&self, explainer: &DisorderExplainer) -> anyhow::Result<()>;
 }
 
 #[async_trait]

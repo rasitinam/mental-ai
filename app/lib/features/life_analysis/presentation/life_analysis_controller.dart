@@ -9,12 +9,24 @@ class LifeAnalysisState {
   final bool loading;
   final String? error;
 
-  const LifeAnalysisState({this.analysis, this.loading = false, this.error});
+  /// When the next generation becomes available (weekly cooldown).
+  final DateTime? cooldownUntil;
 
-  LifeAnalysisState copyWith({LifeAnalysis? analysis, bool? loading, String? error}) => LifeAnalysisState(
+  const LifeAnalysisState({this.analysis, this.loading = false, this.error, this.cooldownUntil});
+
+  bool get isOnCooldown => cooldownUntil != null && cooldownUntil!.isAfter(DateTime.now());
+
+  LifeAnalysisState copyWith({
+    LifeAnalysis? analysis,
+    bool? loading,
+    String? error,
+    DateTime? cooldownUntil,
+  }) =>
+      LifeAnalysisState(
         analysis: analysis ?? this.analysis,
         loading: loading ?? this.loading,
         error: error,
+        cooldownUntil: cooldownUntil ?? this.cooldownUntil,
       );
 }
 
@@ -35,7 +47,13 @@ class LifeAnalysisController extends Notifier<LifeAnalysisState> {
     state = state.copyWith(loading: true, error: null);
     try {
       final analysis = await ref.read(lifeAnalysisApiProvider).latest();
-      state = state.copyWith(analysis: analysis, loading: false);
+      state = state.copyWith(
+        analysis: analysis,
+        loading: false,
+        // The cooldown is measured from the last generation, so the loaded
+        // analysis is enough to know it without a second request.
+        cooldownUntil: analysis?.generatedAt.add(const Duration(days: 7)),
+      );
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
     }
@@ -45,7 +63,13 @@ class LifeAnalysisController extends Notifier<LifeAnalysisState> {
     state = state.copyWith(loading: true, error: null);
     try {
       final analysis = await ref.read(lifeAnalysisApiProvider).generate();
-      state = state.copyWith(analysis: analysis, loading: false);
+      state = state.copyWith(
+        analysis: analysis,
+        loading: false,
+        cooldownUntil: analysis.generatedAt.add(const Duration(days: 7)),
+      );
+    } on LifeAnalysisCooldownException catch (e) {
+      state = state.copyWith(loading: false, cooldownUntil: e.retryAfter);
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
     }

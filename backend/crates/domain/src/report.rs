@@ -29,5 +29,11 @@ pub struct LifeAnalysis {
     pub period_end: DateTime<Utc>,
     pub narrative: String,
     pub key_patterns: Vec<String>,
+    /// Concrete "keep doing / start doing" guidance.
+    pub do_list: Vec<String>,
+    /// Concrete "this is working against you" guidance. Separate from
+    /// `do_list` because the UI contrasts them, and because a mixed list
+    /// reads as a lecture.
+    pub dont_list: Vec<String>,
     pub generated_at: DateTime<Utc>,
 }

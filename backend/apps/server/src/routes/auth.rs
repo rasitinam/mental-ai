@@ -79,6 +79,7 @@ async fn register(
             id: user_id,
             display_name: req.display_name.unwrap_or_else(|| "Kullanıcı".to_string()),
             timezone: req.timezone.unwrap_or_else(|| "UTC".to_string()),
+            diagnoses: vec![],
             created_at: now,
         })
         .await

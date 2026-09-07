@@ -34,7 +34,11 @@ backend/
 
 **Ton ve güvenlik dengesi**: `llm-connector::prompts::SAFETY_SYSTEM_PROMPT`, modelin varsayılan tavrını "hemen 'ben yardımcı olamam, bir uzmana git' de" değil, "gerçekten yardımcı ol, PTSD/bipolar gibi konularda araştırmaya dayalı bilgi ve başa çıkma stratejileri sun, kullanıcıyı uygulamada tut" olarak kuruyor. Tek sabit sınır: resmi bir tanı koymamak/ilaç önermemek ve gerçek kriz sinyallerinde (kendine zarar, intihar düşüncesi, acil durum) sohbeti sürdürmek yerine doğrudan acil yardım/kriz kaynaklarına yönlendirmek. Bu sınır App Store politikaları ve hukuki sorumluluk için gerekli; geri kalan her şeyde amaç kullanıcıyı başka bir yere yönlendirip bırakmak değil, sorununa gerçekten çözüm ortağı olmak.
 
-**Günlük ruh hali kaydı ve bekleme süresi**: "Günlük" ruh hali fikrini ciddiye alarak `POST /mood`, kullanıcının son kaydından 24 saat geçmediyse `429 Too Many Requests` (bir sonraki uygun zamanı `retry_after` alanında) döndürür — bkz. `apps/server/src/routes/mood.rs`. Flutter tarafında `MoodScreen` bunu bir geri sayımla gösterir ve kaydet düğmesini/pad'i o süre boyunca devre dışı bırakır; asıl kısıtlama sunucuda olduğu için istemci tarafı bunu atlatamaz.
+**Süre kısıtları (ruh hali / günlük / yaşam analizi)**: Üçü de aynı desende, sunucu tarafında: son kayıttan bu yana yeterli süre geçmediyse `429 Too Many Requests` + `retry_after`. Ruh hali ve günlük **24 saat** (`routes/mood.rs`, `routes/journal.rs`), yaşam analizi **7 gün** (`routes/life_analysis.rs`). Flutter tarafı bunları geri sayımla gösterip formu kilitler; asıl kısıtlama sunucuda olduğu için istemci atlatamaz. Yaşam analizinin haftalık olmasının sebebi maliyet: tüm geçmişi okuyan en pahalı çağrı o, ve cevabı günden güne en az değişen de o.
+
+**Zaman aralıkları neden farklı**: Günlük rapor **bugünü** anlatır ama izole bir veri noktası gibi değil — kullanıcının tüm ruh hali geçmişinden hesaplanan bir taban çizgi (bugünün ortalaması vs. önceki tüm kayıtların ortalaması, farkıyla birlikte) ve son 7 raporun özeti bağlam olarak modele gider; prompt tam olarak **bir cümlelik** geriye bakış ister ("her zamankinden iyi/kötü/benzer bir gün"), fazlası raporu geçmiş denemesine çevirirdi. Karşılaştırma sayıları koda hesaplatılır, modele tahmin ettirilmez. Yaşam analizi ise tersine **her şeyi** okur: ruh hali, günlük, sohbet ve geçmiş raporlar, en baştan bugüne (`analysis-engine/src/life_analysis.rs`, kaynak başına üst sınırlarla — hesap yıllandıkça prompt sınırsız büyümesin diye).
+
+**Günlük arşivi**: `GET /journal` tüm kayıtları yeniden eskiye döndürür; Flutter tarafında `JournalScreen` bunları tarihleriyle listeler. Geri okunamayan bir günlük sadece bir formdur.
 
 **Sohbetin kalıcılığı**: Her sohbet turu (hem kullanıcı mesajı hem model yanıtı) `chat_messages` tablosuna kalıcı olarak yazılıyor (`apps/server/src/routes/chat.rs::persist_turn`) ve `GET /chat/history` ile geri okunabiliyor (`ChatRepository::history_for_user`). Flutter tarafı bunu ekran her açıldığında (uygulama başlangıcı, hesap girişi, sekmeler arası geçiş) çekip transkripti dolduruyor — sohbet artık uygulamanın bellek-içi durumunda değil, hesabın kendisinde yaşıyor; her hesap girişinde `sessionTokenProvider` değiştiği için `ChatController` de sıfırlanıp o hesabın kendi geçmişini yeniden yüklüyor.
 
@@ -43,6 +47,14 @@ backend/
 **Hesaplar ve kimlik doğrulama**: `/auth/register` (email + şifre, argon2 ile hash'lenir) ve `/auth/login` bir oturum token'ı (`sessions` tablosunda, 30 gün geçerli, opak rastgele token — imzalı bir JWT değil, çünkü bir satırı silerek sunucu tarafında iptal edilebilmesi gerekiyordu) döndürür. `mood`/`journal`/`chat`/`reports`/`life-analysis` altındaki **hiçbir** endpoint artık `user_id`'yi istekten almıyor — hepsi `apps/server/src/auth.rs::AuthUser` extractor'ı ile `Authorization: Bearer <token>` header'ından doğrulanmış kimliği okuyor. Bu, önceki tasarımdaki gerçek bir güvenlik açığını kapatıyor: eskiden herhangi biri rastgele bir UUID'yi `user_id` olarak göndererek başka birinin verisine yazabilir/okuyabilirdi.
 
 Flutter tarafında artık gerçek, görünür bir giriş/kayıt ekranı var (`features/auth/presentation/auth_screen.dart`) — uygulama ilk açıldığında `app/router.dart`'ın `redirect` mantığı, geçerli (süresi dolmamış) bir oturum yoksa doğrudan `/login`'e yönlendirir; klasik oturum davranışı: `core/session/session_bootstrap.dart::loadStoredSession` her açılışta yerel olarak (ağ çağrısı yapmadan) saklı token'ı okur, süresi geçmemişse oturum otomatik açılır. Giriş/kayıt başarılı olduğunda `sessionTokenProvider` değişir, bu da `GoRouter`'ın `refreshListenable`'ını tetikleyip kullanıcıyı uygulamanın içine yönlendirir — ayrı bir "navigate on success" kodu yazmaya gerek kalmadan. `Ayarlar > Çıkış yap` oturumu hem sunucuda (`/auth/logout`) hem yerelde temizler. Ayrıca `apiClientProvider`'ın response interceptor'ı herhangi bir istekte 401 alırsa oturumu otomatik temizleyip kullanıcıyı `/login`'e geri düşürür (sunucu tarafında bir oturum iptal edilmişse diye).
+
+**Tanı kataloğu ve kategoriler**: `domain/src/catalog.rs`, DSM-5-TR şeklinde 20 kategori ve altındaki ~129 durumu **derlenmiş statik veri** olarak tutar (veritabanında değil): kurulumdan kuruluma kaymasın ve `insights.category`, `users.diagnoses`, `disorder_explainers.slug` gibi alanların referans verdiği slug'lar sabit kalsın diye. `GET /catalog` bu ağacı olduğu gibi sunar (kimlik doğrulama gerektirmez — herkes için aynı referans verisi).
+
+**Durum bilgi kartları**: `GET /catalog/disorders/:slug`, bir durumun "nedir / nasıl gelişir / günlük hayatta ne yardımcı olur / profesyonel destek neleri içerir" kartını döndürür. İlk istekte araştırma korpusundan RAG ile üretilir, sonra `disorder_explainers` tablosunda önbelleğe alınır — katalogda ~129 başlık var, her dokunuşta LLM çağrısı yapmak hem yavaş hem pahalı olurdu. Prompt (`prompts::disorder_explainer_instruction`) bilinçli olarak daha katı: üçüncü tekil şahısla ("bu durumda genellikle..."), okuyana hitap etmeden ("sende...") yazılır — bu bir referans girdisi, okuyan hakkında bir değerlendirme değil.
+
+**Kendi bildirdiği tanılar**: `users.diagnoses` (katalog slug'ları), `GET /profile` + `PUT /profile/diagnoses`. Uygulama bunu asla kendisi doldurmaz; kişi kendi bildiğini söyler, bu da sohbet ve raporlarda bağlam olarak kullanılır ("tanı olarak kabul etme, neye dikkat edeceğini bilmek için kullan" talimatıyla). Gönderilen slug'lar kataloğa karşı doğrulanır.
+
+**RAG gerçekten metin taşıyor**: `VectorStore::search` yalnızca ID ve skor döndürüyor, dolayısıyla eskiden prompt'a giden "ilgili araştırma" kısmı modelin okuyamayacağı çıplak UUID'lerdi — yani retrieval var, retrieved içerik yoktu. `analysis-engine::retrieval::retrieve_context` bu adımı tamamlıyor: embed → ara → `ResearchRepository::get_many` ile makale metinlerini çek. Sohbet, günlük rapor ve bilgi kartları bu yoldan geçiyor.
 
 ## Uygulama (`app/`, Flutter)
 
@@ -54,12 +66,14 @@ app/lib/
   core/           # paylaşılan network client (auth interceptor'lı), oturum bootstrap, local storage, sabitler
   features/
     auth/           # gerçek giriş/kayıt ekranı + controller + API client (bkz. yukarı)
-    daily_report/   # data + domain + presentation
-    mood_tracking/
-    journal/
+    daily_report/   # bugünün raporu + geçmişe göre konum
+    mood_tracking/  # 2B pad + 24 saat bekleme
+    journal/        # günde 1 giriş + tarih tarihine arşiv
     chat/
-    insights/       # `/insights` akışı: içgörü kartları, pull-to-refresh
-    life_analysis/  # `/life-analysis/*`: 30 günlük anlatı + öne çıkan örüntüler
+    catalog/        # kategori/durum ağacı + durum bilgi kartı ekranı
+    insights/       # kategori seçici + araştırma akışı + durum listesi
+    life_analysis/  # tüm geçmiş: anlatı, örüntüler, yapılacak/yapılmayacaklar
+    profile/        # kendi bildirdiği tanıların seçimi
     settings/
     home/           # bottom-nav shell
 ```

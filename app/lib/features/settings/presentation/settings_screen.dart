@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
@@ -61,6 +62,13 @@ class SettingsScreen extends ConsumerWidget {
           _SettingsGroup(
             title: 'Hesap',
             rows: [
+              _SettingsRow(
+                icon: Icons.assignment_ind_outlined,
+                label: 'Tanılarım',
+                description: 'Kendi bildirdiğin tanıları seç; raporlar ve sohbet buna göre '
+                    'şekillenir.',
+                onTap: () => context.go('/settings/diagnoses'),
+              ),
               _SettingsRow(
                 icon: Icons.logout_rounded,
                 label: 'Çıkış yap',

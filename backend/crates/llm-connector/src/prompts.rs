@@ -34,10 +34,77 @@ pub fn daily_report_instruction() -> &'static str {
      research context. Do not state a formal diagnosis. Separately, list 2-3 \
      concrete, low-effort recommendations for today; cite which provided \
      research snippet(s), if any, informed each one.\n\n\
+     The report is about today, but you are also given the person's baseline \
+     (today's numbers against the average of their earlier check-ins) and \
+     their previous days' reports. Include exactly one sentence placing today \
+     against that history — whether this is a better, worse, or similar day \
+     than usual, and if a streak or shift is visible, name it. Base that \
+     sentence on the supplied baseline numbers, don't estimate it. If there \
+     isn't enough history to compare, say so briefly instead of inventing a \
+     trend, and do not let the backward glance take over the report: today is \
+     still the subject.\n\n\
      Respond as JSON: {\"summary\": \"...\", \"recommendations\": [\"...\", \
      \"...\"]}. Both the summary and every recommendation must be written in \
      Turkish, regardless of what language the underlying journal excerpts or \
      research snippets are in."
+}
+
+/// The whole-history counterpart to the daily report. Asks for the two lists
+/// the user reads first ("what should I do / what should I stop") as separate
+/// fields, because buried in a narrative they stop being actionable.
+pub fn life_analysis_instruction() -> &'static str {
+    "You are given a person's entire recorded history in this app: mood \
+     check-ins, journal entries, chat transcript excerpts and previous daily \
+     reports, plus any conditions they have self-reported.\n\n\
+     Write a compassionate narrative (6-10 sentences) describing the patterns \
+     you notice across the whole period — how things have moved over time, \
+     what recurs, what has changed. Reference concrete moments from the data \
+     rather than speaking in generalities. Do not diagnose, and do not treat a \
+     self-reported condition as established fact; use it only as context for \
+     what to pay attention to.\n\n\
+     Then produce three lists:\n\
+     - key_patterns: 3-5 short phrases naming the recurring patterns.\n\
+     - do_list: 3-5 concrete things this specific person should keep doing or \
+       start doing, drawn from what visibly helped them in their own history.\n\
+     - dont_list: 3-5 concrete things working against them, phrased as \
+       behaviors to reduce or avoid — never as judgments about who they are.\n\n\
+     Respond as JSON: {\"narrative\": \"...\", \"key_patterns\": [\"...\"], \
+     \"do_list\": [\"...\"], \"dont_list\": [\"...\"]}. Everything must be \
+     written in Turkish."
+}
+
+/// Educational material for one catalog condition. This is the app's most
+/// clinically-loaded output, so the framing rules are stricter than
+/// elsewhere: describe, attribute, and never address it to the reader as if
+/// they have it.
+pub fn disorder_explainer_instruction() -> &'static str {
+    "Write an educational reference card about the given mental-health \
+     condition, for a Turkish-speaking general audience. You are given \
+     research abstracts to ground it — prefer what they support, and don't \
+     contradict them.\n\n\
+     Write in the third person about the condition ('bu durumda genellikle...'), \
+     never in the second person about the reader ('sende...'). This is a \
+     reference entry, not an assessment of whoever is reading it, and nothing \
+     here should read as telling someone they have it.\n\n\
+     Produce:\n\
+     - what_it_is: 3-5 sentences on what the condition is and how it typically \
+       shows up day to day.\n\
+     - how_it_develops: 3-5 sentences on what research says about how it tends \
+       to develop — risk factors, common contributing experiences, biological \
+       and environmental contributors. Describe likelihoods, not certainties, \
+       and avoid anything that reads as blaming the person or their family.\n\
+     - coping_paths: 3-5 concrete things that help day to day and that a \
+       person can try on their own.\n\
+     - treatment_paths: 3-5 short descriptions of what professional treatment \
+       for this typically involves (therapy modalities, what a clinician does, \
+       when medication is generally part of the picture). Describe what \
+       treatment looks like — never recommend, dose, or name specific \
+       medications as advice.\n\n\
+     End what_it_is with a brief reminder that diagnosis belongs to a licensed \
+     professional.\n\n\
+     Respond as JSON: {\"what_it_is\": \"...\", \"how_it_develops\": \"...\", \
+     \"coping_paths\": [\"...\"], \"treatment_paths\": [\"...\"]}. Everything \
+     must be written in Turkish."
 }
 
 /// Modeled on how an actual first/early psychotherapy session runs (open,
@@ -81,26 +148,32 @@ pub fn chat_instruction() -> &'static str {
 /// is exactly the wrong tone for this feed — see docs/DATA_SOURCES.md).
 /// Every card should read like a fact sheet entry about one specific
 /// condition: what it is / how it develops, and what actually helps.
-pub fn insight_synthesis_instruction() -> &'static str {
-    "Turn the research abstract below (likely in English) into one short, \
-     user-facing educational card about a specific mental-health condition \
-     (e.g. PTSD, bipolar disorder, borderline personality disorder, OCD, \
-     schizophrenia, anxiety, depression) for a Turkish-speaking audience. \
-     This is a fact sheet about the condition, not a news brief about a \
-     study — ground everything in what this abstract actually supports, \
-     never invent claims beyond it.\n\n\
-     Write a plain-language Turkish title (under 8 words) naming the \
-     specific condition or mechanism this card is about, and a 3-5 \
-     sentence Turkish body that, to the extent the abstract supports it, \
-     covers: (1) what this tells us about the condition itself — symptoms, \
-     how it develops, or its underlying mechanism — and (2) what it means \
-     for treatment, coping, or a newly-studied technique, stated concretely \
-     rather than abstractly. Skip whichever of the two the abstract doesn't \
-     actually address rather than padding to fill both. No jargon, no \
-     hedging filler, no \"researchers found interesting results\" framing.\n\n\
-     Respond as JSON: {\"title\": \"...\", \"body\": \"...\", \"tags\": \
-     [\"...\"]}. Title and body must be in Turkish; tags stay short \
-     lowercase English topic words naming the condition and theme (e.g. \
-     \"bipolar\", \"borderline-personality-disorder\", \"emotion-regulation\", \
-     \"new-treatment\")."
+pub fn insight_synthesis_instruction(category_menu: &str) -> String {
+    format!(
+        "Turn the research abstract below (likely in English) into one short, \
+         user-facing educational card about a specific mental-health condition \
+         (e.g. PTSD, bipolar disorder, borderline personality disorder, OCD, \
+         schizophrenia, anxiety, depression) for a Turkish-speaking audience. \
+         This is a fact sheet about the condition, not a news brief about a \
+         study — ground everything in what this abstract actually supports, \
+         never invent claims beyond it.\n\n\
+         Write a plain-language Turkish title (under 8 words) naming the \
+         specific condition or mechanism this card is about, and a 3-5 \
+         sentence Turkish body that, to the extent the abstract supports it, \
+         covers: (1) what this tells us about the condition itself — symptoms, \
+         how it develops, or its underlying mechanism — and (2) what it means \
+         for treatment, coping, or a newly-studied technique, stated concretely \
+         rather than abstractly. Skip whichever of the two the abstract doesn't \
+         actually address rather than padding to fill both. No jargon, no \
+         hedging filler, no \"researchers found interesting results\" framing.\n\n\
+         Also place the card in exactly one category, using a slug from this \
+         list: {category_menu}. Use the slug verbatim. If the abstract doesn't \
+         clearly belong to any of them, use null rather than forcing a fit.\n\n\
+         Respond as JSON: {{\"title\": \"...\", \"body\": \"...\", \"tags\": \
+         [\"...\"], \"category\": \"slug-or-null\"}}. Title and body must be in \
+         Turkish; tags stay short lowercase English topic words naming the \
+         condition and theme (e.g. \"bipolar\", \
+         \"borderline-personality-disorder\", \"emotion-regulation\", \
+         \"new-treatment\")."
+    )
 }

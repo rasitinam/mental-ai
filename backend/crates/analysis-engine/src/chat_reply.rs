@@ -1,7 +1,9 @@
+use mental_domain::repository::ResearchRepository;
 use mental_domain::{JournalEntry, MoodEntry};
 use mental_knowledge_base::{Embedder, VectorStore};
 use mental_llm_connector::{prompts, ChatMessage, ChatRequest, LlmProvider, Role};
 
+use crate::retrieval::{format_context, retrieve_context};
 use crate::safety::screen_for_crisis_language;
 
 pub struct ChatReplyResult {
@@ -27,31 +29,29 @@ pub struct ChatReplyResult {
 /// transcript for display, so resending it is simpler than adding
 /// stateful sessions, at the cost of the caller needing to cap its
 /// length (see `ChatApi` on the Flutter side).
+#[allow(clippy::too_many_arguments)]
 pub async fn generate_chat_reply(
     user_message: &str,
     conversation_history: &[ChatMessage],
     recent_moods: &[MoodEntry],
     recent_journal_entries: &[JournalEntry],
+    diagnoses: &[String],
     llm: &dyn LlmProvider,
+    research: &dyn ResearchRepository,
     vector_store: &dyn VectorStore,
     embedder: &Embedder,
 ) -> anyhow::Result<ChatReplyResult> {
     let crisis = screen_for_crisis_language(user_message);
 
-    let query_embedding = embedder.embed_one(user_message).await.unwrap_or_default();
-    let related = if query_embedding.is_empty() {
-        vec![]
-    } else {
-        vector_store.search(&query_embedding, 3).await.unwrap_or_default()
-    };
+    let related = retrieve_context(user_message, 3, research, vector_store, embedder).await;
 
     let mood_summary = if recent_moods.is_empty() {
-        "No recent mood check-ins.".to_string()
+        "Yakın zamanda ruh hali kaydı yok.".to_string()
     } else {
         let avg_valence: f32 = recent_moods.iter().map(|m| m.valence).sum::<f32>() / recent_moods.len() as f32;
         let avg_arousal: f32 = recent_moods.iter().map(|m| m.arousal).sum::<f32>() / recent_moods.len() as f32;
         format!(
-            "{} recent check-ins, average valence {:.2}, average arousal {:.2}",
+            "{} kayıt, ortalama keyif {:.2}, ortalama enerji {:.2}",
             recent_moods.len(),
             avg_valence,
             avg_arousal
@@ -66,15 +66,19 @@ pub async fn generate_chat_reply(
         .collect::<Vec<_>>()
         .join("\n");
 
+    let diagnosis_line = if diagnoses.is_empty() {
+        "(bildirilmemiş)".to_string()
+    } else {
+        diagnoses.join(", ")
+    };
+
     let context = format!(
-        "Recent mood: {mood_summary}\n\nRecent journal excerpts:\n{}\n\nRelated research snippets: {} found\n{}",
-        if journal_excerpts.is_empty() { "(none)".to_string() } else { journal_excerpts },
-        related.len(),
-        related
-            .iter()
-            .map(|r| format!("- article {} (relevance {:.2})", r.article_id, r.score))
-            .collect::<Vec<_>>()
-            .join("\n"),
+        "Kullanıcının kendi bildirdiği tanılar: {diagnosis_line}\n\n\
+         Son ruh hali: {mood_summary}\n\n\
+         Son günlük alıntıları:\n{}\n\n\
+         İlgili araştırma:\n{}",
+        if journal_excerpts.is_empty() { "(yok)".to_string() } else { journal_excerpts },
+        format_context(&related),
     );
 
     let mut messages = vec![

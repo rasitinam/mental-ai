@@ -12,8 +12,13 @@ class InsightsApi {
 
   /// Not per-account — the background research service builds one shared
   /// feed for the whole app (see `apps/server/src/routes/insights.rs`).
-  Future<List<Insight>> recent() async {
-    final response = await _dio.get('/insights');
+  /// `category` is a catalog slug; omitting it returns the unfiltered feed,
+  /// which also includes cards that couldn't be categorized.
+  Future<List<Insight>> recent({String? category}) async {
+    final response = await _dio.get(
+      '/insights',
+      queryParameters: category == null ? null : {'category': category},
+    );
     return (response.data as List<dynamic>).map((e) => Insight.fromJson(e as Map<String, dynamic>)).toList();
   }
 
