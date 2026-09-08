@@ -1,11 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/widgets/countdown_text.dart';
 import '../../../l10n/app_localizations.dart';
 import 'mood_controller.dart';
 
@@ -26,22 +25,6 @@ class MoodScreen extends ConsumerStatefulWidget {
 }
 
 class _MoodScreenState extends ConsumerState<MoodScreen> {
-  Timer? _ticker;
-
-  @override
-  void initState() {
-    super.initState();
-    // Only drives the countdown label + re-enabling the form when the
-    // cooldown lapses — the actual gate is server-side.
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => setState(() {}));
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
   String _formatRemaining(Duration d) {
     final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60);
@@ -70,12 +53,21 @@ class _MoodScreenState extends ConsumerState<MoodScreen> {
                 style: AppTypography.title2.copyWith(color: palette.textPrimary),
               ),
               const SizedBox(height: 4),
-              Text(
-                onCooldown
-                    ? l10n.moodNextIn(_formatRemaining(state.cooldownUntil!.difference(DateTime.now())))
-                    : l10n.moodDragHint,
-                style: AppTypography.footnote.copyWith(color: palette.textTertiary),
-              ),
+              // The countdown owns its own ticker so a second passing
+              // repaints this one line, not the whole screen — and stops
+              // ticking entirely once the cooldown is over.
+              if (onCooldown)
+                CountdownText(
+                  until: state.cooldownUntil!,
+                  onFinished: () => setState(() {}),
+                  format: (remaining) => l10n.moodNextIn(_formatRemaining(remaining)),
+                  style: AppTypography.footnote.copyWith(color: palette.textTertiary),
+                )
+              else
+                Text(
+                  l10n.moodDragHint,
+                  style: AppTypography.footnote.copyWith(color: palette.textTertiary),
+                ),
               const SizedBox(height: 24),
               Expanded(
                 child: Center(
@@ -86,14 +78,9 @@ class _MoodScreenState extends ConsumerState<MoodScreen> {
                       opacity: onCooldown ? 0.45 : 1,
                       child: IgnorePointer(
                         ignoring: onCooldown,
-                        child: _MoodPad(
-                          valence: state.valence,
-                          arousal: state.arousal,
-                          onChanged: (v, a) {
-                            controller.setValence(v);
-                            controller.setArousal(a);
-                          },
-                        ),
+                        // The pad reads its own position, so dragging
+                        // repaints the pad instead of the whole screen.
+                        child: const _MoodPad(),
                       ),
                     ),
                   ),
@@ -125,23 +112,24 @@ class _MoodScreenState extends ConsumerState<MoodScreen> {
   }
 }
 
-class _MoodPad extends StatelessWidget {
-  final double valence;
-  final double arousal;
-  final void Function(double valence, double arousal) onChanged;
+class _MoodPad extends ConsumerWidget {
+  const _MoodPad();
 
-  const _MoodPad({required this.valence, required this.arousal, required this.onChanged});
-
-  void _handle(Offset localPosition, Size size) {
+  void _handle(WidgetRef ref, Offset localPosition, Size size) {
     final dx = (localPosition.dx / size.width) * 2 - 1;
     final dy = 1 - (localPosition.dy / size.height) * 2;
-    onChanged(dx.clamp(-1.0, 1.0), dy.clamp(-1.0, 1.0));
+    ref.read(moodControllerProvider.notifier).setMood(dx.clamp(-1.0, 1.0), dy.clamp(-1.0, 1.0));
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
+    // Watches the two numbers it draws and nothing else, so a drag doesn't
+    // rebuild the heading, the button or the countdown above it.
+    final (valence, arousal) = ref.watch(
+      moodControllerProvider.select((state) => (state.valence, state.arousal)),
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -150,24 +138,28 @@ class _MoodPad extends StatelessWidget {
         final dotY = (1 - arousal) / 2 * size.height;
 
         return GestureDetector(
-          onPanStart: (details) => _handle(details.localPosition, size),
-          onPanUpdate: (details) => _handle(details.localPosition, size),
-          onTapDown: (details) => _handle(details.localPosition, size),
+          onPanStart: (details) => _handle(ref, details.localPosition, size),
+          onPanUpdate: (details) => _handle(ref, details.localPosition, size),
+          onTapDown: (details) => _handle(ref, details.localPosition, size),
           child: GlassSurface(
             radius: 32,
-            blurSigma: 20,
             padding: EdgeInsets.zero,
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: CustomPaint(painter: _AxisPainter(color: palette.separator)),
+                  child: RepaintBoundary(
+                    child: CustomPaint(painter: _AxisPainter(color: palette.separator)),
+                  ),
                 ),
                 _AxisLabel(l10n.moodEnergetic, Alignment.topCenter, palette),
                 _AxisLabel(l10n.moodCalm, Alignment.bottomCenter, palette),
                 _AxisLabel(l10n.moodUnpleasant, Alignment.centerLeft, palette),
                 _AxisLabel(l10n.moodPleasant, Alignment.centerRight, palette),
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 60),
+                // Plain Positioned rather than AnimatedPositioned: while
+                // dragging, the dot should sit under the finger, and
+                // restarting a 60ms implicit animation on every pointer
+                // event was both laggier and more work.
+                Positioned(
                   left: dotX - 14,
                   top: dotY - 14,
                   child: Container(

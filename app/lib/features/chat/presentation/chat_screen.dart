@@ -87,7 +87,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: GlassSurface(
                 radius: 26,
-                blurSigma: 24,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 child: Row(
                   children: [

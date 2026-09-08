@@ -82,51 +82,66 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                 : RefreshIndicator(
                     color: palette.accent,
                     onRefresh: controller.load,
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
-                      children: [
-                        if (selected != null)
-                          ..._categorySection(
-                            context: context,
-                            category:
-                                categories.where((c) => c.slug == selected).firstOrNull,
-                            palette: palette,
-                            l10n: l10n,
+                    // Slivers rather than a ListView of children: the feed
+                    // grows without bound as research is ingested, and an
+                    // eager list would build every card ever synthesized on
+                    // the first frame.
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                          sliver: SliverList.list(
+                            children: [
+                              if (selected != null)
+                                ..._categorySection(
+                                  context: context,
+                                  category:
+                                      categories.where((c) => c.slug == selected).firstOrNull,
+                                  palette: palette,
+                                  l10n: l10n,
+                                ),
+                              if (state.loading)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 60),
+                                  child: Center(
+                                      child: CircularProgressIndicator(color: palette.accent)),
+                                )
+                              else if (state.error != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 24),
+                                  child: Text(state.error!,
+                                      style: TextStyle(color: palette.warning),
+                                      textAlign: TextAlign.center),
+                                )
+                              else if (state.insights.isEmpty)
+                                _EmptyFeed(
+                                  palette: palette,
+                                  inCategory: selected != null,
+                                  synthesizing: state.synthesizing,
+                                  onSynthesizeNow: controller.synthesizeNow,
+                                  l10n: l10n,
+                                )
+                              else if (selected != null) ...[
+                                const SizedBox(height: 22),
+                                _SectionLabel(
+                                    text: l10n.guideResearchInCategory, palette: palette),
+                                const SizedBox(height: 10),
+                              ],
+                            ],
                           ),
-                        if (state.loading)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 60),
-                            child: Center(
-                                child: CircularProgressIndicator(color: palette.accent)),
-                          )
-                        else if (state.error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 24),
-                            child: Text(state.error!,
-                                style: TextStyle(color: palette.warning),
-                                textAlign: TextAlign.center),
-                          )
-                        else if (state.insights.isEmpty)
-                          _EmptyFeed(
-                            palette: palette,
-                            inCategory: selected != null,
-                            synthesizing: state.synthesizing,
-                            onSynthesizeNow: controller.synthesizeNow,
-                            l10n: l10n,
-                          )
-                        else ...[
-                          if (selected != null) ...[
-                            const SizedBox(height: 22),
-                            _SectionLabel(
-                                text: l10n.guideResearchInCategory, palette: palette),
-                            const SizedBox(height: 10),
-                          ],
-                          for (final insight in state.insights)
-                            Padding(
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 140),
+                          sliver: SliverList.builder(
+                            itemCount: state.loading || state.error != null
+                                ? 0
+                                : state.insights.length,
+                            itemBuilder: (context, i) => Padding(
                               padding: const EdgeInsets.only(bottom: 14),
-                              child: _InsightCard(insight: insight),
+                              child: _InsightCard(insight: state.insights[i]),
                             ),
-                        ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -364,25 +379,31 @@ class _CategoryStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 46,
-      child: ListView(
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        children: [
-          _CategoryChip(
-            label: allLabel,
-            icon: Icons.apps_rounded,
-            selected: selected == null,
-            palette: palette,
-            onTap: () => onSelect(null),
-          ),
-          for (final category in categories)
-            _CategoryChip(
-              label: '${category.emoji} ${category.name}',
-              selected: selected == category.slug,
+        // Twenty-one chips, each a Material with its own ink response —
+        // built as they scroll into view rather than all at once.
+        itemCount: categories.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return _CategoryChip(
+              label: allLabel,
+              icon: Icons.apps_rounded,
+              selected: selected == null,
               palette: palette,
-              onTap: () => onSelect(category.slug),
-            ),
-        ],
+              onTap: () => onSelect(null),
+            );
+          }
+
+          final category = categories[index - 1];
+          return _CategoryChip(
+            label: '${category.emoji} ${category.name}',
+            selected: selected == category.slug,
+            palette: palette,
+            onTap: () => onSelect(category.slug),
+          );
+        },
       ),
     );
   }

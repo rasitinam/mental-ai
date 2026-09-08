@@ -38,10 +38,15 @@ class HomeShell extends StatelessWidget {
     return Scaffold(
       extendBody: true,
       body: navigationShell,
-      bottomNavigationBar: SafeArea(
+      // The one surface in the app with real content moving underneath it,
+      // so the one that keeps a backdrop blur — and its own layer, so a
+      // scrolling list above doesn't repaint the bar every frame.
+      bottomNavigationBar: RepaintBoundary(
+        child: SafeArea(
         minimum: const EdgeInsets.fromLTRB(20, 0, 20, 16),
         child: GlassSurface(
           radius: 26,
+          blur: true,
           blurSigma: 30,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           child: Row(
@@ -59,6 +64,7 @@ class HomeShell extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
           ),
         ),
       ),

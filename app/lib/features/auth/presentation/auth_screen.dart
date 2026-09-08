@@ -97,7 +97,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   const SizedBox(height: 14),
                   GlassSurface(
                     radius: 20,
-                    blurSigma: 18,
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,

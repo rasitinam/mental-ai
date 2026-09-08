@@ -30,8 +30,6 @@ class DailyReportScreen extends ConsumerWidget {
     final reportController = ref.read(dailyReportControllerProvider.notifier);
     final home = ref.watch(stateControllerProvider);
     final palette = AppPalette.of(context);
-    final diagnoses = ref.watch(profileControllerProvider).diagnoses;
-    final categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
 
     return Scaffold(
       body: SafeArea(
@@ -79,15 +77,9 @@ class DailyReportScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 18),
               _MoodHero(data: home, palette: palette, l10n: l10n),
-              if (diagnoses.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                _DiagnosesStrip(
-                  slugs: diagnoses,
-                  categories: categories,
-                  palette: palette,
-                  title: l10n.homeDiagnosesTitle,
-                ),
-              ],
+              // Reads the profile itself, so saving a diagnosis rebuilds
+              // this strip instead of the whole landing screen.
+              _DiagnosesStrip(palette: palette, title: l10n.homeDiagnosesTitle),
               const SizedBox(height: 20),
               if (report.error != null)
                 Padding(
@@ -365,20 +357,16 @@ class _RecommendationsCard extends StatelessWidget {
   }
 }
 
-class _DiagnosesStrip extends StatelessWidget {
-  final Set<String> slugs;
-  final List<DisorderCategory> categories;
+class _DiagnosesStrip extends ConsumerWidget {
   final AppPalette palette;
   final String title;
-  const _DiagnosesStrip({
-    required this.slugs,
-    required this.categories,
-    required this.palette,
-    required this.title,
-  });
+  const _DiagnosesStrip({required this.palette, required this.title});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final slugs = ref.watch(profileControllerProvider.select((s) => s.diagnoses));
+    final categories = ref.watch(categoriesProvider).valueOrNull ?? const <DisorderCategory>[];
+
     final resolved = <({String emoji, String name})>[];
     for (final category in categories) {
       for (final disorder in category.disorders) {
@@ -389,41 +377,44 @@ class _DiagnosesStrip extends StatelessWidget {
     }
     if (resolved.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title,
-            style: AppTypography.caption.copyWith(color: palette.textTertiary, letterSpacing: 0.6)),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 36,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              for (final d in resolved)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: palette.accentSoft,
-                      borderRadius: BorderRadius.circular(100),
-                      border: Border.all(color: palette.accent.withValues(alpha: 0.33)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(d.emoji, style: const TextStyle(fontSize: 13)),
-                        const SizedBox(width: 6),
-                        Text(d.name, style: AppTypography.footnote.copyWith(color: palette.accent)),
-                      ],
-                    ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style:
+                  AppTypography.caption.copyWith(color: palette.textTertiary, letterSpacing: 0.6)),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 36,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: resolved.length,
+              itemBuilder: (context, i) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: palette.accentSoft,
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(color: palette.accent.withValues(alpha: 0.33)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(resolved[i].emoji, style: const TextStyle(fontSize: 13)),
+                      const SizedBox(width: 6),
+                      Text(resolved[i].name,
+                          style: AppTypography.footnote.copyWith(color: palette.accent)),
+                    ],
                   ),
                 ),
-            ],
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

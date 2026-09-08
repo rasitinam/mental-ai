@@ -6,15 +6,27 @@ import 'app_colors.dart';
 
 /// The app's one shared surface material: a frosted panel with a hairline
 /// border and a soft, low-spread shadow — no gradient border, no glow, no
-/// saturated tint. `ClipRSuperellipse` gives it Apple's continuous
-/// ("squircle") corner instead of a plain circular-arc rounded rect,
-/// which is the detail that makes it read as native rather than
-/// generic-rounded-card.
+/// saturated tint. The corner is Apple's continuous ("squircle") curve
+/// rather than a plain circular arc, which is the detail that makes it read
+/// as native instead of generic-rounded-card.
+///
+/// [blur] is off by default, and that is a deliberate performance call.
+/// `BackdropFilter` forces a save-layer and a read-back of everything
+/// painted behind it, per surface, per frame — with a dozen cards on screen
+/// that alone was dropping frames on a mid-range phone. What sits behind
+/// these cards is [AppBackground]: a smooth two-stop gradient. Blurring a
+/// smooth gradient returns almost exactly the same pixels a translucent fill
+/// does, so the cost bought nothing. The blur is kept only where something
+/// genuinely scrolls underneath the surface — the floating tab bar.
 class GlassSurface extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double radius;
   final double blurSigma;
+
+  /// Real backdrop blur. Only worth it when content actually moves behind
+  /// this surface; see the class docs.
+  final bool blur;
 
   const GlassSurface({
     super.key,
@@ -22,28 +34,35 @@ class GlassSurface extends StatelessWidget {
     this.padding = const EdgeInsets.all(20),
     this.radius = 28,
     this.blurSigma = 24,
+    this.blur = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final shape = RoundedSuperellipseBorder(
+      borderRadius: BorderRadius.circular(radius),
+      side: BorderSide(color: palette.glassBorder),
+    );
+
+    final surface = DecoratedBox(
+      decoration: ShapeDecoration(
+        color: palette.glassFill,
+        shape: shape,
+        shadows: [
+          BoxShadow(color: palette.glassShadow, blurRadius: 28, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+
+    if (!blur) return surface;
 
     return ClipRSuperellipse(
       borderRadius: BorderRadius.circular(radius),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: palette.glassFill,
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: palette.glassBorder, width: 1),
-            boxShadow: [
-              BoxShadow(color: palette.glassShadow, blurRadius: 28, offset: const Offset(0, 10)),
-            ],
-          ),
-          child: child,
-        ),
+        child: surface,
       ),
     );
   }
@@ -53,6 +72,10 @@ class GlassSurface extends StatelessWidget {
 /// faint radial highlight in the accent color, anchored off-canvas at the
 /// top. Kept deliberately quiet — this is meant to give the glass panels
 /// something to refract, not to be a decoration in its own right.
+///
+/// Painted once into its own layer: it never changes while a screen
+/// scrolls, so isolating it keeps scrolling content from dragging two
+/// full-screen gradients through every repaint.
 class AppBackground extends StatelessWidget {
   final Widget child;
   const AppBackground({super.key, required this.child});
@@ -61,51 +84,58 @@ class AppBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [palette.canvasTop, palette.canvasBottom],
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: RepaintBoundary(
+            child: CustomPaint(painter: _BackdropPainter(palette)),
+          ),
         ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -180,
-            right: -120,
-            child: _SoftGlow(color: palette.accent.withValues(alpha: 0.10), size: 420),
-          ),
-          Positioned(
-            bottom: -220,
-            left: -160,
-            child: _SoftGlow(color: palette.accent.withValues(alpha: 0.06), size: 460),
-          ),
-          child,
-        ],
-      ),
+        child,
+      ],
     );
   }
 }
 
-class _SoftGlow extends StatelessWidget {
-  final Color color;
-  final double size;
-  const _SoftGlow({required this.color, required this.size});
+/// One painter for the whole backdrop instead of a `DecoratedBox` plus two
+/// gradient-filled `Container`s in a `Stack`: same picture, a third of the
+/// render objects, and nothing to lay out.
+class _BackdropPainter extends CustomPainter {
+  final AppPalette palette;
+  const _BackdropPainter(this.palette);
 
   @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
-        ),
-      ),
+  void paint(Canvas canvas, Size size) {
+    final bounds = Offset.zero & size;
+
+    canvas.drawRect(
+      bounds,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [palette.canvasTop, palette.canvasBottom],
+        ).createShader(bounds),
+    );
+
+    _glow(canvas, Offset(size.width + 120, -180), 210, palette.accent.withValues(alpha: 0.10));
+    _glow(canvas, Offset(-160, size.height + 220), 230, palette.accent.withValues(alpha: 0.06));
+  }
+
+  void _glow(Canvas canvas, Offset center, double radius, Color color) {
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [color, color.withValues(alpha: 0)],
+        ).createShader(rect),
     );
   }
+
+  @override
+  bool shouldRepaint(_BackdropPainter oldDelegate) => oldDelegate.palette != palette;
 }
 
 /// A single-line, single-accent pill button — the app's one primary

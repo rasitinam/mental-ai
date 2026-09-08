@@ -73,8 +73,11 @@ class MoodController extends Notifier<MoodState> {
     }
   }
 
-  void setValence(double v) => state = state.copyWith(valence: v, submitted: false);
-  void setArousal(double v) => state = state.copyWith(arousal: v, submitted: false);
+  /// Both axes in one write. The pad moves on both at once, and setting
+  /// them separately emitted two states per pointer event — at drag speed
+  /// that was over a hundred rebuilds a second for one gesture.
+  void setMood(double valence, double arousal) =>
+      state = state.copyWith(valence: valence, arousal: arousal, submitted: false);
 
   Future<void> submit({String? note}) async {
     state = state.copyWith(submitting: true, error: null);
