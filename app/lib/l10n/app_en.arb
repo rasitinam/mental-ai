@@ -86,7 +86,7 @@
   "profileBirthYearHint": "e.g. 1998",
   "profileAgeValue": "{age} years old",
   "@profileAgeValue": { "placeholders": { "age": { "type": "int" } } },
-  "profileAgeWhy": "Knowing your age keeps suggestions fitted to the stage of life you're in — what a teenager lives through and what a middle-aged person lives through under the same diagnosis are not the same thing.",
+  "profileAgeWhy": "Knowing your age keeps suggestions fitted to the stage of life you're in.",
   "profileDiagnoses": "My diagnoses",
   "profileSaved": "Your profile has been saved.",
   "profileInvalidYear": "Enter a valid year of birth.",

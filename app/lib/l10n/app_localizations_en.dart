@@ -249,7 +249,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileAgeWhy =>
-      'Knowing your age keeps suggestions fitted to the stage of life you\'re in — what a teenager lives through and what a middle-aged person lives through under the same diagnosis are not the same thing.';
+      'Knowing your age keeps suggestions fitted to the stage of life you\'re in.';
 
   @override
   String get profileDiagnoses => 'My diagnoses';

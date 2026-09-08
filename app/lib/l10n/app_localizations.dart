@@ -545,7 +545,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileAgeWhy.
   ///
   /// In tr, this message translates to:
-  /// **'Yaşını bilmek, önerilerin yaşadığın döneme uygun olmasını sağlar — bir ergenin ve orta yaşlı birinin aynı tanıyla yaşadığı şey aynı değil.'**
+  /// **'Yaşını bilmek, önerilerin yaşadığın döneme uygun olmasını sağlar.'**
   String get profileAgeWhy;
 
   /// No description provided for @profileDiagnoses.

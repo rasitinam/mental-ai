@@ -86,7 +86,7 @@
   "profileBirthYearHint": "örn. 1998",
   "profileAgeValue": "{age} yaşında",
   "@profileAgeValue": { "placeholders": { "age": { "type": "int" } } },
-  "profileAgeWhy": "Yaşını bilmek, önerilerin yaşadığın döneme uygun olmasını sağlar — bir ergenin ve orta yaşlı birinin aynı tanıyla yaşadığı şey aynı değil.",
+  "profileAgeWhy": "Yaşını bilmek, önerilerin yaşadığın döneme uygun olmasını sağlar.",
   "profileDiagnoses": "Tanılarım",
   "profileSaved": "Profilin kaydedildi.",
   "profileInvalidYear": "Geçerli bir doğum yılı gir.",

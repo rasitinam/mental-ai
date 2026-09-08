@@ -249,7 +249,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileAgeWhy =>
-      'Yaşını bilmek, önerilerin yaşadığın döneme uygun olmasını sağlar — bir ergenin ve orta yaşlı birinin aynı tanıyla yaşadığı şey aynı değil.';
+      'Yaşını bilmek, önerilerin yaşadığın döneme uygun olmasını sağlar.';
 
   @override
   String get profileDiagnoses => 'Tanılarım';
