@@ -13,6 +13,7 @@ use mental_storage::{
     init_pool, SqliteAuthRepository, SqliteChatRepository, SqliteExplainerRepository,
     SqliteInsightRepository, SqliteJournalRepository, SqliteLifeAnalysisRepository,
     SqliteMoodRepository, SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
+    SqliteUserStateRepository,
 };
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
@@ -53,6 +54,7 @@ async fn main() -> anyhow::Result<()> {
         life_analyses: Arc::new(SqliteLifeAnalysisRepository::new(pool.clone())),
         chats: Arc::new(SqliteChatRepository::new(pool.clone())),
         explainers: Arc::new(SqliteExplainerRepository::new(pool.clone())),
+        user_states: Arc::new(SqliteUserStateRepository::new(pool.clone())),
         vector_store: Arc::new(SqliteVectorStore::new(pool.clone())),
         embedder: Arc::new(Embedder::new(llm.clone())),
         llm,
@@ -61,6 +63,8 @@ async fn main() -> anyhow::Result<()> {
     if config.research_ingest.enabled {
         scheduler::spawn_research_ingest_job(state.clone(), config.research_ingest.clone()).await?;
     }
+
+    scheduler::spawn_explainer_warmup_job(state.clone());
 
     let app = routes::build_router(state)
         .layer(CorsLayer::permissive())

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/catalog_api.dart';
 import '../domain/disorder_category.dart';
 import '../domain/disorder_explainer.dart';
@@ -22,7 +23,7 @@ class DisorderDetailScreen extends ConsumerWidget {
     final categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Bilgi Kartı')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.cardTitle)),
       body: explainer.when(
         loading: () => _LoadingState(palette: palette),
         error: (error, _) => _ErrorState(
@@ -46,6 +47,7 @@ class _Content extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final emoji = category?.emoji ?? '🧠';
 
     return ListView(
@@ -87,14 +89,14 @@ class _Content extends StatelessWidget {
         const SizedBox(height: 22),
         _Section(
           icon: Icons.help_outline_rounded,
-          title: 'Nedir?',
+          title: l10n.cardWhatIsIt,
           body: explainer.whatItIs,
           palette: palette,
         ),
         const SizedBox(height: 14),
         _Section(
           icon: Icons.timeline_rounded,
-          title: 'Nasıl gelişir?',
+          title: l10n.cardHowDevelops,
           body: explainer.howItDevelops,
           palette: palette,
         ),
@@ -102,7 +104,7 @@ class _Content extends StatelessWidget {
           const SizedBox(height: 14),
           _ListSection(
             icon: Icons.self_improvement_rounded,
-            title: 'Günlük hayatta ne yardımcı olur?',
+            title: l10n.cardWhatHelps,
             items: explainer.copingPaths,
             palette: palette,
           ),
@@ -111,7 +113,7 @@ class _Content extends StatelessWidget {
           const SizedBox(height: 14),
           _ListSection(
             icon: Icons.medical_services_outlined,
-            title: 'Profesyonel destek neleri içerir?',
+            title: l10n.cardProfessionalHelp,
             items: explainer.treatmentPaths,
             palette: palette,
           ),
@@ -139,8 +141,7 @@ class _Content extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Bu sayfa yalnızca bilgilendirme amaçlıdır ve tanı koymaz. '
-                  'Kendinde bu belirtileri görüyorsan bir ruh sağlığı uzmanına danış.',
+                  l10n.cardDisclaimer,
                   style: AppTypography.footnote.copyWith(color: palette.warning),
                 ),
               ),
@@ -280,13 +281,12 @@ class _LoadingState extends StatelessWidget {
             CircularProgressIndicator(color: palette.accent),
             const SizedBox(height: 20),
             Text(
-              'Bilgi kartı hazırlanıyor',
+              AppLocalizations.of(context)!.cardPreparing,
               style: AppTypography.headline.copyWith(color: palette.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
-              'Bu başlık ilk kez açılıyor; araştırma kaynaklarından derleniyor. '
-              'Bir sonraki açılışta anında gelecek.',
+              AppLocalizations.of(context)!.cardPreparingBody,
               textAlign: TextAlign.center,
               style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
             ),
@@ -313,13 +313,16 @@ class _ErrorState extends StatelessWidget {
             Icon(Icons.cloud_off_rounded, size: 30, color: palette.warning),
             const SizedBox(height: 14),
             Text(
-              'Bilgi kartı yüklenemedi',
+              AppLocalizations.of(context)!.cardLoadFailed,
               style: AppTypography.headline.copyWith(color: palette.textPrimary),
             ),
             const SizedBox(height: 20),
             SizedBox(
               width: 200,
-              child: AppPrimaryButton(label: 'Tekrar dene', onPressed: onRetry),
+              child: AppPrimaryButton(
+                label: AppLocalizations.of(context)!.commonRetry,
+                onPressed: onRetry,
+              ),
             ),
           ],
         ),

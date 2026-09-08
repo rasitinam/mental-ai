@@ -6,28 +6,30 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
-import '../../mood_tracking/data/mood_api.dart';
-import '../../mood_tracking/domain/mood_entry.dart';
 import '../../profile/presentation/profile_controller.dart';
+import '../domain/user_state.dart';
 import 'daily_report_controller.dart';
+import 'state_controller.dart';
 
-/// The app's landing screen. Above the existing daily-report content sits a
-/// quick "how are you right now" read: the latest mood check-in as a face
-/// and a good/bad bar, the trend note the backend already computes
-/// (comparing today against the person's own history), and the diagnoses
-/// they've told the app about — so the most personal context is visible
-/// before anyone scrolls.
+/// The app's landing screen. Above the daily report sits a live read of
+/// where the person is right now: a face, a five-star rating on each axis
+/// and a good/bad bar, all driven by an assessment the backend makes from
+/// chat, the latest report, the life analysis, journal entries and mood
+/// check-ins together — so it moves when their situation moves, instead of
+/// being frozen to the last time they touched a slider.
 class DailyReportScreen extends ConsumerWidget {
   const DailyReportScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dailyReportControllerProvider);
-    final controller = ref.read(dailyReportControllerProvider.notifier);
+    final l10n = AppLocalizations.of(context)!;
+    final report = ref.watch(dailyReportControllerProvider);
+    final reportController = ref.read(dailyReportControllerProvider.notifier);
+    final home = ref.watch(stateControllerProvider);
     final palette = AppPalette.of(context);
-    final latestMood = ref.watch(latestMoodProvider);
     final diagnoses = ref.watch(profileControllerProvider).diagnoses;
     final categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
 
@@ -35,224 +37,328 @@ class DailyReportScreen extends ConsumerWidget {
       body: SafeArea(
         child: RefreshIndicator(
           color: palette.accent,
+          // Pull-to-refresh reassesses rather than re-reads: the whole point
+          // is that a conversation from ten minutes ago should change what
+          // this screen says.
           onRefresh: () async {
-            ref.invalidate(latestMoodProvider);
-            await controller.loadLatest();
+            await Future.wait([
+              ref.read(stateControllerProvider.notifier).refresh(),
+              reportController.loadLatest(),
+            ]);
           },
-          child: state.loading
-              ? Center(child: CircularProgressIndicator(color: palette.accent))
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 140),
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_greeting(), style: AppTypography.title1.copyWith(color: palette.textPrimary)),
-                            const SizedBox(height: 4),
-                            Text(
-                              DateFormat('d MMMM EEEE').format(DateTime.now()),
-                              style: AppTypography.footnote.copyWith(color: palette.textTertiary),
-                            ),
-                          ],
-                        ),
-                        _IconButton(
-                          icon: Icons.refresh_rounded,
-                          palette: palette,
-                          onTap: state.loading ? null : controller.generateNow,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    _MoodHero(mood: latestMood.valueOrNull, trendNote: state.report?.moodTrendNote, palette: palette),
-                    if (diagnoses.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      _DiagnosesStrip(slugs: diagnoses, categories: categories, palette: palette),
-                    ],
-                    const SizedBox(height: 20),
-                    if (state.error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(state.error!, style: TextStyle(color: palette.warning)),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 140),
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_greeting(l10n),
+                          style: AppTypography.title1.copyWith(color: palette.textPrimary)),
+                      const SizedBox(height: 4),
+                      Text(
+                        // Locale-aware on purpose: this used to render
+                        // "September Tuesday" for a Turkish user because the
+                        // format followed the device, not the app.
+                        DateFormat.MMMMEEEEd(Localizations.localeOf(context).languageCode)
+                            .format(DateTime.now()),
+                        style: AppTypography.footnote.copyWith(color: palette.textTertiary),
                       ),
-                    if (state.report == null && state.error == null)
-                      _EmptyState(onGenerate: controller.generateNow, palette: palette),
-                    if (state.report != null) ...[
-                      if (state.report!.crisisFlag) ...[
-                        _CrisisBanner(palette: palette),
-                        const SizedBox(height: 14),
-                      ],
-                      GlassSurface(
-                        radius: 24,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Bugün', style: AppTypography.title2.copyWith(color: palette.textPrimary)),
-                            const SizedBox(height: 10),
-                            Text(
-                              state.report!.summary,
-                              style: AppTypography.body.copyWith(color: palette.textPrimary),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (state.report!.recommendations.isNotEmpty) ...[
-                        const SizedBox(height: 14),
-                        GlassSurface(
-                          radius: 24,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  _SectionBadge(icon: Icons.lightbulb_outline_rounded, palette: palette),
-                                  const SizedBox(width: 10),
-                                  Text('Öneriler',
-                                      style: AppTypography.headline.copyWith(color: palette.textPrimary)),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              for (var i = 0; i < state.report!.recommendations.length; i++)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 11),
-                                  decoration: i == state.report!.recommendations.length - 1
-                                      ? null
-                                      : BoxDecoration(
-                                          border: Border(bottom: BorderSide(color: palette.separator))),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.only(top: 7),
-                                        width: 6,
-                                        height: 6,
-                                        decoration:
-                                            BoxDecoration(color: palette.accent, shape: BoxShape.circle),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(state.report!.recommendations[i],
-                                            style: AppTypography.subheadline
-                                                .copyWith(color: palette.textPrimary)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 20),
                     ],
-                    _QuickActions(palette: palette),
-                  ],
+                  ),
+                  _IconButton(
+                    icon: Icons.refresh_rounded,
+                    palette: palette,
+                    onTap: home.refreshing
+                        ? null
+                        : () => ref.read(stateControllerProvider.notifier).refresh(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _MoodHero(data: home, palette: palette, l10n: l10n),
+              if (diagnoses.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                _DiagnosesStrip(
+                  slugs: diagnoses,
+                  categories: categories,
+                  palette: palette,
+                  title: l10n.homeDiagnosesTitle,
                 ),
+              ],
+              const SizedBox(height: 20),
+              if (report.error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(report.error!, style: TextStyle(color: palette.warning)),
+                ),
+              if (report.loading)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: CircularProgressIndicator(color: palette.accent)),
+                )
+              else if (report.report == null && report.error == null)
+                _EmptyState(onGenerate: reportController.generateNow, palette: palette, l10n: l10n)
+              else if (report.report != null) ...[
+                if (report.report!.crisisFlag) ...[
+                  _CrisisBanner(palette: palette, l10n: l10n),
+                  const SizedBox(height: 14),
+                ],
+                GlassSurface(
+                  radius: 24,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.homeToday,
+                          style: AppTypography.title2.copyWith(color: palette.textPrimary)),
+                      const SizedBox(height: 10),
+                      Text(report.report!.summary,
+                          style: AppTypography.body.copyWith(color: palette.textPrimary)),
+                    ],
+                  ),
+                ),
+                if (report.report!.recommendations.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  _RecommendationsCard(
+                    items: report.report!.recommendations,
+                    palette: palette,
+                    title: l10n.homeRecommendations,
+                  ),
+                ],
+                const SizedBox(height: 20),
+              ],
+              _QuickActions(palette: palette, l10n: l10n),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  String _greeting() {
+  String _greeting(AppLocalizations l10n) {
     final hour = DateTime.now().hour;
-    if (hour < 6) return 'İyi geceler';
-    if (hour < 12) return 'Günaydın';
-    if (hour < 18) return 'İyi günler';
-    return 'İyi akşamlar';
+    if (hour < 6) return l10n.greetingNight;
+    if (hour < 12) return l10n.greetingMorning;
+    if (hour < 18) return l10n.greetingDay;
+    return l10n.greetingEvening;
   }
 }
 
-/// Maps a -1..1 valence reading to the face and words someone sees first.
-({String emoji, String label}) _moodPresentation(double? valence) {
-  if (valence == null) return (emoji: '🙂', label: 'Henüz bir kayıt yok');
-  if (valence >= 0.5) return (emoji: '😄', label: 'Harika gidiyorsun');
-  if (valence >= 0.15) return (emoji: '😊', label: 'İyi görünüyorsun');
-  if (valence > -0.15) return (emoji: '😐', label: 'Dengeli bir haldesin');
-  if (valence > -0.5) return (emoji: '😟', label: 'Biraz zorlanıyor olabilirsin');
-  return (emoji: '😢', label: 'Zor bir dönemden geçiyorsun');
+/// Maps a -1..1 valence reading to the face someone sees first.
+String _faceFor(double? valence) {
+  if (valence == null) return '🙂';
+  if (valence >= 0.5) return '😄';
+  if (valence >= 0.15) return '😊';
+  if (valence > -0.15) return '😐';
+  if (valence > -0.5) return '😟';
+  return '😢';
 }
 
 class _MoodHero extends StatelessWidget {
-  final MoodEntry? mood;
-  final String? trendNote;
+  final HomeStateData data;
   final AppPalette palette;
-  const _MoodHero({required this.mood, required this.trendNote, required this.palette});
+  final AppLocalizations l10n;
+  const _MoodHero({required this.data, required this.palette, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
-    final presentation = _moodPresentation(mood?.valence);
-    final fraction = mood == null ? null : ((mood!.valence + 1) / 2).clamp(0.0, 1.0);
+    final state = data.state;
 
     return GlassSurface(
       radius: 28,
       padding: const EdgeInsets.fromLTRB(20, 26, 20, 22),
       child: Column(
         children: [
-          Text(presentation.emoji, style: const TextStyle(fontSize: 52)),
+          Text(_faceFor(state?.valence), style: const TextStyle(fontSize: 52)),
           const SizedBox(height: 12),
           Text(
-            presentation.label,
+            state?.headline ?? (data.loading ? l10n.commonLoading : l10n.homeStateNoData),
+            textAlign: TextAlign.center,
             style: AppTypography.title2.copyWith(color: palette.textPrimary),
           ),
-          if (trendNote != null) ...[
-            const SizedBox(height: 5),
-            Text(
-              trendNote!,
-              textAlign: TextAlign.center,
-              style: AppTypography.footnote.copyWith(color: palette.textTertiary),
+          const SizedBox(height: 6),
+          Text(
+            data.refreshing
+                ? l10n.homeRefreshing
+                : (state?.note ?? l10n.homeStateNoDataNote),
+            textAlign: TextAlign.center,
+            style: AppTypography.footnote.copyWith(color: palette.textTertiary),
+          ),
+          if (state != null) ...[
+            const SizedBox(height: 20),
+            _StarRow(
+              label: l10n.homeMoodLabel,
+              stars: UserState.stars(state.valence),
+              palette: palette,
             ),
-          ],
-          if (fraction != null) ...[
+            const SizedBox(height: 8),
+            _StarRow(
+              label: l10n.homeEnergyLabel,
+              stars: UserState.stars(state.energy),
+              palette: palette,
+            ),
             const SizedBox(height: 22),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final thumbLeft = fraction * constraints.maxWidth;
-                return SizedBox(
-                  height: 18,
-                  child: Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [
-                      Container(
-                        height: 10,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(100),
-                          gradient: LinearGradient(colors: [
-                            palette.warning,
-                            palette.textTertiary,
-                            palette.accent,
-                          ]),
-                        ),
-                      ),
-                      Positioned(
-                        left: (thumbLeft - 9).clamp(0.0, constraints.maxWidth - 18),
-                        child: Container(
-                          width: 18,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: palette.textPrimary,
-                            border: Border.all(color: palette.accent, width: 3),
-                            boxShadow: [BoxShadow(color: palette.glassShadow, blurRadius: 6, offset: const Offset(0, 2))],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+            _GoodBadBar(value: state.valence, palette: palette),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('KÖTÜ',
-                    style: AppTypography.caption.copyWith(color: palette.textTertiary, letterSpacing: 0.4)),
-                Text('İYİ',
-                    style: AppTypography.caption.copyWith(color: palette.textTertiary, letterSpacing: 0.4)),
+                Text(l10n.homeBarBad,
+                    style: AppTypography.caption
+                        .copyWith(color: palette.textTertiary, letterSpacing: 0.4)),
+                Text(l10n.homeBarGood,
+                    style: AppTypography.caption
+                        .copyWith(color: palette.textTertiary, letterSpacing: 0.4)),
               ],
             ),
+            if (state.basis.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                l10n.homeBasedOn(state.basis.join(', ')),
+                textAlign: TextAlign.center,
+                style: AppTypography.caption.copyWith(color: palette.textTertiary),
+              ),
+            ],
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StarRow extends StatelessWidget {
+  final String label;
+  final int stars;
+  final AppPalette palette;
+  const _StarRow({required this.label, required this.stars, required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 64,
+          child: Text(
+            label,
+            textAlign: TextAlign.right,
+            style: AppTypography.footnote.copyWith(color: palette.textSecondary),
+          ),
+        ),
+        const SizedBox(width: 12),
+        for (var i = 1; i <= 5; i++)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Icon(
+              i <= stars ? Icons.star_rounded : Icons.star_outline_rounded,
+              size: 20,
+              color: i <= stars ? palette.accent : palette.textTertiary,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _GoodBadBar extends StatelessWidget {
+  final double value;
+  final AppPalette palette;
+  const _GoodBadBar({required this.value, required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = ((value.clamp(-1.0, 1.0) + 1) / 2);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final thumbLeft = fraction * constraints.maxWidth;
+        return SizedBox(
+          height: 18,
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              Container(
+                height: 10,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(100),
+                  gradient: LinearGradient(
+                    colors: [palette.warning, palette.textTertiary, palette.accent],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: (thumbLeft - 9).clamp(0.0, constraints.maxWidth - 18),
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: palette.textPrimary,
+                    border: Border.all(color: palette.accent, width: 3),
+                    boxShadow: [
+                      BoxShadow(color: palette.glassShadow, blurRadius: 6, offset: const Offset(0, 2)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RecommendationsCard extends StatelessWidget {
+  final List<String> items;
+  final AppPalette palette;
+  final String title;
+  const _RecommendationsCard({
+    required this.items,
+    required this.palette,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      radius: 24,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _SectionBadge(icon: Icons.lightbulb_outline_rounded, palette: palette),
+              const SizedBox(width: 10),
+              Text(title, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          for (var i = 0; i < items.length; i++)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 11),
+              decoration: i == items.length - 1
+                  ? null
+                  : BoxDecoration(border: Border(bottom: BorderSide(color: palette.separator))),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 7),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(color: palette.accent, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(items[i],
+                        style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -263,7 +369,13 @@ class _DiagnosesStrip extends StatelessWidget {
   final Set<String> slugs;
   final List<DisorderCategory> categories;
   final AppPalette palette;
-  const _DiagnosesStrip({required this.slugs, required this.categories, required this.palette});
+  final String title;
+  const _DiagnosesStrip({
+    required this.slugs,
+    required this.categories,
+    required this.palette,
+    required this.title,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -280,10 +392,8 @@ class _DiagnosesStrip extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'TANILARIM',
-          style: AppTypography.caption.copyWith(color: palette.textTertiary, letterSpacing: 0.6),
-        ),
+        Text(title,
+            style: AppTypography.caption.copyWith(color: palette.textTertiary, letterSpacing: 0.6)),
         const SizedBox(height: 10),
         SizedBox(
           height: 36,
@@ -320,7 +430,8 @@ class _DiagnosesStrip extends StatelessWidget {
 
 class _QuickActions extends StatelessWidget {
   final AppPalette palette;
-  const _QuickActions({required this.palette});
+  final AppLocalizations l10n;
+  const _QuickActions({required this.palette, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -329,7 +440,7 @@ class _QuickActions extends StatelessWidget {
         Expanded(
           child: _QuickAction(
             icon: Icons.emoji_emotions_outlined,
-            label: 'Ruh Hali',
+            label: l10n.navMood,
             palette: palette,
             onTap: () => context.go('/mood'),
           ),
@@ -338,7 +449,7 @@ class _QuickActions extends StatelessWidget {
         Expanded(
           child: _QuickAction(
             icon: Icons.menu_book_outlined,
-            label: 'Günlük',
+            label: l10n.navJournal,
             palette: palette,
             onTap: () => context.go('/journal'),
           ),
@@ -347,7 +458,7 @@ class _QuickActions extends StatelessWidget {
         Expanded(
           child: _QuickAction(
             icon: Icons.forum_outlined,
-            label: 'Sohbet',
+            label: l10n.navChat,
             palette: palette,
             onTap: () => context.go('/chat'),
           ),
@@ -362,7 +473,12 @@ class _QuickAction extends StatelessWidget {
   final String label;
   final AppPalette palette;
   final VoidCallback onTap;
-  const _QuickAction({required this.icon, required this.label, required this.palette, required this.onTap});
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.palette,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -379,8 +495,8 @@ class _QuickAction extends StatelessWidget {
               Icon(icon, size: 19, color: palette.accent),
               const SizedBox(height: 8),
               Text(label,
-                  style:
-                      AppTypography.caption.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w600)),
+                  style: AppTypography.caption
+                      .copyWith(color: palette.textPrimary, fontWeight: FontWeight.w600)),
             ],
           ),
         ),
@@ -433,7 +549,8 @@ class _SectionBadge extends StatelessWidget {
 class _EmptyState extends StatelessWidget {
   final VoidCallback onGenerate;
   final AppPalette palette;
-  const _EmptyState({required this.onGenerate, required this.palette});
+  final AppLocalizations l10n;
+  const _EmptyState({required this.onGenerate, required this.palette, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -449,14 +566,13 @@ class _EmptyState extends StatelessWidget {
             child: Icon(Icons.event_note_outlined, size: 28, color: palette.accent),
           ),
           const SizedBox(height: 16),
-          Text(
-            'Henüz bugüne ait bir raporun yok.',
-            style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
-          ),
+          Text(l10n.homeNoReport,
+              textAlign: TextAlign.center,
+              style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
           const SizedBox(height: 20),
           SizedBox(
             width: 200,
-            child: AppPrimaryButton(label: 'Rapor oluştur', onPressed: onGenerate),
+            child: AppPrimaryButton(label: l10n.homeGenerateReport, onPressed: onGenerate),
           ),
         ],
       ),
@@ -466,7 +582,8 @@ class _EmptyState extends StatelessWidget {
 
 class _CrisisBanner extends StatelessWidget {
   final AppPalette palette;
-  const _CrisisBanner({required this.palette});
+  final AppLocalizations l10n;
+  const _CrisisBanner({required this.palette, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -482,11 +599,8 @@ class _CrisisBanner extends StatelessWidget {
           Icon(Icons.favorite_border_rounded, size: 18, color: palette.warning),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              'Son günlük kayıtlarında zorlu ifadeler fark ettik. Acil durumdaysan '
-              '112\'yi ara; konuşmak istersen bir uzmana ulaşmayı düşünebilirsin.',
-              style: AppTypography.subheadline.copyWith(color: palette.warning),
-            ),
+            child: Text(l10n.homeCrisisWarning,
+                style: AppTypography.subheadline.copyWith(color: palette.warning)),
           ),
         ],
       ),

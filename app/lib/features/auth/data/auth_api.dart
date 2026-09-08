@@ -14,11 +14,15 @@ class AuthApi {
     required String email,
     required String password,
     String? displayName,
+    String? language,
   }) async {
     final response = await _dio.post('/auth/register', data: {
       'email': email,
       'password': password,
       'display_name': ?displayName,
+      // Sent at sign-up so the very first generated report comes back in
+      // the language the app is already showing.
+      'language': ?language,
     });
     return Session.fromJson(response.data as Map<String, dynamic>);
   }

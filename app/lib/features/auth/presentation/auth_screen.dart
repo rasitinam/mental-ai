@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../l10n/app_localizations.dart';
 import 'auth_controller.dart';
 
 /// The app's one auth surface — a login form by default, toggling in
@@ -43,6 +44,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
     final state = ref.watch(authControllerProvider);
 
@@ -65,7 +67,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 Text('Mental AI', style: AppTypography.largeTitle.copyWith(color: palette.textPrimary)),
                 const SizedBox(height: 8),
                 Text(
-                  _isRegister ? 'Hesabını oluştur' : 'Hesabına giriş yap',
+                  _isRegister ? l10n.authRegisterTitle : l10n.authLoginTitle,
                   style: AppTypography.body.copyWith(color: palette.textSecondary),
                 ),
                 const SizedBox(height: 28),
@@ -76,14 +78,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     children: [
                       _AuthField(
                         controller: _emailController,
-                        label: 'E-posta',
+                        label: l10n.profileEmail,
                         icon: Icons.mail_outline_rounded,
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 14),
                       _AuthField(
                         controller: _passwordController,
-                        label: 'Şifre (en az 8 karakter)',
+                        label: l10n.authPassword,
                         icon: Icons.lock_outline_rounded,
                         obscureText: true,
                         onSubmitted: (_) => _submit(),
@@ -104,9 +106,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Mental AI lisanslı bir psikolog, psikiyatrist ya da tıbbi bir '
-                            'cihaz değildir; tanı koymaz. Kriz anında lütfen 112\'yi veya '
-                            'bir uzmanı ara.',
+                            l10n.authDisclaimer,
                             style: AppTypography.footnote.copyWith(color: palette.textSecondary),
                           ),
                         ),
@@ -120,7 +120,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 ],
                 const SizedBox(height: 20),
                 AppPrimaryButton(
-                  label: _isRegister ? 'Hesap oluştur' : 'Giriş yap',
+                  label: _isRegister ? l10n.authRegisterCta : l10n.authLoginCta,
                   loading: state.submitting,
                   onPressed: _submit,
                 ),
@@ -133,7 +133,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           ref.read(authControllerProvider.notifier).clearError();
                         },
                   child: Text(
-                    _isRegister ? 'Zaten hesabın var mı? Giriş yap' : 'Hesabın yok mu? Kayıt ol',
+                    _isRegister ? l10n.authSwitchToLogin : l10n.authSwitchToRegister,
                     style: AppTypography.subheadline.copyWith(color: palette.accent),
                   ),
                 ),

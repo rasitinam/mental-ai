@@ -6,6 +6,7 @@ use mental_storage::{
     SqliteAuthRepository, SqliteChatRepository, SqliteExplainerRepository, SqliteInsightRepository,
     SqliteJournalRepository, SqliteLifeAnalysisRepository, SqliteMoodRepository,
     SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
+    SqliteUserStateRepository,
 };
 
 /// Composition root: the one place that knows every concrete
@@ -25,6 +26,7 @@ pub struct AppState {
     pub life_analyses: Arc<SqliteLifeAnalysisRepository>,
     pub chats: Arc<SqliteChatRepository>,
     pub explainers: Arc<SqliteExplainerRepository>,
+    pub user_states: Arc<SqliteUserStateRepository>,
     pub vector_store: Arc<SqliteVectorStore>,
     pub llm: Arc<dyn LlmProvider>,
     pub embedder: Arc<Embedder>,

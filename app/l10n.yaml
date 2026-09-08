@@ -1,0 +1,6 @@
+arb-dir: lib/l10n
+template-arb-file: app_tr.arb
+output-localization-file: app_localizations.dart
+# Turkish is the template because it is the language the app was written in
+# and the one every string was authored against — English is the translation,
+# not the other way round.

@@ -4,7 +4,7 @@ use axum::{
     Json, Router,
 };
 use chrono::{Duration, Utc};
-use mental_analysis_engine::generate_chat_reply;
+use mental_analysis_engine::{generate_chat_reply, PersonContext};
 use mental_domain::repository::{ChatRepository, JournalRepository, MoodRepository};
 use mental_domain::{ChatMessageRecord, ChatRole};
 use mental_llm_connector::ChatMessage;
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::auth::AuthUser;
-use crate::routes::diagnoses_for;
+use crate::routes::user_for;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -84,14 +84,18 @@ async fn send_message(
     let history_start = req.history.len().saturating_sub(MAX_HISTORY_MESSAGES);
     let history = &req.history[history_start..];
 
-    let diagnoses = diagnoses_for(&state, auth.user_id).await;
+    let user = user_for(&state, auth.user_id).await;
+    let person = user
+        .as_ref()
+        .map(PersonContext::from_user)
+        .unwrap_or_else(PersonContext::unknown);
 
     let result = generate_chat_reply(
         &req.message,
         history,
         &recent_moods,
         &recent_journal_entries,
-        &diagnoses,
+        &person,
         state.llm.as_ref(),
         state.research.as_ref(),
         state.vector_store.as_ref(),

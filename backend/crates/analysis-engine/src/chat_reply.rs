@@ -35,7 +35,7 @@ pub async fn generate_chat_reply(
     conversation_history: &[ChatMessage],
     recent_moods: &[MoodEntry],
     recent_journal_entries: &[JournalEntry],
-    diagnoses: &[String],
+    person: &crate::person::PersonContext<'_>,
     llm: &dyn LlmProvider,
     research: &dyn ResearchRepository,
     vector_store: &dyn VectorStore,
@@ -46,12 +46,12 @@ pub async fn generate_chat_reply(
     let related = retrieve_context(user_message, 3, research, vector_store, embedder).await;
 
     let mood_summary = if recent_moods.is_empty() {
-        "Yakın zamanda ruh hali kaydı yok.".to_string()
+        "No recent check-ins.".to_string()
     } else {
         let avg_valence: f32 = recent_moods.iter().map(|m| m.valence).sum::<f32>() / recent_moods.len() as f32;
         let avg_arousal: f32 = recent_moods.iter().map(|m| m.arousal).sum::<f32>() / recent_moods.len() as f32;
         format!(
-            "{} kayıt, ortalama keyif {:.2}, ortalama enerji {:.2}",
+            "{} check-ins, average valence {:.2}, average energy {:.2}",
             recent_moods.len(),
             avg_valence,
             avg_arousal
@@ -66,24 +66,18 @@ pub async fn generate_chat_reply(
         .collect::<Vec<_>>()
         .join("\n");
 
-    let diagnosis_line = if diagnoses.is_empty() {
-        "(bildirilmemiş)".to_string()
-    } else {
-        diagnoses.join(", ")
-    };
-
     let context = format!(
-        "Kullanıcının kendi bildirdiği tanılar: {diagnosis_line}\n\n\
-         Son ruh hali: {mood_summary}\n\n\
-         Son günlük alıntıları:\n{}\n\n\
-         İlgili araştırma:\n{}",
-        if journal_excerpts.is_empty() { "(yok)".to_string() } else { journal_excerpts },
+        "{}Recent mood: {mood_summary}\n\n\
+         Recent journal excerpts:\n{}\n\n\
+         Related research:\n{}",
+        person.prompt_block(),
+        if journal_excerpts.is_empty() { "(none)".to_string() } else { journal_excerpts },
         format_context(&related),
     );
 
     let mut messages = vec![
         ChatMessage { role: Role::System, content: prompts::SAFETY_SYSTEM_PROMPT.to_string() },
-        ChatMessage { role: Role::System, content: prompts::chat_instruction().to_string() },
+        ChatMessage { role: Role::System, content: prompts::chat_instruction(person.language) },
         ChatMessage { role: Role::System, content: format!("User context:\n{context}") },
     ];
     messages.extend(conversation_history.iter().cloned());

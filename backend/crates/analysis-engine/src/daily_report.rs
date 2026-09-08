@@ -1,10 +1,11 @@
 use chrono::Utc;
 use mental_domain::repository::ResearchRepository;
-use mental_domain::{DailyMentalReport, JournalEntry, MoodEntry};
+use mental_domain::{ChatMessageRecord, ChatRole, DailyMentalReport, JournalEntry, MoodEntry};
 use mental_llm_connector::{prompts, ChatMessage, ChatRequest, LlmProvider, Role};
 use mental_knowledge_base::{Embedder, VectorStore};
 use uuid::Uuid;
 
+use crate::person::PersonContext;
 use crate::retrieval::{format_context, retrieve_context};
 use crate::safety::screen_for_crisis_language;
 
@@ -12,6 +13,11 @@ use crate::safety::screen_for_crisis_language;
 /// last few days" without turning today's report into a history essay — the
 /// long view is the life analysis's job.
 const MAX_PREVIOUS_REPORTS: usize = 7;
+
+/// How many of the day's chat turns go into the report. The conversation is
+/// often the richest thing that happened in a day — leaving it out was why a
+/// report could describe a calm day the person had spent describing a crisis.
+const MAX_CHAT_TURNS: usize = 24;
 
 /// Builds the RAG context (mood summary + journal excerpts + top-k
 /// research snippets) and asks the LLM for today's report. The crisis
@@ -30,9 +36,10 @@ pub async fn generate_daily_report(
     user_id: Uuid,
     moods: &[MoodEntry],
     journal_entries: &[JournalEntry],
+    chat_messages: &[ChatMessageRecord],
     mood_history: &[MoodEntry],
     previous_reports: &[DailyMentalReport],
-    diagnoses: &[String],
+    person: &PersonContext<'_>,
     llm: &dyn LlmProvider,
     research: &dyn ResearchRepository,
     vector_store: &dyn VectorStore,
@@ -44,7 +51,12 @@ pub async fn generate_daily_report(
         .collect::<Vec<_>>()
         .join("\n---\n");
 
-    let crisis = screen_for_crisis_language(&journal_text);
+    let chat_text = summarize_chat(chat_messages);
+
+    // The crisis screen reads the conversation too: someone is far more
+    // likely to say the alarming thing to the chat than to write it in a
+    // journal entry they know they're composing.
+    let crisis = screen_for_crisis_language(&format!("{journal_text}\n{chat_text}"));
 
     let mood_summary = summarize_moods(moods);
     let baseline = summarize_baseline(moods, mood_history);
@@ -56,23 +68,25 @@ pub async fn generate_daily_report(
         .collect::<Vec<_>>()
         .join("\n");
 
-    let diagnosis_line = if diagnoses.is_empty() {
-        String::new()
-    } else {
-        format!(
-            "Kullanıcının kendi bildirdiği tanılar: {}\n\n",
-            diagnoses.join(", ")
-        )
-    };
-
-    let related = retrieve_context(&journal_text, 3, research, vector_store, embedder).await;
+    // Retrieval is seeded with the conversation as well, so grounding
+    // follows what the person actually talked about today.
+    let related = retrieve_context(
+        &format!("{journal_text}\n{chat_text}"),
+        3,
+        research,
+        vector_store,
+        embedder,
+    )
+    .await;
 
     let context = format!(
-        "{diagnosis_line}Bugünün ruh hali: {mood_summary}\n\n\
-         Geçmişe göre konum: {baseline}\n\n\
-         Bugünün günlük kayıtları:\n{journal_text}\n\n\
-         Önceki günlerin raporları (yeniden eskiye):\n{previous_summaries}\n\n\
-         İlgili araştırma:\n{}",
+        "{}Today's mood: {mood_summary}\n\n\
+         Position against history: {baseline}\n\n\
+         Today's journal entries:\n{journal_text}\n\n\
+         Today's conversation with the app:\n{chat_text}\n\n\
+         Previous days' reports (newest first):\n{previous_summaries}\n\n\
+         Related research:\n{}",
+        person.prompt_block(),
         format_context(&related)
     );
 
@@ -83,7 +97,7 @@ pub async fn generate_daily_report(
         },
         ChatMessage {
             role: Role::System,
-            content: prompts::daily_report_instruction().to_string(),
+            content: prompts::daily_report_instruction(person.language),
         },
         ChatMessage {
             role: Role::User,
@@ -116,6 +130,25 @@ pub async fn generate_daily_report(
         crisis_flag: crisis.flagged,
         generated_at: Utc::now(),
     })
+}
+
+fn summarize_chat(messages: &[ChatMessageRecord]) -> String {
+    if messages.is_empty() {
+        return "No conversation today.".to_string();
+    }
+
+    let start = messages.len().saturating_sub(MAX_CHAT_TURNS);
+    messages[start..]
+        .iter()
+        .map(|m| {
+            let speaker = match m.role {
+                ChatRole::User => "Person",
+                ChatRole::Assistant => "App",
+            };
+            format!("{speaker}: {}", m.content)
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// Computed directly from the actual mood entries rather than asked of

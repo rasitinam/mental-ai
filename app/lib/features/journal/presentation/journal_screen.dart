@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../l10n/app_localizations.dart';
 import '../domain/journal_entry.dart';
 import 'journal_controller.dart';
 
@@ -47,6 +48,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(journalControllerProvider);
     final journalController = ref.read(journalControllerProvider.notifier);
     final palette = AppPalette.of(context);
@@ -56,14 +58,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       if (next.submitted && prev?.submitted != true) {
         _controller.clear();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Günlük kaydedildi.')),
+          SnackBar(content: Text(l10n.journalSaved)),
         );
         journalController.acknowledgeSubmitted();
       }
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Günlük')),
+      appBar: AppBar(title: Text(l10n.navJournal)),
       body: RefreshIndicator(
         color: palette.accent,
         onRefresh: journalController.load,
@@ -88,7 +90,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   cursorColor: palette.accent,
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.all(18),
-                    hintText: 'Bugün aklından ne geçti?',
+                    hintText: l10n.journalHint,
                     hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
                     border: InputBorder.none,
                   ),
@@ -101,7 +103,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   child: Text(state.error!, style: TextStyle(color: palette.warning)),
                 ),
               AppPrimaryButton(
-                label: 'Kaydet',
+                label: l10n.commonSave,
                 loading: state.submitting,
                 onPressed: () => journalController.submit(_controller.text),
               ),
@@ -110,7 +112,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 10),
               child: Text(
-                'GEÇMİŞ GÜNLÜKLER',
+                l10n.journalPast,
                 style: AppTypography.caption.copyWith(color: palette.textTertiary, letterSpacing: 0.6),
               ),
             ),
@@ -123,7 +125,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  'Henüz bir günlük yazmadın.',
+                  l10n.journalEmpty,
                   style: AppTypography.subheadline.copyWith(color: palette.textTertiary),
                 ),
               )
@@ -147,6 +149,8 @@ class _CooldownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return GlassSurface(
       radius: 26,
       child: Column(
@@ -154,12 +158,12 @@ class _CooldownCard extends StatelessWidget {
           Icon(Icons.check_circle_outline_rounded, size: 30, color: palette.accent),
           const SizedBox(height: 12),
           Text(
-            'Bugünkü günlüğün yazıldı',
+            l10n.journalDoneToday,
             style: AppTypography.headline.copyWith(color: palette.textPrimary),
           ),
           const SizedBox(height: 6),
           Text(
-            'Sonraki giriş $remaining sonra açılıyor',
+            l10n.journalNextIn(remaining),
             textAlign: TextAlign.center,
             style: AppTypography.footnote.copyWith(color: palette.textTertiary),
           ),

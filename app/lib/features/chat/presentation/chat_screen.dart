@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../l10n/app_localizations.dart';
 import '../domain/chat_message.dart';
 import 'chat_controller.dart';
 
@@ -44,7 +45,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Sohbet')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.navChat)),
       body: Column(
         children: [
           Expanded(
@@ -55,7 +56,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(32),
                           child: Text(
-                            'Bir şey paylaşmak ister misin?',
+                            AppLocalizations.of(context)!.chatEmptyPrompt,
                             style: AppTypography.body.copyWith(color: palette.textTertiary),
                             textAlign: TextAlign.center,
                           ),
@@ -100,7 +101,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         decoration: InputDecoration(
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          hintText: 'Bir şey yaz...',
+                          hintText: AppLocalizations.of(context)!.chatInputHint,
                           hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
                           border: InputBorder.none,
                         ),
@@ -183,8 +184,7 @@ class _ChatBubble extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
-              'Zor bir an gibi görünüyor. Acil durumdaysan 112\'yi ara; '
-              'konuşmak istersen bir uzmana ulaşmayı düşünebilirsin.',
+              AppLocalizations.of(context)!.chatCrisis,
               style: AppTypography.subheadline.copyWith(color: palette.warning),
             ),
           ),

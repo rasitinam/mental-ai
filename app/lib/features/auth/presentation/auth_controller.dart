@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/local_prefs.dart';
+import '../../../core/l10n/locale_controller.dart';
 import '../data/auth_api.dart';
 import '../domain/session.dart';
 
@@ -24,7 +25,11 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> register({required String email, required String password}) async {
     if (!_validate(email, password)) return;
-    await _submit(() => ref.read(authApiProvider).register(email: email, password: password));
+    await _submit(() => ref.read(authApiProvider).register(
+          email: email,
+          password: password,
+          language: ref.read(localeControllerProvider).languageCode,
+        ));
   }
 
   Future<void> login({required String email, required String password}) async {

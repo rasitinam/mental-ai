@@ -1,12 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/locale_controller.dart';
 import '../../../core/storage/local_prefs.dart';
 import '../data/profile_api.dart';
+import '../domain/user_profile.dart';
 
 class ProfileState {
   /// Catalog slugs currently selected in the editor. Held locally while the
   /// person is ticking boxes and only sent on save.
   final Set<String> diagnoses;
+  final String? email;
+  final String language;
+  final int? birthYear;
+  final int? age;
   final bool loading;
   final bool saving;
   final bool saved;
@@ -14,6 +20,10 @@ class ProfileState {
 
   const ProfileState({
     this.diagnoses = const {},
+    this.email,
+    this.language = 'tr',
+    this.birthYear,
+    this.age,
     this.loading = true,
     this.saving = false,
     this.saved = false,
@@ -22,6 +32,10 @@ class ProfileState {
 
   ProfileState copyWith({
     Set<String>? diagnoses,
+    String? email,
+    String? language,
+    int? birthYear,
+    int? age,
     bool? loading,
     bool? saving,
     bool? saved,
@@ -29,6 +43,10 @@ class ProfileState {
   }) =>
       ProfileState(
         diagnoses: diagnoses ?? this.diagnoses,
+        email: email ?? this.email,
+        language: language ?? this.language,
+        birthYear: birthYear ?? this.birthYear,
+        age: age ?? this.age,
         loading: loading ?? this.loading,
         saving: saving ?? this.saving,
         saved: saved ?? this.saved,
@@ -51,7 +69,7 @@ class ProfileController extends Notifier<ProfileState> {
     state = state.copyWith(loading: true, error: null);
     try {
       final profile = await ref.read(profileApiProvider).profile();
-      state = state.copyWith(diagnoses: profile.diagnoses.toSet(), loading: false);
+      state = _fromProfile(profile);
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
     }
@@ -67,9 +85,39 @@ class ProfileController extends Notifier<ProfileState> {
     state = state.copyWith(saving: true, error: null);
     try {
       final profile = await ref.read(profileApiProvider).setDiagnoses(state.diagnoses.toList());
-      state = state.copyWith(diagnoses: profile.diagnoses.toSet(), saving: false, saved: true);
+      state = _fromProfile(profile).copyWith(saved: true);
     } catch (e) {
       state = state.copyWith(saving: false, error: e.toString());
     }
   }
+
+  /// Language switches locally first so the UI changes immediately, then is
+  /// stored on the account — the backend needs it to generate reports and
+  /// chat replies in the same language, not just to label them.
+  Future<void> savePreferences({String? language, int? birthYear}) async {
+    state = state.copyWith(saving: true, error: null);
+
+    if (language != null) {
+      await ref.read(localeControllerProvider.notifier).setLanguage(language);
+    }
+
+    try {
+      final profile = await ref
+          .read(profileApiProvider)
+          .setPreferences(language: language, birthYear: birthYear);
+      state = _fromProfile(profile).copyWith(saved: true);
+    } catch (e) {
+      state = state.copyWith(saving: false, error: e.toString());
+    }
+  }
+
+  ProfileState _fromProfile(UserProfile profile) => ProfileState(
+        diagnoses: profile.diagnoses.toSet(),
+        email: profile.email,
+        language: profile.language,
+        birthYear: profile.birthYear,
+        age: profile.age,
+        loading: false,
+        saving: false,
+      );
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
 import 'profile_controller.dart';
@@ -16,6 +17,7 @@ class DiagnosesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(profileControllerProvider);
     final controller = ref.read(profileControllerProvider.notifier);
     final categories = ref.watch(categoriesProvider);
@@ -24,19 +26,19 @@ class DiagnosesScreen extends ConsumerWidget {
     ref.listen(profileControllerProvider, (prev, next) {
       if (next.saved && prev?.saved != true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tanıların kaydedildi.')),
+          SnackBar(content: Text(l10n.diagnosesSaved)),
         );
       }
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Tanılarım')),
+      appBar: AppBar(title: Text(l10n.diagnosesTitle)),
       body: categories.when(
         loading: () => Center(child: CircularProgressIndicator(color: palette.accent)),
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(28),
-            child: Text('Kategoriler yüklenemedi.',
+            child: Text(l10n.diagnosesLoadFailed,
                 style: AppTypography.subheadline.copyWith(color: palette.warning)),
           ),
         ),
@@ -45,6 +47,7 @@ class DiagnosesScreen extends ConsumerWidget {
           selected: state.diagnoses,
           loading: state.loading,
           palette: palette,
+          l10n: l10n,
           onToggle: controller.toggle,
         ),
       ),
@@ -59,7 +62,7 @@ class DiagnosesScreen extends ConsumerWidget {
                 child: Text(state.error!, style: TextStyle(color: palette.warning)),
               ),
             AppPrimaryButton(
-              label: 'Kaydet',
+              label: l10n.commonSave,
               loading: state.saving,
               onPressed: controller.save,
             ),
@@ -75,6 +78,7 @@ class _CategoryList extends StatelessWidget {
   final Set<String> selected;
   final bool loading;
   final AppPalette palette;
+  final AppLocalizations l10n;
   final ValueChanged<String> onToggle;
 
   const _CategoryList({
@@ -82,6 +86,7 @@ class _CategoryList extends StatelessWidget {
     required this.selected,
     required this.loading,
     required this.palette,
+    required this.l10n,
     required this.onToggle,
   });
 
@@ -103,9 +108,7 @@ class _CategoryList extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Burada seçtiklerin yalnızca senin bildirdiğin bilgilerdir; uygulama tanı '
-                  'koymaz. Seçtiklerin raporlarını ve sohbeti sana göre şekillendirmek için '
-                  'kullanılır.',
+                  l10n.diagnosesNote,
                   style: AppTypography.footnote.copyWith(color: palette.textSecondary),
                 ),
               ),
@@ -131,7 +134,7 @@ class _CategoryList extends StatelessWidget {
                   subtitle: _selectedCount(category) == 0
                       ? null
                       : Text(
-                          '${_selectedCount(category)} seçili',
+                          l10n.diagnosesSelectedCount(_selectedCount(category)),
                           style: AppTypography.caption.copyWith(color: palette.accent),
                         ),
                   iconColor: palette.accent,

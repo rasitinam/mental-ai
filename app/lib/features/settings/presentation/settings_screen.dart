@@ -7,6 +7,7 @@ import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/local_prefs.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../auth/data/auth_api.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -26,52 +27,55 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final userId = ref.watch(currentUserIdProvider);
     final palette = AppPalette.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ayarlar')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
         children: [
           _SettingsGroup(
-            title: 'Bağlantı',
+            title: l10n.settingsConnection,
             rows: [
-              _SettingsRow(icon: Icons.dns_outlined, label: 'Sunucu adresi', value: AppConstants.apiBaseUrl),
-              _SettingsRow(icon: Icons.fingerprint_rounded, label: 'Cihaz kimliği', value: userId),
+              _SettingsRow(
+                  icon: Icons.dns_outlined,
+                  label: l10n.settingsServer,
+                  value: AppConstants.apiBaseUrl),
+              _SettingsRow(
+                  icon: Icons.fingerprint_rounded, label: l10n.settingsDeviceId, value: userId),
             ],
           ),
           const SizedBox(height: 20),
           _SettingsGroup(
-            title: 'Gizlilik ve Güvenlik',
-            rows: const [
+            title: l10n.settingsPrivacy,
+            rows: [
               _SettingsRow(
                 icon: Icons.lock_outline_rounded,
-                label: 'Verilerin nerede duruyor',
-                description: 'Yalnızca kendi bilgisayarındaki yerel veritabanında saklanır.',
+                label: l10n.settingsDataLocation,
+                description: l10n.settingsDataLocationBody,
               ),
               _SettingsRow(
                 icon: Icons.shield_outlined,
-                label: 'Yasal uyarı',
-                description: 'Mental AI lisanslı bir sağlık uzmanının yerini tutmaz. '
-                    'Acil bir durumdaysan 112\'yi ara.',
+                label: l10n.settingsLegal,
+                description: l10n.settingsLegalBody,
               ),
             ],
           ),
           const SizedBox(height: 20),
           _SettingsGroup(
-            title: 'Hesap',
+            title: l10n.settingsAccount,
             rows: [
               _SettingsRow(
-                icon: Icons.assignment_ind_outlined,
-                label: 'Tanılarım',
-                description: 'Kendi bildirdiğin tanıları seç; raporlar ve sohbet buna göre '
-                    'şekillenir.',
-                onTap: () => context.go('/settings/diagnoses'),
+                icon: Icons.person_outline_rounded,
+                label: l10n.settingsProfile,
+                description: l10n.settingsProfileBody,
+                onTap: () => context.go('/settings/profile'),
               ),
               _SettingsRow(
                 icon: Icons.logout_rounded,
-                label: 'Çıkış yap',
+                label: l10n.settingsLogout,
                 iconColor: palette.warning,
                 onTap: () => _logout(context, ref),
               ),

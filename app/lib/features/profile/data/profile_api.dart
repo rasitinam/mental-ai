@@ -21,4 +21,15 @@ class ProfileApi {
     final response = await _dio.put('/profile/diagnoses', data: {'diagnoses': diagnoses});
     return UserProfile.fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// Language and birth year. Both are optional and omitted fields keep
+  /// their stored value, so changing the language doesn't require the screen
+  /// to resend a birth year the person never gave.
+  Future<UserProfile> setPreferences({String? language, int? birthYear}) async {
+    final response = await _dio.put('/profile/preferences', data: {
+      'language': ?language,
+      'birth_year': ?birthYear,
+    });
+    return UserProfile.fromJson(response.data as Map<String, dynamic>);
+  }
 }

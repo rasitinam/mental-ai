@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::report::LifeAnalysis;
 use crate::{
     ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, Insight, JournalEntry,
-    MoodEntry, ResearchArticle, Session, User,
+    MoodEntry, ResearchArticle, Session, User, UserState,
 };
 
 #[async_trait]
@@ -22,12 +22,23 @@ pub trait UserRepository: Send + Sync {
     /// edits it as a set, so a partial update would just be a second way to
     /// get the same result wrong.
     async fn set_diagnoses(&self, user_id: Uuid, diagnoses: &[String]) -> anyhow::Result<()>;
+    /// Language and birth year, both optional to change independently:
+    /// `None` leaves that field as it is rather than clearing it.
+    async fn set_preferences(
+        &self,
+        user_id: Uuid,
+        language: Option<&str>,
+        birth_year: Option<i32>,
+    ) -> anyhow::Result<()>;
 }
 
 #[async_trait]
 pub trait AuthRepository: Send + Sync {
     async fn create_credentials(&self, credentials: &Credentials) -> anyhow::Result<()>;
     async fn find_credentials_by_email(&self, email: &str) -> anyhow::Result<Option<Credentials>>;
+    /// The address an account signs in with, for showing it back on the
+    /// profile screen. Sign-in itself always goes the other way round.
+    async fn find_email_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<String>>;
     async fn create_session(&self, session: &Session) -> anyhow::Result<()>;
     async fn find_session(&self, token: &str) -> anyhow::Result<Option<Session>>;
     async fn delete_session(&self, token: &str) -> anyhow::Result<()>;
@@ -114,6 +125,22 @@ pub trait InsightRepository: Send + Sync {
 pub trait ExplainerRepository: Send + Sync {
     async fn get(&self, slug: &str) -> anyhow::Result<Option<DisorderExplainer>>;
     async fn save(&self, explainer: &DisorderExplainer) -> anyhow::Result<()>;
+    /// Slugs that already have a cached card. The warm-up job walks the
+    /// catalog against this so it only spends LLM calls on what's missing
+    /// instead of regenerating the whole list on every boot.
+    async fn cached_slugs(&self) -> anyhow::Result<Vec<String>>;
+    /// Cards generated before `cutoff`, oldest first. The research corpus
+    /// keeps growing underneath these, so a card written months ago is
+    /// grounded in a smaller evidence base than one written today.
+    async fn stale_slugs(&self, cutoff: DateTime<Utc>, limit: u32) -> anyhow::Result<Vec<String>>;
+}
+
+#[async_trait]
+pub trait UserStateRepository: Send + Sync {
+    async fn get(&self, user_id: Uuid) -> anyhow::Result<Option<UserState>>;
+    /// One row per user, replaced wholesale — this is the current snapshot,
+    /// not an append-only log.
+    async fn save(&self, state: &UserState) -> anyhow::Result<()>;
 }
 
 #[async_trait]

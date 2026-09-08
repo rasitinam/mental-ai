@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Datelike, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -14,5 +14,30 @@ pub struct User {
     /// so reports/chat can be framed with that context instead of guessing.
     #[serde(default)]
     pub diagnoses: Vec<String>,
+    /// Interface language as a plain ISO-639-1 code ("tr"/"en"). The model is
+    /// told to answer in it, so a language switch changes generated content
+    /// too, not just the labels around it.
+    #[serde(default = "default_language")]
+    pub language: String,
+    /// Birth year, not age, so it can't go stale. Optional — [`User::age`]
+    /// returns `None` and the prompts stay age-neutral when it's unset.
+    #[serde(default)]
+    pub birth_year: Option<i32>,
     pub created_at: DateTime<Utc>,
+}
+
+fn default_language() -> String {
+    "tr".to_string()
+}
+
+impl User {
+    /// Age in whole years, or `None` when no birth year was given. Ignores a
+    /// birth year that can't be true (future, or absurdly long ago) rather
+    /// than feeding the model a nonsense number.
+    pub fn age(&self) -> Option<i32> {
+        let birth_year = self.birth_year?;
+        let this_year = Utc::now().year();
+        let age = this_year - birth_year;
+        (0..=120).contains(&age).then_some(age)
+    }
 }

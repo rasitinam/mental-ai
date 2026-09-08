@@ -6,83 +6,130 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
 import '../domain/insight.dart';
 import 'insights_controller.dart';
 
-/// Two things live on this screen, and the category selector switches
-/// between them: "Genel" is the research feed the background service
-/// produces, and a specific category is a reference section — the
-/// conditions under it, each opening its own explainer, plus whatever
-/// research cards were filed under that category.
-class InsightsScreen extends ConsumerWidget {
+/// The reference guide. Three ways in, in the order people actually reach
+/// for them: search when they know what they're looking for, the category
+/// strip when they want to browse, and the research feed when they're just
+/// reading. Search sits above the strip rather than replacing it — someone
+/// who knows the name shouldn't have to scroll twenty categories to find it,
+/// and someone who doesn't still gets something to wander through.
+class InsightsScreen extends ConsumerStatefulWidget {
   const InsightsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InsightsScreen> createState() => _InsightsScreenState();
+}
+
+class _InsightsScreenState extends ConsumerState<InsightsScreen> {
+  final _search = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(insightsControllerProvider);
     final controller = ref.read(insightsControllerProvider.notifier);
     final selected = ref.watch(selectedCategoryProvider);
-    final categories = ref.watch(categoriesProvider);
+    final categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
     final palette = AppPalette.of(context);
 
+    final searching = _query.trim().length >= 2;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('İçgörüler')),
+      appBar: AppBar(title: Text(l10n.guideTitle)),
       body: Column(
         children: [
-          _CategoryStrip(
-            categories: categories.valueOrNull ?? const [],
-            selected: selected,
-            palette: palette,
-            onSelect: (slug) => ref.read(selectedCategoryProvider.notifier).state = slug,
-          ),
-          Expanded(
-            child: RefreshIndicator(
-              color: palette.accent,
-              onRefresh: controller.load,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
-                children: [
-                  if (selected != null)
-                    ..._categorySection(
-                      context: context,
-                      category: categories.valueOrNull?.where((c) => c.slug == selected).firstOrNull,
-                      palette: palette,
-                    ),
-                  if (state.loading)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 60),
-                      child: Center(child: CircularProgressIndicator(color: palette.accent)),
-                    )
-                  else if (state.error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 24),
-                      child: Text(state.error!,
-                          style: TextStyle(color: palette.warning), textAlign: TextAlign.center),
-                    )
-                  else if (state.insights.isEmpty)
-                    _EmptyFeed(
-                      palette: palette,
-                      inCategory: selected != null,
-                      synthesizing: state.synthesizing,
-                      onSynthesizeNow: controller.synthesizeNow,
-                    )
-                  else ...[
-                    if (selected != null) ...[
-                      const SizedBox(height: 22),
-                      _SectionLabel(text: 'Bu kategoriden araştırmalar', palette: palette),
-                      const SizedBox(height: 10),
-                    ],
-                    for (final insight in state.insights)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: _InsightCard(insight: insight),
-                      ),
-                  ],
-                ],
-              ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: _SearchField(
+              controller: _search,
+              palette: palette,
+              hint: l10n.guideSearchHint,
+              onChanged: (value) => setState(() => _query = value),
+              onClear: () {
+                _search.clear();
+                setState(() => _query = '');
+              },
             ),
+          ),
+          if (!searching)
+            _CategoryStrip(
+              categories: categories,
+              selected: selected,
+              palette: palette,
+              allLabel: l10n.guideCategoryAll,
+              onSelect: (slug) => ref.read(selectedCategoryProvider.notifier).state = slug,
+            ),
+          Expanded(
+            child: searching
+                ? _SearchResults(
+                    query: _query.trim(),
+                    categories: categories,
+                    palette: palette,
+                    l10n: l10n,
+                  )
+                : RefreshIndicator(
+                    color: palette.accent,
+                    onRefresh: controller.load,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
+                      children: [
+                        if (selected != null)
+                          ..._categorySection(
+                            context: context,
+                            category:
+                                categories.where((c) => c.slug == selected).firstOrNull,
+                            palette: palette,
+                            l10n: l10n,
+                          ),
+                        if (state.loading)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 60),
+                            child: Center(
+                                child: CircularProgressIndicator(color: palette.accent)),
+                          )
+                        else if (state.error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 24),
+                            child: Text(state.error!,
+                                style: TextStyle(color: palette.warning),
+                                textAlign: TextAlign.center),
+                          )
+                        else if (state.insights.isEmpty)
+                          _EmptyFeed(
+                            palette: palette,
+                            inCategory: selected != null,
+                            synthesizing: state.synthesizing,
+                            onSynthesizeNow: controller.synthesizeNow,
+                            l10n: l10n,
+                          )
+                        else ...[
+                          if (selected != null) ...[
+                            const SizedBox(height: 22),
+                            _SectionLabel(
+                                text: l10n.guideResearchInCategory, palette: palette),
+                            const SizedBox(height: 10),
+                          ],
+                          for (final insight in state.insights)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: _InsightCard(insight: insight),
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
@@ -93,6 +140,7 @@ class InsightsScreen extends ConsumerWidget {
     required BuildContext context,
     required DisorderCategory? category,
     required AppPalette palette,
+    required AppLocalizations l10n,
   }) {
     if (category == null) return const [];
 
@@ -129,9 +177,10 @@ class InsightsScreen extends ConsumerWidget {
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(100)),
+            decoration:
+                BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(100)),
             child: Text(
-              '${category.disorders.length} tanı',
+              l10n.guideDisorderCount(category.disorders.length),
               style: AppTypography.caption.copyWith(color: palette.accent),
             ),
           ),
@@ -151,6 +200,7 @@ class InsightsScreen extends ConsumerWidget {
         itemBuilder: (context, i) => _DisorderCard(
           disorder: category.disorders[i],
           palette: palette,
+          subtitle: l10n.guideOpenCard,
           onTap: () => context.go('/insights/disorder/${category.disorders[i].slug}'),
         ),
       ),
@@ -158,16 +208,155 @@ class InsightsScreen extends ConsumerWidget {
   }
 }
 
+class _SearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final AppPalette palette;
+  final String hint;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  const _SearchField({
+    required this.controller,
+    required this.palette,
+    required this.hint,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      radius: 100,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          Icon(Icons.search_rounded, size: 20, color: palette.textTertiary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              style: AppTypography.subheadline.copyWith(color: palette.textPrimary),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                hintText: hint,
+                hintStyle: AppTypography.subheadline.copyWith(color: palette.textTertiary),
+              ),
+            ),
+          ),
+          if (controller.text.isNotEmpty)
+            InkWell(
+              onTap: onClear,
+              customBorder: const CircleBorder(),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(Icons.close_rounded, size: 18, color: palette.textTertiary),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Searches the whole catalog at once rather than within the selected
+/// category — the point of typing a name is to skip the browsing.
+class _SearchResults extends StatelessWidget {
+  final String query;
+  final List<DisorderCategory> categories;
+  final AppPalette palette;
+  final AppLocalizations l10n;
+
+  const _SearchResults({
+    required this.query,
+    required this.categories,
+    required this.palette,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final needle = query.toLowerCase();
+    final matches = <({DisorderCategory category, Disorder disorder})>[];
+    for (final category in categories) {
+      for (final disorder in category.disorders) {
+        if (disorder.name.toLowerCase().contains(needle) ||
+            category.name.toLowerCase().contains(needle)) {
+          matches.add((category: category, disorder: disorder));
+        }
+      }
+    }
+
+    if (matches.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(28, 40, 28, 0),
+        child: Text(
+          l10n.guideSearchEmpty(query),
+          textAlign: TextAlign.center,
+          style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
+      itemCount: matches.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, i) {
+        final match = matches[i];
+        return GlassSurface(
+          radius: 20,
+          padding: EdgeInsets.zero,
+          child: InkWell(
+            onTap: () => context.go('/insights/disorder/${match.disorder.slug}'),
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Text(match.category.emoji, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(match.disorder.name,
+                            style: AppTypography.subheadline.copyWith(
+                              color: palette.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            )),
+                        const SizedBox(height: 3),
+                        Text(match.category.name,
+                            style:
+                                AppTypography.caption.copyWith(color: palette.textTertiary)),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, size: 20, color: palette.textTertiary),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _CategoryStrip extends StatelessWidget {
   final List<DisorderCategory> categories;
   final String? selected;
   final AppPalette palette;
+  final String allLabel;
   final ValueChanged<String?> onSelect;
 
   const _CategoryStrip({
     required this.categories,
     required this.selected,
     required this.palette,
+    required this.allLabel,
     required this.onSelect,
   });
 
@@ -180,7 +369,7 @@ class _CategoryStrip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         children: [
           _CategoryChip(
-            label: 'Genel',
+            label: allLabel,
             icon: Icons.apps_rounded,
             selected: selected == null,
             palette: palette,
@@ -250,9 +439,15 @@ class _CategoryChip extends StatelessWidget {
 class _DisorderCard extends StatelessWidget {
   final Disorder disorder;
   final AppPalette palette;
+  final String subtitle;
   final VoidCallback onTap;
 
-  const _DisorderCard({required this.disorder, required this.palette, required this.onTap});
+  const _DisorderCard({
+    required this.disorder,
+    required this.palette,
+    required this.subtitle,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +466,8 @@ class _DisorderCard extends StatelessWidget {
               Container(
                 width: 34,
                 height: 34,
-                decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(12)),
+                decoration:
+                    BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(12)),
                 alignment: Alignment.center,
                 child: Icon(Icons.psychology_outlined, size: 17, color: palette.accent),
               ),
@@ -286,7 +482,7 @@ class _DisorderCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Text('Bilgi kartını gör', style: AppTypography.caption.copyWith(color: palette.textTertiary)),
+              Text(subtitle, style: AppTypography.caption.copyWith(color: palette.textTertiary)),
             ],
           ),
         ),
@@ -330,7 +526,8 @@ class _InsightCard extends StatelessWidget {
               Icon(Icons.auto_awesome_outlined, size: 16, color: palette.accent),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(insight.title, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
+                child: Text(insight.title,
+                    style: AppTypography.headline.copyWith(color: palette.textPrimary)),
               ),
             ],
           ),
@@ -345,7 +542,8 @@ class _InsightCard extends StatelessWidget {
                 for (final tag in insight.tags)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(
+                        color: palette.accentSoft, borderRadius: BorderRadius.circular(10)),
                     child: Text(tag, style: AppTypography.caption.copyWith(color: palette.accent)),
                   ),
               ],
@@ -353,7 +551,8 @@ class _InsightCard extends StatelessWidget {
           ],
           const SizedBox(height: 10),
           Text(
-            DateFormat.yMMMd().format(insight.createdAt),
+            DateFormat.yMMMd(Localizations.localeOf(context).languageCode)
+                .format(insight.createdAt),
             style: AppTypography.caption.copyWith(color: palette.textTertiary),
           ),
         ],
@@ -367,12 +566,14 @@ class _EmptyFeed extends StatelessWidget {
   final bool inCategory;
   final bool synthesizing;
   final VoidCallback onSynthesizeNow;
+  final AppLocalizations l10n;
 
   const _EmptyFeed({
     required this.palette,
     required this.inCategory,
     required this.synthesizing,
     required this.onSynthesizeNow,
+    required this.l10n,
   });
 
   @override
@@ -387,19 +588,13 @@ class _EmptyFeed extends StatelessWidget {
             Icon(Icons.auto_awesome_outlined, size: 30, color: palette.accent),
             const SizedBox(height: 14),
             Text(
-              inCategory ? 'Bu kategoride henüz araştırma kartı yok' : 'Henüz bir içgörü yok',
+              inCategory ? l10n.guideEmptyInCategory : l10n.guideEmptyFeed,
               textAlign: TextAlign.center,
               style: AppTypography.headline.copyWith(color: palette.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
-              inCategory
-                  ? 'Yukarıdaki başlıklardan birine dokunarak o durumla ilgili bilgi kartını '
-                      'okuyabilirsin. Araştırma kartları, arka plandaki servis bu kategoride '
-                      'yeni makale buldukça burada birikir.'
-                  : 'Arka planda çalışan araştırma servisi yeni makaleler topladıkça bu ekran '
-                      'güncellenecek. Beklemek istemezsen zaten toplanmış makalelerden şimdi bir '
-                      'içgörü çıkarabilirsin.',
+              inCategory ? l10n.guideEmptyInCategoryBody : l10n.guideEmptyFeedBody,
               textAlign: TextAlign.center,
               style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
             ),
@@ -408,7 +603,7 @@ class _EmptyFeed extends StatelessWidget {
               SizedBox(
                 width: 200,
                 child: AppPrimaryButton(
-                  label: 'Şimdi oluştur',
+                  label: l10n.guideSynthesizeNow,
                   loading: synthesizing,
                   onPressed: onSynthesizeNow,
                 ),

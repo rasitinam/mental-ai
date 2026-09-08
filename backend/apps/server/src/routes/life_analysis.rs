@@ -5,7 +5,7 @@ use axum::{
     Json, Router,
 };
 use chrono::{DateTime, Duration, Utc};
-use mental_analysis_engine::generate_life_analysis;
+use mental_analysis_engine::{generate_life_analysis, PersonContext};
 use mental_domain::repository::{
     ChatRepository, JournalRepository, LifeAnalysisRepository, MoodRepository, ReportRepository,
 };
@@ -14,7 +14,7 @@ use serde::Serialize;
 
 use crate::auth::AuthUser;
 use crate::state::AppState;
-use crate::routes::diagnoses_for;
+use crate::routes::user_for;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -92,7 +92,11 @@ async fn generate_analysis(
         .list_recent(auth.user_id, MAX_REPORTS)
         .await
         .map_err(internal)?;
-    let diagnoses = diagnoses_for(&state, auth.user_id).await;
+    let user = user_for(&state, auth.user_id).await;
+    let person = user
+        .as_ref()
+        .map(PersonContext::from_user)
+        .unwrap_or_else(PersonContext::unknown);
 
     let analysis = generate_life_analysis(
         auth.user_id,
@@ -100,7 +104,7 @@ async fn generate_analysis(
         &journal_entries,
         &chat_messages,
         &reports,
-        &diagnoses,
+        &person,
         state.llm.as_ref(),
     )
     .await

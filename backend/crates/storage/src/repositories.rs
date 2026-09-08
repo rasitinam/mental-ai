@@ -3,11 +3,12 @@ use chrono::{DateTime, Utc};
 use mental_domain::repository::{
     AuthRepository, ChatRepository, ExplainerRepository, InsightRepository, JournalRepository,
     LifeAnalysisRepository, MoodRepository, ReportRepository, ResearchRepository, UserRepository,
+    UserStateRepository,
 };
 use mental_domain::report::LifeAnalysis;
 use mental_domain::{
     ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, Insight,
-    JournalEntry, MoodEntry, ResearchArticle, Session, User,
+    JournalEntry, MoodEntry, ResearchArticle, Session, User, UserState,
 };
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -33,31 +34,39 @@ impl SqliteUserRepository {
 #[async_trait]
 impl UserRepository for SqliteUserRepository {
     async fn get(&self, id: Uuid) -> anyhow::Result<Option<User>> {
-        let row = sqlx::query_as::<_, (String, String, String, String, DateTime<Utc>)>(
-            "SELECT id, display_name, timezone, diagnoses, created_at FROM users WHERE id = ?1",
+        let row = sqlx::query_as::<_, (String, String, String, String, String, Option<i32>, DateTime<Utc>)>(
+            "SELECT id, display_name, timezone, diagnoses, language, birth_year, created_at
+             FROM users WHERE id = ?1",
         )
         .bind(id.to_string())
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(|(id, display_name, timezone, diagnoses, created_at)| User {
-            id: Uuid::parse_str(&id).unwrap_or_default(),
-            display_name,
-            timezone,
-            diagnoses: tags_from_json(&diagnoses),
-            created_at,
-        }))
+        Ok(row.map(
+            |(id, display_name, timezone, diagnoses, language, birth_year, created_at)| User {
+                id: Uuid::parse_str(&id).unwrap_or_default(),
+                display_name,
+                timezone,
+                diagnoses: tags_from_json(&diagnoses),
+                language,
+                birth_year,
+                created_at,
+            },
+        ))
     }
 
     async fn upsert(&self, user: &User) -> anyhow::Result<()> {
         sqlx::query(
-            "INSERT INTO users (id, display_name, timezone, diagnoses, created_at) VALUES (?1, ?2, ?3, ?4, ?5)
+            "INSERT INTO users (id, display_name, timezone, diagnoses, language, birth_year, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
              ON CONFLICT(id) DO UPDATE SET display_name = excluded.display_name, timezone = excluded.timezone",
         )
         .bind(user.id.to_string())
         .bind(&user.display_name)
         .bind(&user.timezone)
         .bind(tags_to_json(&user.diagnoses))
+        .bind(&user.language)
+        .bind(user.birth_year)
         .bind(user.created_at)
         .execute(&self.pool)
         .await?;
@@ -71,6 +80,28 @@ impl UserRepository for SqliteUserRepository {
             .bind(user_id.to_string())
             .execute(&self.pool)
             .await?;
+
+        Ok(())
+    }
+
+    async fn set_preferences(
+        &self,
+        user_id: Uuid,
+        language: Option<&str>,
+        birth_year: Option<i32>,
+    ) -> anyhow::Result<()> {
+        // COALESCE so an omitted field keeps its stored value: the profile
+        // screen can save just the language without also having to resend a
+        // birth year the person never gave.
+        sqlx::query(
+            "UPDATE users SET language = COALESCE(?1, language), birth_year = COALESCE(?2, birth_year)
+             WHERE id = ?3",
+        )
+        .bind(language)
+        .bind(birth_year)
+        .bind(user_id.to_string())
+        .execute(&self.pool)
+        .await?;
 
         Ok(())
     }
@@ -682,6 +713,89 @@ impl ExplainerRepository for SqliteExplainerRepository {
 
         Ok(())
     }
+
+    async fn cached_slugs(&self) -> anyhow::Result<Vec<String>> {
+        let rows = sqlx::query_as::<_, (String,)>("SELECT slug FROM disorder_explainers")
+            .fetch_all(&self.pool)
+            .await?;
+
+        Ok(rows.into_iter().map(|(slug,)| slug).collect())
+    }
+
+    async fn stale_slugs(&self, cutoff: DateTime<Utc>, limit: u32) -> anyhow::Result<Vec<String>> {
+        let rows = sqlx::query_as::<_, (String,)>(
+            "SELECT slug FROM disorder_explainers
+             WHERE generated_at < ?1
+             ORDER BY generated_at ASC
+             LIMIT ?2",
+        )
+        .bind(cutoff)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(|(slug,)| slug).collect())
+    }
+}
+
+pub struct SqliteUserStateRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteUserStateRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl UserStateRepository for SqliteUserStateRepository {
+    async fn get(&self, user_id: Uuid) -> anyhow::Result<Option<UserState>> {
+        let row = sqlx::query_as::<_, (String, f32, f32, String, String, String, DateTime<Utc>)>(
+            "SELECT user_id, valence, energy, headline, note, basis, generated_at
+             FROM user_states WHERE user_id = ?1",
+        )
+        .bind(user_id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(
+            |(user_id, valence, energy, headline, note, basis, generated_at)| UserState {
+                user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+                valence,
+                energy,
+                headline,
+                note,
+                basis: tags_from_json(&basis),
+                generated_at,
+            },
+        ))
+    }
+
+    async fn save(&self, state: &UserState) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO user_states (user_id, valence, energy, headline, note, basis, generated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+             ON CONFLICT(user_id) DO UPDATE SET
+                valence = excluded.valence,
+                energy = excluded.energy,
+                headline = excluded.headline,
+                note = excluded.note,
+                basis = excluded.basis,
+                generated_at = excluded.generated_at",
+        )
+        .bind(state.user_id.to_string())
+        .bind(state.valence)
+        .bind(state.energy)
+        .bind(&state.headline)
+        .bind(&state.note)
+        .bind(tags_to_json(&state.basis))
+        .bind(state.generated_at)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
 }
 
 pub struct SqliteAuthRepository {
@@ -724,6 +838,15 @@ impl AuthRepository for SqliteAuthRepository {
             password_hash,
             created_at,
         }))
+    }
+
+    async fn find_email_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<String>> {
+        let row = sqlx::query_as::<_, (String,)>("SELECT email FROM credentials WHERE user_id = ?1")
+            .bind(user_id.to_string())
+            .fetch_optional(&self.pool)
+            .await?;
+
+        Ok(row.map(|(email,)| email))
     }
 
     async fn create_session(&self, session: &Session) -> anyhow::Result<()> {

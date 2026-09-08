@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../l10n/app_localizations.dart';
 import 'mood_controller.dart';
 
 /// Mood check-in on a 2D valence/arousal pad instead of a single "1-5
@@ -51,27 +52,28 @@ class _MoodScreenState extends ConsumerState<MoodScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(moodControllerProvider);
     final controller = ref.read(moodControllerProvider.notifier);
     final palette = AppPalette.of(context);
     final onCooldown = state.isOnCooldown;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ruh Hali')),
+      appBar: AppBar(title: Text(l10n.navMood)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
           child: Column(
             children: [
               Text(
-                onCooldown ? 'Bugünkü kaydın alındı' : 'Şu an nasılsın?',
+                onCooldown ? l10n.moodDoneToday : l10n.moodHowAreYou,
                 style: AppTypography.title2.copyWith(color: palette.textPrimary),
               ),
               const SizedBox(height: 4),
               Text(
                 onCooldown
-                    ? 'Sonraki kayıt ${_formatRemaining(state.cooldownUntil!.difference(DateTime.now()))} sonra açılıyor'
-                    : 'Noktayı hissettiğin yere sürükle',
+                    ? l10n.moodNextIn(_formatRemaining(state.cooldownUntil!.difference(DateTime.now())))
+                    : l10n.moodDragHint,
                 style: AppTypography.footnote.copyWith(color: palette.textTertiary),
               ),
               const SizedBox(height: 24),
@@ -106,11 +108,11 @@ class _MoodScreenState extends ConsumerState<MoodScreen> {
               if (state.submitted && !onCooldown)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Text('Kaydedildi. Teşekkürler!',
+                  child: Text(l10n.moodSaved,
                       style: AppTypography.subheadline.copyWith(color: palette.accent)),
                 ),
               AppPrimaryButton(
-                label: onCooldown ? 'Yarın tekrar dene' : 'Kaydet',
+                label: onCooldown ? l10n.moodTryTomorrow : l10n.commonSave,
                 loading: state.submitting || state.loadingCooldown,
                 icon: onCooldown ? Icons.schedule_rounded : null,
                 onPressed: onCooldown ? null : () => controller.submit(),
@@ -138,6 +140,7 @@ class _MoodPad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
 
     return LayoutBuilder(
@@ -159,10 +162,10 @@ class _MoodPad extends StatelessWidget {
                 Positioned.fill(
                   child: CustomPaint(painter: _AxisPainter(color: palette.separator)),
                 ),
-                _AxisLabel('Enerjik', Alignment.topCenter, palette),
-                _AxisLabel('Sakin', Alignment.bottomCenter, palette),
-                _AxisLabel('Zorlayıcı', Alignment.centerLeft, palette),
-                _AxisLabel('Keyifli', Alignment.centerRight, palette),
+                _AxisLabel(l10n.moodEnergetic, Alignment.topCenter, palette),
+                _AxisLabel(l10n.moodCalm, Alignment.bottomCenter, palette),
+                _AxisLabel(l10n.moodUnpleasant, Alignment.centerLeft, palette),
+                _AxisLabel(l10n.moodPleasant, Alignment.centerRight, palette),
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 60),
                   left: dotX - 14,

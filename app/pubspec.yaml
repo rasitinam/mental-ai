@@ -30,6 +30,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Material/Cupertino widget translations + locale-aware date formatting,
+  # so switching language also switches the framework's own strings and the
+  # way dates are written (not just our labels).
+  flutter_localizations:
+    sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -44,7 +49,7 @@ dependencies:
   # Local key-value storage (settings, cached user id)
   shared_preferences: ^2.3.3
   # date/time formatting for reports and mood history
-  intl: ^0.19.0
+  intl: ^0.20.2
   # generates the local, non-authenticating device/user id
   uuid: ^4.5.1
 
@@ -69,6 +74,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Builds AppLocalizations from lib/l10n/*.arb (see l10n.yaml).
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
   # assets:

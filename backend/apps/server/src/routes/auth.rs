@@ -23,6 +23,10 @@ struct RegisterRequest {
     display_name: Option<String>,
     #[serde(default)]
     timezone: Option<String>,
+    /// The language the app was showing at sign-up, so a new account's very
+    /// first generated report comes back in it rather than in the default.
+    #[serde(default)]
+    language: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -80,6 +84,8 @@ async fn register(
             display_name: req.display_name.unwrap_or_else(|| "Kullanıcı".to_string()),
             timezone: req.timezone.unwrap_or_else(|| "UTC".to_string()),
             diagnoses: vec![],
+            language: req.language.unwrap_or_else(|| "tr".to_string()),
+            birth_year: None,
             created_at: now,
         })
         .await

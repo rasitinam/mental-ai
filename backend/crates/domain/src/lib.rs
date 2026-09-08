@@ -13,6 +13,7 @@ pub mod mood;
 pub mod repository;
 pub mod report;
 pub mod research;
+pub mod state;
 pub mod user;
 
 pub use auth::{Credentials, Session};
@@ -24,4 +25,5 @@ pub use journal::JournalEntry;
 pub use mood::MoodEntry;
 pub use report::DailyMentalReport;
 pub use research::ResearchArticle;
+pub use state::UserState;
 pub use user::User;

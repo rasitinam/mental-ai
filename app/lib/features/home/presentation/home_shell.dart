@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/glass.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Wraps every top-level tab in a floating glass tab bar instead of a
 /// full-width Material [NavigationBar] — closer to how iOS floats a
@@ -16,19 +17,23 @@ class HomeShell extends StatelessWidget {
 
   const HomeShell({super.key, required this.navigationShell});
 
-  static const _destinations = [
-    (icon: Icons.event_note_outlined, activeIcon: Icons.event_note, tooltip: 'Günlük Rapor'),
-    (icon: Icons.emoji_emotions_outlined, activeIcon: Icons.emoji_emotions, tooltip: 'Ruh Hali'),
-    (icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book, tooltip: 'Günlük'),
-    (icon: Icons.forum_outlined, activeIcon: Icons.forum, tooltip: 'Sohbet'),
-    (icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, tooltip: 'İçgörüler'),
-    (icon: Icons.insights_outlined, activeIcon: Icons.insights, tooltip: 'Yaşam'),
-    (icon: Icons.tune_outlined, activeIcon: Icons.tune, tooltip: 'Ayarlar'),
-  ];
+  static List<({IconData icon, IconData activeIcon, String tooltip})> _destinations(
+    AppLocalizations l10n,
+  ) =>
+      [
+        (icon: Icons.event_note_outlined, activeIcon: Icons.event_note, tooltip: l10n.navReport),
+        (icon: Icons.emoji_emotions_outlined, activeIcon: Icons.emoji_emotions, tooltip: l10n.navMood),
+        (icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book, tooltip: l10n.navJournal),
+        (icon: Icons.forum_outlined, activeIcon: Icons.forum, tooltip: l10n.navChat),
+        (icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, tooltip: l10n.navGuide),
+        (icon: Icons.insights_outlined, activeIcon: Icons.insights, tooltip: l10n.navLife),
+        (icon: Icons.tune_outlined, activeIcon: Icons.tune, tooltip: l10n.navSettings),
+      ];
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final destinations = _destinations(AppLocalizations.of(context)!);
 
     return Scaffold(
       extendBody: true,
@@ -42,9 +47,9 @@ class HomeShell extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              for (var i = 0; i < _destinations.length; i++)
+              for (var i = 0; i < destinations.length; i++)
                 _TabIcon(
-                  data: _destinations[i],
+                  data: destinations[i],
                   selected: i == navigationShell.currentIndex,
                   color: palette.accent,
                   inactiveColor: palette.textTertiary,

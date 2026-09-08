@@ -1,8 +1,12 @@
 use std::sync::Arc;
+use std::time::Duration;
 
-use mental_analysis_engine::synthesize_insights;
+use chrono::{Duration as ChronoDuration, Utc};
+
+use mental_analysis_engine::{generate_disorder_explainer, synthesize_insights};
 use mental_common::config::ResearchIngestConfig;
-use mental_domain::repository::InsightRepository;
+use mental_domain::catalog;
+use mental_domain::repository::{ExplainerRepository, InsightRepository};
 use mental_research_ingest::sources::{PubMedSource, WhoRssSource};
 use mental_research_ingest::{run_ingest_cycle, ResearchSource};
 use tokio_cron_scheduler::{Job, JobScheduler};
@@ -13,6 +17,97 @@ use crate::state::AppState;
 /// per cycle — each one costs an LLM call, so this bounds both API spend
 /// and how fast the insight feed grows relative to the raw corpus.
 const MAX_INSIGHTS_PER_CYCLE: usize = 5;
+
+/// Pause between explainer generations. Generation is one LLM call that
+/// takes ~30s on its own, so this isn't about rate limits — it's about
+/// leaving the API free for requests a person is actually waiting on.
+const EXPLAINER_GAP: Duration = Duration::from_secs(20);
+
+/// How old a card has to be before it's rewritten. The research corpus grows
+/// underneath these cards, so one written months ago rests on a smaller
+/// evidence base than one written today.
+const EXPLAINER_MAX_AGE_DAYS: i64 = 30;
+
+/// How many stale cards to rewrite per run, so refreshing never crowds out
+/// filling in the ones that are still missing.
+const EXPLAINER_REFRESH_PER_RUN: u32 = 10;
+
+/// Fills in the disorder-explainer cache in the background, one condition at
+/// a time, so that opening a card is a database read rather than a ~30s LLM
+/// call. That wait was the real bug behind the timeouts on the guide screen:
+/// over a tunnel, a cold card could outlive the client's patience entirely.
+///
+/// Missing slugs are generated first, so a restart resumes where the last run
+/// stopped instead of paying for the whole catalog again; a handful of the
+/// oldest cards are then rewritten per run so the guide keeps up with the
+/// research that has been ingested since they were written.
+pub fn spawn_explainer_warmup_job(state: AppState) {
+    tokio::spawn(async move {
+        let cached = match state.explainers.cached_slugs().await {
+            Ok(slugs) => slugs,
+            Err(err) => {
+                tracing::warn!(error = %err, "explainer warm-up: could not read cache, skipping");
+                return;
+            }
+        };
+
+        let missing: Vec<String> = catalog::CATEGORIES
+            .iter()
+            .flat_map(|category| category.disorders.iter())
+            .map(|disorder| disorder.slug.to_string())
+            .filter(|slug| !cached.contains(slug))
+            .collect();
+
+        // Missing cards first — someone opening one of those waits ~30s
+        // today. Stale cards are only a freshness problem, so they come
+        // after, and only a few per run.
+        let cutoff = Utc::now() - ChronoDuration::days(EXPLAINER_MAX_AGE_DAYS);
+        let stale = state
+            .explainers
+            .stale_slugs(cutoff, EXPLAINER_REFRESH_PER_RUN)
+            .await
+            .unwrap_or_default();
+
+        if missing.is_empty() && stale.is_empty() {
+            tracing::info!("explainer warm-up: cache complete and current");
+            return;
+        }
+
+        tracing::info!(
+            missing = missing.len(),
+            stale = stale.len(),
+            "explainer warm-up starting"
+        );
+
+        for slug in missing.into_iter().chain(stale) {
+            match generate_disorder_explainer(
+                &slug,
+                "tr",
+                state.llm.as_ref(),
+                state.research.as_ref(),
+                state.vector_store.as_ref(),
+                state.embedder.as_ref(),
+            )
+            .await
+            {
+                Ok(explainer) => {
+                    if let Err(err) = state.explainers.save(&explainer).await {
+                        tracing::warn!(error = %err, slug, "explainer warm-up: save failed");
+                    }
+                }
+                // One condition failing (bad JSON, a transient API error)
+                // shouldn't stop the other hundred-odd from being filled in.
+                Err(err) => {
+                    tracing::warn!(error = %err, slug, "explainer warm-up: generation failed")
+                }
+            }
+
+            tokio::time::sleep(EXPLAINER_GAP).await;
+        }
+
+        tracing::info!("explainer warm-up complete");
+    });
+}
 
 /// Wires up the recurring research-ingest job described in
 /// `research-ingest`'s crate docs: every `interval_hours`, pull from each

@@ -45,8 +45,13 @@ async fn explainer(
         return Ok(Json(cached));
     }
 
+    // Cards are shared across accounts, so they're generated in the app's
+    // default language rather than the caller's — a per-language cache would
+    // double the (slow, expensive) generation for two variants of the same
+    // reference text. The warm-up job normally means this branch never runs.
     let generated = generate_disorder_explainer(
         &slug,
+        "tr",
         state.llm.as_ref(),
         state.research.as_ref(),
         state.vector_store.as_ref(),

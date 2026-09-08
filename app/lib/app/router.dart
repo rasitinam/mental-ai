@@ -13,6 +13,7 @@ import '../features/journal/presentation/journal_screen.dart';
 import '../features/life_analysis/presentation/life_analysis_screen.dart';
 import '../features/mood_tracking/presentation/mood_screen.dart';
 import '../features/profile/presentation/diagnoses_screen.dart';
+import '../features/profile/presentation/profile_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 
 /// Notifies [GoRouter] whenever the signed-in session changes, so
@@ -89,6 +90,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/settings',
               builder: (context, state) => const SettingsScreen(),
               routes: [
+                GoRoute(path: 'profile', builder: (context, state) => const ProfileScreen()),
                 GoRoute(path: 'diagnoses', builder: (context, state) => const DiagnosesScreen()),
               ],
             ),

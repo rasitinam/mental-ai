@@ -8,14 +8,16 @@ mod life_analysis;
 mod mood;
 mod profile;
 mod reports;
+mod state;
 
 use axum::Router;
 use mental_domain::repository::UserRepository;
+use mental_domain::User;
 use uuid::Uuid;
 
 use crate::state::AppState;
 
-pub fn build_router(state: AppState) -> Router {
+pub fn build_router(app_state: AppState) -> Router {
     Router::new()
         .merge(health::router())
         .merge(auth::router())
@@ -27,19 +29,14 @@ pub fn build_router(state: AppState) -> Router {
         .merge(reports::router())
         .merge(insights::router())
         .merge(life_analysis::router())
-        .with_state(state)
+        .merge(state::router())
+        .with_state(app_state)
 }
 
-/// The account's self-reported conditions, for prompt context. Returns an
-/// empty list rather than an error when the lookup fails: missing context
-/// should make an answer less tailored, never fail the request.
-pub(crate) async fn diagnoses_for(state: &AppState, user_id: Uuid) -> Vec<String> {
-    state
-        .users
-        .get(user_id)
-        .await
-        .ok()
-        .flatten()
-        .map(|user| user.diagnoses)
-        .unwrap_or_default()
+/// The account behind a request, for prompt context (diagnoses, age,
+/// language). Returns `None` rather than an error when the lookup fails:
+/// missing context should make an answer less tailored, never fail the
+/// request — callers fall back to `PersonContext::unknown()`.
+pub(crate) async fn user_for(state: &AppState, user_id: Uuid) -> Option<User> {
+    state.users.get(user_id).await.ok().flatten()
 }

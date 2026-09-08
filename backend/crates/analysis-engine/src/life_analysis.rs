@@ -26,7 +26,7 @@ pub async fn generate_life_analysis(
     journal_entries: &[JournalEntry],
     chat_messages: &[ChatMessageRecord],
     reports: &[DailyMentalReport],
-    diagnoses: &[String],
+    person: &crate::person::PersonContext<'_>,
     llm: &dyn LlmProvider,
 ) -> anyhow::Result<LifeAnalysis> {
     let period_start = earliest_timestamp(moods, journal_entries, chat_messages).unwrap_or_else(Utc::now);
@@ -74,19 +74,13 @@ pub async fn generate_life_analysis(
         .collect::<Vec<_>>()
         .join("\n");
 
-    let diagnosis_line = if diagnoses.is_empty() {
-        "Kullanıcı herhangi bir tanı bildirmemiş.".to_string()
-    } else {
-        format!("Kullanıcının kendi bildirdiği tanılar: {}", diagnoses.join(", "))
-    };
-
     let user_content = format!(
-        "{diagnosis_line}\n\n\
-         Kapsanan dönem: {} - {}\n\n\
-         RUH HALİ KAYITLARI:\n{mood_series}\n\n\
-         GÜNLÜK KAYITLARI:\n{journal_excerpts}\n\n\
-         SOHBET GEÇMİŞİ:\n{chat_excerpts}\n\n\
-         GEÇMİŞ GÜNLÜK RAPORLAR:\n{report_excerpts}",
+        "{}Period covered: {} - {}\n\n\
+         MOOD CHECK-INS:\n{mood_series}\n\n\
+         JOURNAL ENTRIES:\n{journal_excerpts}\n\n\
+         CHAT HISTORY:\n{chat_excerpts}\n\n\
+         PAST DAILY REPORTS:\n{report_excerpts}",
+        person.prompt_block(),
         period_start.format("%Y-%m-%d"),
         period_end.format("%Y-%m-%d"),
     );
@@ -98,7 +92,7 @@ pub async fn generate_life_analysis(
         },
         ChatMessage {
             role: Role::System,
-            content: prompts::life_analysis_instruction().to_string(),
+            content: prompts::life_analysis_instruction(person.language),
         },
         ChatMessage {
             role: Role::User,

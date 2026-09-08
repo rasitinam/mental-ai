@@ -4,12 +4,14 @@ use axum::{
     Json, Router,
 };
 use chrono::{Duration, Utc};
-use mental_analysis_engine::generate_daily_report;
-use mental_domain::repository::{JournalRepository, MoodRepository, ReportRepository};
+use mental_analysis_engine::{generate_daily_report, PersonContext};
+use mental_domain::repository::{
+    ChatRepository, JournalRepository, MoodRepository, ReportRepository,
+};
 use mental_domain::DailyMentalReport;
 
 use crate::auth::AuthUser;
-use crate::routes::diagnoses_for;
+use crate::routes::user_for;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -23,6 +25,8 @@ pub fn router() -> Router<AppState> {
 const PREVIOUS_REPORTS: u32 = 7;
 /// Cap for the archive endpoint.
 const MAX_REPORTS: u32 = 90;
+/// How much transcript to pull before filtering it down to today's turns.
+const CHAT_MESSAGES: u32 = 60;
 
 async fn latest_report(
     State(state): State<AppState>,
@@ -81,15 +85,31 @@ async fn generate_report(
         .list_recent(auth.user_id, PREVIOUS_REPORTS)
         .await
         .map_err(internal)?;
-    let diagnoses = diagnoses_for(&state, auth.user_id).await;
+    // The day's conversation is part of the day: leaving it out was why a
+    // report could describe a calm day the person had spent in crisis in chat.
+    let chat_messages = state
+        .chats
+        .history_for_user(auth.user_id, CHAT_MESSAGES)
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|m| m.created_at >= since)
+        .collect::<Vec<_>>();
+
+    let user = user_for(&state, auth.user_id).await;
+    let person = user
+        .as_ref()
+        .map(PersonContext::from_user)
+        .unwrap_or_else(PersonContext::unknown);
 
     let report = generate_daily_report(
         auth.user_id,
         &moods,
         &journal_entries,
+        &chat_messages,
         &mood_history,
         &previous_reports,
-        &diagnoses,
+        &person,
         state.llm.as_ref(),
         state.research.as_ref(),
         state.vector_store.as_ref(),

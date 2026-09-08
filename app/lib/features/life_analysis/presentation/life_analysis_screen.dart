@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../l10n/app_localizations.dart';
 import 'life_analysis_controller.dart';
 
 /// The whole-history view: one narrative over everything the account has
@@ -16,6 +17,7 @@ class LifeAnalysisScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(lifeAnalysisControllerProvider);
     final controller = ref.read(lifeAnalysisControllerProvider.notifier);
     final palette = AppPalette.of(context);
@@ -23,12 +25,12 @@ class LifeAnalysisScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Yaşam Analizi'),
+        title: Text(l10n.lifeTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: (state.loading || onCooldown) ? null : controller.generateNow,
-            tooltip: onCooldown ? 'Haftada bir yenilenebilir' : 'Yeniden analiz et',
+            tooltip: onCooldown ? l10n.lifeCooldownTooltip : l10n.lifeRegenerate,
           ),
           const SizedBox(width: 8),
         ],
@@ -75,7 +77,7 @@ class LifeAnalysisScreen extends ConsumerWidget {
                             children: [
                               Icon(Icons.insights_outlined, size: 18, color: palette.accent),
                               const SizedBox(width: 8),
-                              Text('Genel görünüm',
+                              Text(l10n.lifeOverview,
                                   style: AppTypography.title2.copyWith(color: palette.textPrimary)),
                             ],
                           ),
@@ -91,7 +93,7 @@ class LifeAnalysisScreen extends ConsumerWidget {
                       const SizedBox(height: 14),
                       _BulletCard(
                         icon: Icons.pattern_rounded,
-                        title: 'Öne çıkan örüntüler',
+                        title: l10n.lifePatterns,
                         items: state.analysis!.keyPatterns,
                         bulletColor: palette.accent,
                         titleColor: palette.textPrimary,
@@ -102,7 +104,7 @@ class LifeAnalysisScreen extends ConsumerWidget {
                       const SizedBox(height: 14),
                       _BulletCard(
                         icon: Icons.check_circle_outline_rounded,
-                        title: 'Yapman iyi gelenler',
+                        title: l10n.lifeDoList,
                         items: state.analysis!.doList,
                         bulletColor: palette.accent,
                         titleColor: palette.textPrimary,
@@ -113,7 +115,7 @@ class LifeAnalysisScreen extends ConsumerWidget {
                       const SizedBox(height: 14),
                       _BulletCard(
                         icon: Icons.do_not_disturb_on_outlined,
-                        title: 'Sana zorluk çıkaranlar',
+                        title: l10n.lifeDontList,
                         items: state.analysis!.dontList,
                         bulletColor: palette.warning,
                         titleColor: palette.textPrimary,
@@ -208,20 +210,22 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Henüz bir yaşam analizin yok.',
+            AppLocalizations.of(context)!.lifeEmpty,
             style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
           ),
           const SizedBox(height: 6),
           Text(
-            'Tüm ruh hali, günlük, sohbet ve rapor geçmişine bakarak bir analiz oluşturulur. '
-            'Haftada bir yenilenebilir.',
+            AppLocalizations.of(context)!.lifeEmptyBody,
             textAlign: TextAlign.center,
             style: AppTypography.footnote.copyWith(color: palette.textTertiary),
           ),
           const SizedBox(height: 20),
           SizedBox(
             width: 220,
-            child: AppPrimaryButton(label: 'Analiz oluştur', onPressed: onGenerate),
+            child: AppPrimaryButton(
+              label: AppLocalizations.of(context)!.lifeGenerate,
+              onPressed: onGenerate,
+            ),
           ),
         ],
       ),

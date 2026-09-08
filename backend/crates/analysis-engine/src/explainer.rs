@@ -18,6 +18,7 @@ use crate::retrieval::{format_context, retrieve_context};
 /// nothing here writes to the database.
 pub async fn generate_disorder_explainer(
     slug: &str,
+    language: &str,
     llm: &dyn LlmProvider,
     research: &dyn ResearchRepository,
     vector_store: &dyn VectorStore,
@@ -30,8 +31,8 @@ pub async fn generate_disorder_explainer(
     let articles = retrieve_context(&query, 5, research, vector_store, embedder).await;
 
     let user_content = format!(
-        "Durum: {} (kategori: {})\n\n\
-         İlgili araştırma özetleri:\n{}",
+        "Condition: {} (category: {})\n\n\
+         Related research abstracts:\n{}",
         disorder.name,
         category.name,
         format_context(&articles)
@@ -46,7 +47,7 @@ pub async fn generate_disorder_explainer(
                 },
                 ChatMessage {
                     role: Role::System,
-                    content: prompts::disorder_explainer_instruction().to_string(),
+                    content: prompts::disorder_explainer_instruction(language),
                 },
                 ChatMessage {
                     role: Role::User,
