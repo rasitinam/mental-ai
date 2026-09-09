@@ -25,6 +25,14 @@ final apiClientProvider = Provider<Dio>((ref) {
       connectTimeout: const Duration(seconds: 60),
       receiveTimeout: const Duration(seconds: 90),
       contentType: 'application/json',
+      // The backend sits behind ngrok's free tier, which interposes an
+      // HTML "visit site" interstitial in front of any request that
+      // looks like it came from a browser — it has no CORS headers of
+      // its own, so on web that reads as a CORS failure even though
+      // the real API responds fine. This header opts every request out
+      // of that interstitial; native platforms and any other tunnel
+      // just ignore it.
+      headers: const {'ngrok-skip-browser-warning': 'true'},
     ),
   );
 
