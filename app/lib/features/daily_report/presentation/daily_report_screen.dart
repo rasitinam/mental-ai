@@ -137,6 +137,18 @@ class DailyReportScreen extends ConsumerWidget {
   }
 }
 
+/// The face that carries the whole card at a glance. Five steps rather
+/// than a continuous curve, because a face people read in half a second
+/// should land on a recognizable expression, not a subtly-off one.
+String _faceFor(double? valence) {
+  if (valence == null) return '🙂';
+  if (valence >= 0.5) return '😄';
+  if (valence >= 0.15) return '😊';
+  if (valence > -0.15) return '😐';
+  if (valence > -0.5) return '😟';
+  return '😢';
+}
+
 class _StateCard extends StatelessWidget {
   final HomeStateData data;
   final AppPalette palette;
@@ -160,10 +172,7 @@ class _StateCard extends StatelessWidget {
                 height: 52,
                 decoration: BoxDecoration(color: palette.accentSoft, shape: BoxShape.circle),
                 alignment: Alignment.center,
-                child: CustomPaint(
-                  size: const Size(22, 12),
-                  painter: _MoodArcPainter(valence: state?.valence, color: palette.accent),
-                ),
+                child: Text(_faceFor(state?.valence), style: const TextStyle(fontSize: 26)),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -224,43 +233,6 @@ class _StateCard extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The face, reduced to the one line that carries it: a mouth that
-/// curves up, flattens, or turns down with valence. Drawn rather than
-/// set as an emoji so it takes the theme's accent and can sit at any
-/// curvature between the two extremes instead of snapping between five
-/// stock glyphs.
-class _MoodArcPainter extends CustomPainter {
-  final double? valence;
-  final Color color;
-  const _MoodArcPainter({required this.valence, required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final v = (valence ?? 0).clamp(-1.0, 1.0);
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round;
-
-    // The control point rides valence: above the baseline for a frown,
-    // below it for a smile.
-    final path = Path()
-      ..moveTo(0, size.height / 2)
-      ..quadraticBezierTo(
-        size.width / 2,
-        size.height / 2 + v * size.height,
-        size.width,
-        size.height / 2,
-      );
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_MoodArcPainter oldDelegate) =>
-      oldDelegate.valence != valence || oldDelegate.color != color;
 }
 
 /// A labeled 0-5 level as five equal bars, filled up to the level.
