@@ -251,14 +251,44 @@ abstract class AppLocalizations {
   /// No description provided for @homeDiagnosesTitle.
   ///
   /// In tr, this message translates to:
-  /// **'TANILARIM'**
+  /// **'Tanılarım'**
   String get homeDiagnosesTitle;
 
   /// No description provided for @homeToday.
   ///
   /// In tr, this message translates to:
-  /// **'Bugün'**
+  /// **'Bugünün notu'**
   String get homeToday;
+
+  /// No description provided for @streakLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Seri'**
+  String get streakLabel;
+
+  /// No description provided for @streakDays.
+  ///
+  /// In tr, this message translates to:
+  /// **'gün'**
+  String get streakDays;
+
+  /// No description provided for @streakJournalLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'gün seri'**
+  String get streakJournalLabel;
+
+  /// No description provided for @streakPeriodLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dönem serisi'**
+  String get streakPeriodLabel;
+
+  /// No description provided for @streakPeriodValue.
+  ///
+  /// In tr, this message translates to:
+  /// **'{active} / {total} gün'**
+  String streakPeriodValue(int active, int total);
 
   /// No description provided for @homeRecommendations.
   ///
@@ -331,6 +361,12 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Bu kategoriden araştırmalar'**
   String get guideResearchInCategory;
+
+  /// No description provided for @guideResearchFeed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu hafta okunanlardan'**
+  String get guideResearchFeed;
 
   /// No description provided for @guideEmptyInCategory.
   ///
@@ -506,23 +542,17 @@ abstract class AppLocalizations {
   /// **'Hikayeler'**
   String get settingsStories;
 
-  /// No description provided for @settingsStoriesBody.
-  ///
-  /// In tr, this message translates to:
-  /// **'Deneyimini paylaş, başkalarının hikayelerini oku.'**
-  String get settingsStoriesBody;
-
   /// No description provided for @settingsModeration.
   ///
   /// In tr, this message translates to:
   /// **'Moderasyon'**
   String get settingsModeration;
 
-  /// No description provided for @settingsModerationBody.
+  /// No description provided for @settingsAdminBadge.
   ///
   /// In tr, this message translates to:
-  /// **'Bekleyen ve bildirilen hikayeleri incele.'**
-  String get settingsModerationBody;
+  /// **'Admin'**
+  String get settingsAdminBadge;
 
   /// No description provided for @settingsAccount.
   ///
@@ -535,12 +565,6 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Profilim'**
   String get settingsProfile;
-
-  /// No description provided for @settingsProfileBody.
-  ///
-  /// In tr, this message translates to:
-  /// **'E-posta, yaş, dil ve tanıların.'**
-  String get settingsProfileBody;
 
   /// No description provided for @settingsLogout.
   ///
@@ -638,6 +662,12 @@ abstract class AppLocalizations {
   /// **'{count} seçili'**
   String diagnosesSelectedCount(int count);
 
+  /// No description provided for @diagnosesCatalogSize.
+  ///
+  /// In tr, this message translates to:
+  /// **'{categories} kategori · {total} tanı'**
+  String diagnosesCatalogSize(int categories, int total);
+
   /// No description provided for @diagnosesSaved.
   ///
   /// In tr, this message translates to:
@@ -656,11 +686,65 @@ abstract class AppLocalizations {
   /// **'Hesabını oluştur'**
   String get authRegisterTitle;
 
+  /// No description provided for @authRegisterNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Birkaç saniye sürer. Hiçbir şey paylaşmak zorunda değilsin.'**
+  String get authRegisterNote;
+
+  /// No description provided for @authWelcomeBack.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tekrar hoş geldin'**
+  String get authWelcomeBack;
+
+  /// No description provided for @authWelcomeNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaldığın yerden devam edelim. Hiçbir şey paylaşmak zorunda değilsin.'**
+  String get authWelcomeNote;
+
   /// No description provided for @authLoginTitle.
   ///
   /// In tr, this message translates to:
   /// **'Hesabına giriş yap'**
   String get authLoginTitle;
+
+  /// No description provided for @authPasswordLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Şifre'**
+  String get authPasswordLabel;
+
+  /// No description provided for @authPasswordRule.
+  ///
+  /// In tr, this message translates to:
+  /// **'En az 8 karakter.'**
+  String get authPasswordRule;
+
+  /// No description provided for @authShowPassword.
+  ///
+  /// In tr, this message translates to:
+  /// **'Göster'**
+  String get authShowPassword;
+
+  /// No description provided for @authHidePassword.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gizle'**
+  String get authHidePassword;
+
+  /// No description provided for @authHaveAccount.
+  ///
+  /// In tr, this message translates to:
+  /// **'Zaten hesabın var mı?'**
+  String get authHaveAccount;
+
+  /// No description provided for @authNoAccount.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hesabın yok mu?'**
+  String get authNoAccount;
 
   /// No description provided for @authPassword.
   ///
@@ -707,8 +791,92 @@ abstract class AppLocalizations {
   /// No description provided for @moodHowAreYou.
   ///
   /// In tr, this message translates to:
-  /// **'Şu an nasılsın?'**
+  /// **'Şu an sana en yakın olan hangisi?'**
   String get moodHowAreYou;
+
+  /// No description provided for @moodPickHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Birkaçını seçebilirsin. Doğru cevap yok.'**
+  String get moodPickHint;
+
+  /// No description provided for @moodWhereItLands.
+  ///
+  /// In tr, this message translates to:
+  /// **'Nereye düşüyor'**
+  String get moodWhereItLands;
+
+  /// No description provided for @moodAxisHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Seçtiklerin bu iki eksene çevriliyor — noktayı elle de oynatabilirsin.'**
+  String get moodAxisHint;
+
+  /// No description provided for @moodOncePerDay.
+  ///
+  /// In tr, this message translates to:
+  /// **'Günde bir kez kaydediliyor · sonraki 24 sa sonra'**
+  String get moodOncePerDay;
+
+  /// No description provided for @moodWordCalm.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sakin'**
+  String get moodWordCalm;
+
+  /// No description provided for @moodWordHopeful.
+  ///
+  /// In tr, this message translates to:
+  /// **'Umutlu'**
+  String get moodWordHopeful;
+
+  /// No description provided for @moodWordTired.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yorgun'**
+  String get moodWordTired;
+
+  /// No description provided for @moodWordTense.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gergin'**
+  String get moodWordTense;
+
+  /// No description provided for @moodWordUnsure.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kararsız'**
+  String get moodWordUnsure;
+
+  /// No description provided for @moodWordRelieved.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hafiflemiş'**
+  String get moodWordRelieved;
+
+  /// No description provided for @moodWordHeavy.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ağır'**
+  String get moodWordHeavy;
+
+  /// No description provided for @moodWordJoyful.
+  ///
+  /// In tr, this message translates to:
+  /// **'Neşeli'**
+  String get moodWordJoyful;
+
+  /// No description provided for @moodWordAngry.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kızgın'**
+  String get moodWordAngry;
+
+  /// No description provided for @moodWordEmpty.
+  ///
+  /// In tr, this message translates to:
+  /// **'Boşlukta'**
+  String get moodWordEmpty;
 
   /// No description provided for @moodNextIn.
   ///
@@ -773,13 +941,31 @@ abstract class AppLocalizations {
   /// No description provided for @journalHint.
   ///
   /// In tr, this message translates to:
-  /// **'Bugün aklından ne geçti?'**
+  /// **'Yarım cümle de olur...'**
   String get journalHint;
+
+  /// No description provided for @journalPrompt.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bugün aklından ne geçti?'**
+  String get journalPrompt;
+
+  /// No description provided for @journalPromptNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kimse okumuyor. Yarım cümle de olur.'**
+  String get journalPromptNote;
+
+  /// No description provided for @journalDraftSaved.
+  ///
+  /// In tr, this message translates to:
+  /// **'Taslak kaydedildi'**
+  String get journalDraftSaved;
 
   /// No description provided for @journalPast.
   ///
   /// In tr, this message translates to:
-  /// **'GEÇMİŞ GÜNLÜKLER'**
+  /// **'Önceki günler'**
   String get journalPast;
 
   /// No description provided for @journalEmpty.
@@ -818,6 +1004,18 @@ abstract class AppLocalizations {
   /// **'Zor bir an gibi görünüyor. Acil durumdaysan 112\'yi ara; konuşmak istersen bir uzmana ulaşmayı düşünebilirsin.'**
   String get chatCrisis;
 
+  /// No description provided for @chatToday.
+  ///
+  /// In tr, this message translates to:
+  /// **'bugün'**
+  String get chatToday;
+
+  /// No description provided for @chatCrisisTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bunu yalnız taşımak zorunda değilsin'**
+  String get chatCrisisTitle;
+
   /// No description provided for @chatCallEmergency.
   ///
   /// In tr, this message translates to:
@@ -841,6 +1039,12 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Haftada bir yenilenebilir'**
   String get lifeCooldownTooltip;
+
+  /// No description provided for @lifeNextOn.
+  ///
+  /// In tr, this message translates to:
+  /// **'sonraki {date}'**
+  String lifeNextOn(String date);
 
   /// No description provided for @lifeRegenerate.
   ///
@@ -913,6 +1117,12 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Tanı veya kategori ara'**
   String get storiesSearchHint;
+
+  /// No description provided for @storiesAnonymous.
+  ///
+  /// In tr, this message translates to:
+  /// **'isimsiz'**
+  String get storiesAnonymous;
 
   /// No description provided for @storiesTabFeed.
   ///
@@ -1123,6 +1333,12 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Kriz dili'**
   String get storiesModerationCrisisFlag;
+
+  /// No description provided for @storiesModerationReporterNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildiren notu:'**
+  String get storiesModerationReporterNote;
 }
 
 class _AppLocalizationsDelegate

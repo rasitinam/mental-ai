@@ -69,157 +69,188 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.profileTitle)),
-      body: state.loading
-          ? Center(child: CircularProgressIndicator(color: palette.accent))
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
-              children: [
-                GlassSurface(
-                  radius: 22,
-                  child: Row(
+      body: SafeArea(
+        bottom: false,
+        child: state.loading
+            ? Center(child: CircularProgressIndicator(color: palette.accent))
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
+                children: [
+                  Row(
                     children: [
-                      Icon(Icons.alternate_email_rounded, size: 20, color: palette.accent),
+                      SquareIconButton(
+                        icon: Icons.arrow_back_rounded,
+                        onPressed: () => Navigator.of(context).maybePop(),
+                      ),
                       const SizedBox(width: 14),
+                      Text(l10n.profileTitle,
+                          style: AppTypography.title3.copyWith(color: palette.textPrimary)),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  GlassSurface(
+                    radius: 16,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.profileEmail,
+                            style: AppTypography.caption.copyWith(color: palette.textSecondary)),
+                        const SizedBox(height: 3),
+                        Text(state.email ?? '—',
+                            style: AppTypography.label.copyWith(color: palette.textPrimary)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  SectionLabel(l10n.profileLanguage),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.profileEmail,
-                                style: AppTypography.footnote
-                                    .copyWith(color: palette.textTertiary)),
-                            const SizedBox(height: 3),
-                            Text(state.email ?? '—',
-                                style: AppTypography.headline
-                                    .copyWith(color: palette.textPrimary)),
-                          ],
+                        child: _LanguageOption(
+                          code: 'TR',
+                          label: l10n.profileLanguageTurkish,
+                          selected: state.language == 'tr',
+                          palette: palette,
+                          onTap: () => controller.savePreferences(language: 'tr'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _LanguageOption(
+                          code: 'EN',
+                          label: l10n.profileLanguageEnglish,
+                          selected: state.language == 'en',
+                          palette: palette,
+                          onTap: () => controller.savePreferences(language: 'en'),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 18),
-                Text(l10n.profileLanguage.toUpperCase(),
-                    style: AppTypography.caption
-                        .copyWith(color: palette.textTertiary, letterSpacing: 0.6)),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _LanguageOption(
-                        label: l10n.profileLanguageTurkish,
-                        code: 'tr',
-                        selected: state.language == 'tr',
-                        palette: palette,
-                        onTap: () => controller.savePreferences(language: 'tr'),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _LanguageOption(
-                        label: l10n.profileLanguageEnglish,
-                        code: 'en',
-                        selected: state.language == 'en',
-                        palette: palette,
-                        onTap: () => controller.savePreferences(language: 'en'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 22),
-                Text(l10n.profileBirthYear.toUpperCase(),
-                    style: AppTypography.caption
-                        .copyWith(color: palette.textTertiary, letterSpacing: 0.6)),
-                const SizedBox(height: 10),
-                GlassSurface(
-                  radius: 22,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 22),
+                  SectionLabel(l10n.profileBirthYear),
+                  const SizedBox(height: 10),
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _birthYear,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                LengthLimitingTextInputFormatter(4),
+                      Expanded(
+                        child: Container(
+                          height: 54,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          alignment: Alignment.centerLeft,
+                          decoration: BoxDecoration(
+                            color: palette.glassFill,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: palette.accent, width: 2),
+                          ),
+                          child: TextField(
+                            controller: _birthYear,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(4),
+                            ],
+                            style: AppTypography.headline.copyWith(
+                              color: palette.textPrimary,
+                              fontSize: 17,
+                              letterSpacing: 1,
+                            ),
+                            cursorColor: palette.accent,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                              hintText: l10n.profileBirthYearHint,
+                              hintStyle: AppTypography.label
+                                  .copyWith(color: palette.textTertiary, fontWeight: FontWeight.w400),
+                            ),
+                            onSubmitted: (_) => _saveBirthYear(l10n),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Material(
+                        color: palette.accentSoft,
+                        borderRadius: BorderRadius.circular(16),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: state.saving ? null : () => _saveBirthYear(l10n),
+                          child: Container(
+                            height: 54,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                if (state.age != null) ...[
+                                  Text(l10n.profileAgeValue(state.age!),
+                                      style: AppTypography.label.copyWith(
+                                          color: palette.accent, fontWeight: FontWeight.w600)),
+                                  const SizedBox(width: 9),
+                                ],
+                                Icon(Icons.check_rounded, size: 18, color: palette.accent),
                               ],
-                              style: AppTypography.body.copyWith(color: palette.textPrimary),
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                isDense: true,
-                                hintText: l10n.profileBirthYearHint,
-                                hintStyle:
-                                    AppTypography.body.copyWith(color: palette.textTertiary),
-                              ),
-                              onSubmitted: (_) => _saveBirthYear(l10n),
                             ),
                           ),
-                          if (state.age != null)
-                            Text(l10n.profileAgeValue(state.age!),
-                                style: AppTypography.footnote.copyWith(color: palette.accent)),
-                          const SizedBox(width: 10),
-                          IconButton(
-                            icon: Icon(Icons.check_rounded, color: palette.accent),
-                            onPressed: state.saving ? null : () => _saveBirthYear(l10n),
-                          ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(l10n.profileAgeWhy,
-                          style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
                     ],
                   ),
-                ),
-                const SizedBox(height: 22),
-                GlassSurface(
-                  radius: 22,
-                  padding: EdgeInsets.zero,
-                  child: InkWell(
-                    onTap: () => context.go('/settings/diagnoses'),
-                    borderRadius: BorderRadius.circular(22),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(Icons.assignment_ind_outlined, size: 20, color: palette.accent),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Text(l10n.profileDiagnoses,
-                                style: AppTypography.headline
-                                    .copyWith(color: palette.textPrimary)),
-                          ),
-                          Text('${state.diagnoses.length}',
-                              style: AppTypography.footnote.copyWith(color: palette.accent)),
-                          const SizedBox(width: 8),
-                          Icon(Icons.chevron_right_rounded, size: 20, color: palette.textTertiary),
-                        ],
+                  const SizedBox(height: 10),
+                  Text(l10n.profileAgeWhy,
+                      style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                  const SizedBox(height: 22),
+                  GlassSurface(
+                    radius: 16,
+                    padding: EdgeInsets.zero,
+                    child: InkWell(
+                      onTap: () => context.go('/settings/diagnoses'),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 60),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(l10n.profileDiagnoses,
+                                      style: AppTypography.label
+                                          .copyWith(color: palette.textPrimary)),
+                                  const SizedBox(height: 2),
+                                  Text(l10n.diagnosesSelectedCount(state.diagnoses.length),
+                                      style: AppTypography.footnote
+                                          .copyWith(color: palette.textSecondary)),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded,
+                                size: 20, color: palette.textTertiary),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                if (state.error != null) ...[
-                  const SizedBox(height: 16),
-                  Text(state.error!, style: TextStyle(color: palette.warning)),
+                  if (state.error != null) ...[
+                    const SizedBox(height: 16),
+                    Text(state.error!, style: TextStyle(color: palette.warning)),
+                  ],
                 ],
-              ],
-            ),
+              ),
+      ),
     );
   }
 }
 
 class _LanguageOption extends StatelessWidget {
-  final String label;
   final String code;
+  final String label;
   final bool selected;
   final AppPalette palette;
   final VoidCallback onTap;
 
   const _LanguageOption({
-    required this.label,
     required this.code,
+    required this.label,
     required this.selected,
     required this.palette,
     required this.onTap,
@@ -229,32 +260,33 @@ class _LanguageOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: selected ? palette.accent : palette.glassFill,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          height: 64,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: selected ? palette.accent : palette.glassBorder),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: selected ? palette.accent : palette.separator),
           ),
-          alignment: Alignment.center,
-          child: Row(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                code.toUpperCase(),
-                style: AppTypography.caption.copyWith(
-                  color: selected ? palette.canvasBottom : palette.textTertiary,
-                  fontWeight: FontWeight.w700,
+                code,
+                style: AppTypography.headline.copyWith(
+                  fontSize: 19,
+                  color: selected ? Colors.white : palette.textPrimary,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(height: 2),
               Text(
                 label,
-                style: AppTypography.headline.copyWith(
-                  color: selected ? palette.canvasBottom : palette.textPrimary,
+                style: AppTypography.caption.copyWith(
+                  color: selected
+                      ? Colors.white.withValues(alpha: 0.85)
+                      : palette.textSecondary,
                 ),
               ),
             ],

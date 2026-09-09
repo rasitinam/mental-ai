@@ -43,28 +43,33 @@ class HomeShell extends StatelessWidget {
       // scrolling list above doesn't repaint the bar every frame.
       bottomNavigationBar: RepaintBoundary(
         child: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-        child: GlassSurface(
-          radius: 26,
-          blur: true,
-          blurSigma: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              for (var i = 0; i < destinations.length; i++)
-                _TabIcon(
-                  data: destinations[i],
-                  selected: i == navigationShell.currentIndex,
-                  color: palette.accent,
-                  inactiveColor: palette.textTertiary,
-                  onTap: () => navigationShell.goBranch(
-                    i,
-                    initialLocation: i == navigationShell.currentIndex,
-                  ),
-                ),
-            ],
-          ),
+          minimum: const EdgeInsets.fromLTRB(14, 0, 14, 20),
+          child: SizedBox(
+            height: 60,
+            child: GlassSurface(
+              radius: 22,
+              blur: true,
+              bordered: true,
+              blurSigma: 16,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  for (var i = 0; i < destinations.length; i++)
+                    _TabIcon(
+                      data: destinations[i],
+                      selected: i == navigationShell.currentIndex,
+                      color: palette.accent,
+                      activeBackground: palette.accentSoft,
+                      inactiveColor: palette.textSecondary,
+                      onTap: () => navigationShell.goBranch(
+                        i,
+                        initialLocation: i == navigationShell.currentIndex,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -76,6 +81,7 @@ class _TabIcon extends StatelessWidget {
   final ({IconData icon, IconData activeIcon, String tooltip}) data;
   final bool selected;
   final Color color;
+  final Color activeBackground;
   final Color inactiveColor;
   final VoidCallback onTap;
 
@@ -83,6 +89,7 @@ class _TabIcon extends StatelessWidget {
     required this.data,
     required this.selected,
     required this.color,
+    required this.activeBackground,
     required this.inactiveColor,
     required this.onTap,
   });
@@ -101,13 +108,13 @@ class _TabIcon extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: selected ? color.withValues(alpha: 0.14) : Colors.transparent,
+            color: selected ? activeBackground : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
           ),
           alignment: Alignment.center,
           child: Icon(
             selected ? data.activeIcon : data.icon,
-            size: 22,
+            size: 21,
             color: selected ? color : inactiveColor,
           ),
         ),

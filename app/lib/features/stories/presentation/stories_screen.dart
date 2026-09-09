@@ -9,13 +9,13 @@ import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
+import '../../insights/presentation/insights_screen.dart' show SearchField, CategoryStrip;
 import '../domain/life_story.dart';
 import 'stories_controller.dart';
 
-/// Where a story's `diagnosisSlug` actually lives in the catalog tree —
-/// resolved once per build against the already-fetched category list, so
-/// the feed can show "which condition" on each card and filter by it,
-/// the same way the guide filters by category.
+/// Where a story's `diagnosisSlug` sits in the catalog tree — resolved
+/// against the already-fetched category list, so the feed can show which
+/// condition a story is about and filter by it the way the guide does.
 ({DisorderCategory category, Disorder disorder})? _resolve(
   List<DisorderCategory> categories,
   String diagnosisSlug,
@@ -28,12 +28,10 @@ import 'stories_controller.dart';
   return null;
 }
 
-/// The public guide's story feed, plus the author's own submissions
-/// ("Hikayem") behind a second tab on the same screen. Two lists rather
-/// than two routes: switching between "what others shared" and "what I
-/// submitted" is something people do back and forth while writing their
-/// own, so keeping it one screen avoids a round trip through Settings
-/// each time.
+/// The public story feed, plus the author's own submissions ("Hikayem")
+/// behind a second tab on the same screen. Two lists rather than two
+/// routes: switching between "what others shared" and "what I submitted"
+/// is something people do back and forth while writing their own.
 class StoriesScreen extends ConsumerStatefulWidget {
   const StoriesScreen({super.key});
 
@@ -46,12 +44,6 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
   final _search = TextEditingController();
   String _query = '';
   String? _selectedCategory;
-
-  @override
-  void dispose() {
-    _search.dispose();
-    super.dispose();
-  }
 
   @override
   void initState() {
@@ -67,16 +59,24 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
   Future<void> _confirmWithdraw(BuildContext context, WidgetRef ref, String id) async {
     final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: palette.canvasBottom,
+        backgroundColor: palette.glassFill,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(l10n.storiesWithdrawTitle, style: TextStyle(color: palette.textPrimary)),
-        content: Text(l10n.storiesWithdrawBody, style: TextStyle(color: palette.textSecondary)),
+        title: Text(l10n.storiesWithdrawTitle,
+            style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17)),
+        content: Text(l10n.storiesWithdrawBody,
+            style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.commonCancel)),
           TextButton(
@@ -98,14 +98,19 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: palette.canvasBottom,
+        backgroundColor: palette.glassFill,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(l10n.storiesReportTitle, style: TextStyle(color: palette.textPrimary)),
+        title: Text(l10n.storiesReportTitle,
+            style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17)),
         content: TextField(
           controller: noteController,
           maxLines: 3,
-          style: TextStyle(color: palette.textPrimary),
-          decoration: InputDecoration(hintText: l10n.storiesReportNoteHint),
+          style: AppTypography.subheadline.copyWith(color: palette.textPrimary),
+          cursorColor: palette.accent,
+          decoration: InputDecoration(
+            hintText: l10n.storiesReportNoteHint,
+            hintStyle: AppTypography.subheadline.copyWith(color: palette.textTertiary),
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.commonCancel)),
@@ -156,264 +161,154 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.storiesTitle)),
       // The floating bottom nav bar (see `HomeShell`) is painted above this
       // screen's own body, so the default FAB position would sit right
-      // behind it — lifted by the same clearance every list in the app
-      // already pads its bottom content by.
+      // behind it — lifted by the same clearance every list here pads by.
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 90),
+        padding: const EdgeInsets.only(bottom: 86),
         child: FloatingActionButton.extended(
           onPressed: () => context.push('/settings/stories/new'),
           backgroundColor: palette.accent,
-          icon: const Icon(Icons.edit_outlined, color: Colors.white),
-          label: Text(l10n.storiesWriteCta, style: const TextStyle(color: Colors.white)),
+          elevation: 3,
+          icon: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+          label: Text(l10n.storiesWriteCta,
+              style: AppTypography.label.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _SegmentButton(
-                    label: l10n.storiesTabFeed,
-                    selected: !_showMine,
-                    palette: palette,
-                    onTap: () => setState(() => _showMine = false),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _SegmentButton(
-                    label: l10n.storiesTabMine,
-                    selected: _showMine,
-                    palette: palette,
-                    onTap: () => setState(() => _showMine = true),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!_showMine) ...[
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: _SearchField(
-                controller: _search,
-                palette: palette,
-                hint: l10n.storiesSearchHint,
-                onChanged: (v) => setState(() => _query = v),
-                onClear: () {
-                  _search.clear();
-                  setState(() => _query = '');
-                },
+              padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
+              child: Row(
+                children: [
+                  SquareIconButton(
+                    icon: Icons.arrow_back_rounded,
+                    onPressed: () => context.go('/insights'),
+                  ),
+                  const SizedBox(width: 14),
+                  Text(l10n.storiesTitle,
+                      style: AppTypography.title2.copyWith(color: palette.textPrimary)),
+                ],
               ),
             ),
-            if (availableCategories.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
+              child: _Segmented(
+                left: l10n.storiesTabFeed,
+                right: l10n.storiesTabMine,
+                rightSelected: _showMine,
+                palette: palette,
+                onSelect: (mine) => setState(() => _showMine = mine),
+              ),
+            ),
+            if (!_showMine) ...[
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _CategoryStrip(
-                  categories: availableCategories,
-                  selected: _selectedCategory,
+                padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
+                child: SearchField(
+                  controller: _search,
                   palette: palette,
-                  allLabel: l10n.guideCategoryAll,
-                  onSelect: (slug) => setState(() => _selectedCategory = slug),
+                  hint: l10n.storiesSearchHint,
+                  onChanged: (v) => setState(() => _query = v),
+                  onClear: () {
+                    _search.clear();
+                    setState(() => _query = '');
+                  },
                 ),
               ),
-          ],
-          Expanded(
-            child: RefreshIndicator(
-              color: palette.accent,
-              onRefresh: _showMine ? controller.loadMine : controller.loadFeed,
-              child: _showMine
-                  ? _MineList(
-                      state: state,
-                      palette: palette,
-                      l10n: l10n,
-                      onWithdraw: (id) => _confirmWithdraw(context, ref, id),
-                    )
-                  : _FeedList(
-                      stories: visibleFeed,
-                      loading: state.loadingFeed,
-                      categories: categories,
-                      palette: palette,
-                      l10n: l10n,
-                      onReport: (id) => _report(context, ref, id),
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SegmentButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final AppPalette palette;
-  final VoidCallback onTap;
-
-  const _SegmentButton({
-    required this.label,
-    required this.selected,
-    required this.palette,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? palette.accent : palette.glassFill,
-      borderRadius: BorderRadius.circular(100),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Center(
-            child: Text(
-              label,
-              style: AppTypography.subheadline.copyWith(
-                color: selected ? palette.canvasBottom : palette.textSecondary,
-                fontWeight: FontWeight.w600,
+              if (availableCategories.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: CategoryStrip(
+                    categories: availableCategories,
+                    selected: _selectedCategory,
+                    palette: palette,
+                    allLabel: l10n.guideCategoryAll,
+                    onSelect: (slug) => setState(() => _selectedCategory = slug),
+                  ),
+                ),
+            ],
+            Expanded(
+              child: RefreshIndicator(
+                color: palette.accent,
+                onRefresh: _showMine ? controller.loadMine : controller.loadFeed,
+                child: _showMine
+                    ? _MineList(
+                        state: state,
+                        palette: palette,
+                        l10n: l10n,
+                        onWithdraw: (id) => _confirmWithdraw(context, ref, id),
+                      )
+                    : _FeedList(
+                        stories: visibleFeed,
+                        loading: state.loadingFeed,
+                        categories: categories,
+                        palette: palette,
+                        l10n: l10n,
+                        onReport: (id) => _report(context, ref, id),
+                      ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _SearchField extends StatelessWidget {
-  final TextEditingController controller;
+/// The two-way switch the design uses for feed/mine and for the
+/// moderation queue: one muted track, the active half lifted out of it.
+class _Segmented extends StatelessWidget {
+  final String left;
+  final String right;
+  final bool rightSelected;
   final AppPalette palette;
-  final String hint;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
+  final ValueChanged<bool> onSelect;
 
-  const _SearchField({
-    required this.controller,
+  const _Segmented({
+    required this.left,
+    required this.right,
+    required this.rightSelected,
     required this.palette,
-    required this.hint,
-    required this.onChanged,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassSurface(
-      radius: 100,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Row(
-        children: [
-          Icon(Icons.search_rounded, size: 20, color: palette.textTertiary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              textInputAction: TextInputAction.search,
-              style: AppTypography.subheadline.copyWith(color: palette.textPrimary),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                isDense: true,
-                hintText: hint,
-                hintStyle: AppTypography.subheadline.copyWith(color: palette.textTertiary),
-              ),
-            ),
-          ),
-          if (controller.text.isNotEmpty)
-            InkWell(
-              onTap: onClear,
-              customBorder: const CircleBorder(),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(Icons.close_rounded, size: 18, color: palette.textTertiary),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CategoryStrip extends StatelessWidget {
-  final List<DisorderCategory> categories;
-  final String? selected;
-  final AppPalette palette;
-  final String allLabel;
-  final ValueChanged<String?> onSelect;
-
-  const _CategoryStrip({
-    required this.categories,
-    required this.selected,
-    required this.palette,
-    required this.allLabel,
     required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: categories.length + 1,
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return _CategoryChip(
-              label: allLabel,
-              selected: selected == null,
-              palette: palette,
-              onTap: () => onSelect(null),
-            );
-          }
-
-          final category = categories[index - 1];
-          return _CategoryChip(
-            label: '${category.emoji} ${category.name}',
-            selected: selected == category.slug,
-            palette: palette,
-            onTap: () => onSelect(category.slug),
-          );
-        },
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: palette.surfaceMuted,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          _half(left, !rightSelected, () => onSelect(false)),
+          _half(right, rightSelected, () => onSelect(true)),
+        ],
       ),
     );
   }
-}
 
-class _CategoryChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final AppPalette palette;
-  final VoidCallback onTap;
-
-  const _CategoryChip({
-    required this.label,
-    required this.selected,
-    required this.palette,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final fg = selected ? palette.canvasBottom : palette.textSecondary;
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
+  Widget _half(String label, bool selected, VoidCallback onTap) {
+    return Expanded(
       child: Material(
-        color: selected ? palette.accent : palette.glassFill,
-        shape: StadiumBorder(side: BorderSide(color: selected ? palette.accent : palette.glassBorder)),
+        color: selected ? palette.glassFill : Colors.transparent,
+        borderRadius: BorderRadius.circular(11),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            child: Text(label, style: AppTypography.footnote.copyWith(color: fg)),
+          child: Center(
+            child: Text(
+              label,
+              style: AppTypography.footnote.copyWith(
+                fontSize: 13.5,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                color: selected ? palette.textPrimary : palette.textSecondary,
+              ),
+            ),
           ),
         ),
       ),
@@ -445,41 +340,41 @@ class _FeedList extends StatelessWidget {
     }
     if (stories.isEmpty) {
       return ListView(
-        padding: const EdgeInsets.fromLTRB(28, 60, 28, 0),
+        padding: const EdgeInsets.fromLTRB(28, 50, 28, 0),
         children: [
-          Icon(Icons.auto_stories_outlined, size: 30, color: palette.accent),
+          Icon(Icons.auto_stories_outlined, size: 28, color: palette.accent),
           const SizedBox(height: 14),
           Text(
             l10n.storiesFeedEmpty,
             textAlign: TextAlign.center,
-            style: AppTypography.headline.copyWith(color: palette.textPrimary),
+            style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17),
           ),
           const SizedBox(height: 8),
           Text(
             l10n.storiesFeedEmptyBody,
             textAlign: TextAlign.center,
-            style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
+            style: AppTypography.footnote.copyWith(color: palette.textSecondary),
           ),
         ],
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
+      padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
       itemCount: stories.length,
       itemBuilder: (context, i) {
         final story = stories[i];
         final resolved = _resolve(categories, story.diagnosisSlug);
         return Padding(
-          padding: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.only(bottom: 12),
           child: GlassSurface(
-            radius: 24,
+            radius: 18,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (resolved != null) ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: palette.accentSoft,
                       borderRadius: BorderRadius.circular(100),
@@ -489,31 +384,28 @@ class _FeedList extends StatelessWidget {
                       style: AppTypography.caption.copyWith(color: palette.accent),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                 ],
-                Text(story.body, style: AppTypography.body.copyWith(color: palette.textPrimary)),
-                const SizedBox(height: 12),
+                Text(story.body,
+                    style: AppTypography.subheadline
+                        .copyWith(color: palette.textPrimary, fontSize: 14.5, height: 1.65)),
+                const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      DateFormat.yMMMd(Localizations.localeOf(context).languageCode).format(story.createdAt),
-                      style: AppTypography.caption.copyWith(color: palette.textTertiary),
+                      '${DateFormat.MMMMd(Localizations.localeOf(context).languageCode).format(story.createdAt)}'
+                      ' · ${l10n.storiesAnonymous}',
+                      style: AppTypography.caption.copyWith(color: palette.textSecondary),
                     ),
                     InkWell(
                       onTap: () => onReport(story.id),
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.flag_outlined, size: 14, color: palette.textTertiary),
-                            const SizedBox(width: 4),
-                            Text(l10n.storiesReport,
-                                style: AppTypography.caption.copyWith(color: palette.textTertiary)),
-                          ],
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        child: Text(l10n.storiesReport,
+                            style: AppTypography.caption
+                                .copyWith(color: palette.textSecondary, fontSize: 12)),
                       ),
                     ),
                   ],
@@ -547,7 +439,7 @@ class _MineList extends StatelessWidget {
       };
 
   Color _statusColor(StoryStatus status) => switch (status) {
-        StoryStatus.pending => palette.warning,
+        StoryStatus.pending => palette.textSecondary,
         StoryStatus.approved => palette.accent,
         StoryStatus.rejected => palette.textTertiary,
       };
@@ -559,48 +451,54 @@ class _MineList extends StatelessWidget {
     }
     if (state.mine.isEmpty) {
       return ListView(
-        padding: const EdgeInsets.fromLTRB(28, 60, 28, 0),
+        padding: const EdgeInsets.fromLTRB(28, 50, 28, 0),
         children: [
-          Icon(Icons.edit_note_rounded, size: 30, color: palette.accent),
+          Icon(Icons.edit_note_rounded, size: 28, color: palette.accent),
           const SizedBox(height: 14),
           Text(
             l10n.storiesMineEmpty,
             textAlign: TextAlign.center,
-            style: AppTypography.headline.copyWith(color: palette.textPrimary),
+            style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17),
           ),
           const SizedBox(height: 8),
           Text(
             l10n.storiesMineEmptyBody,
             textAlign: TextAlign.center,
-            style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
+            style: AppTypography.footnote.copyWith(color: palette.textSecondary),
           ),
         ],
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
+      padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
       itemCount: state.mine.length,
       itemBuilder: (context, i) {
         final story = state.mine[i];
         return Padding(
-          padding: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.only(bottom: 12),
           child: GlassSurface(
-            radius: 24,
+            radius: 18,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: _statusColor(story.status).withValues(alpha: 0.15),
+                        color: palette.surfaceMuted,
                         borderRadius: BorderRadius.circular(100),
                       ),
                       child: Text(
-                        _statusLabel(story.status),
-                        style: AppTypography.caption.copyWith(color: _statusColor(story.status)),
+                        _statusLabel(story.status).toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          height: 1.2,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.44,
+                          color: _statusColor(story.status),
+                        ),
                       ),
                     ),
                     const Spacer(),
@@ -609,17 +507,20 @@ class _MineList extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
                         padding: const EdgeInsets.all(4),
-                        child: Icon(Icons.delete_outline_rounded, size: 18, color: palette.textTertiary),
+                        child: Icon(Icons.delete_outline_rounded,
+                            size: 18, color: palette.warning),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(story.body, style: AppTypography.body.copyWith(color: palette.textPrimary)),
-                const SizedBox(height: 10),
+                Text(story.body,
+                    style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
+                const SizedBox(height: 8),
                 Text(
-                  DateFormat.yMMMd(Localizations.localeOf(context).languageCode).format(story.createdAt),
-                  style: AppTypography.caption.copyWith(color: palette.textTertiary),
+                  DateFormat.MMMMd(Localizations.localeOf(context).languageCode)
+                      .format(story.createdAt),
+                  style: AppTypography.caption.copyWith(color: palette.textSecondary),
                 ),
               ],
             ),

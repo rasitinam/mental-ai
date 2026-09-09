@@ -6,6 +6,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../streak/data/streak_api.dart';
 import 'life_analysis_controller.dart';
 
 /// The whole-history view: one narrative over everything the account has
@@ -22,169 +23,226 @@ class LifeAnalysisScreen extends ConsumerWidget {
     final controller = ref.read(lifeAnalysisControllerProvider.notifier);
     final palette = AppPalette.of(context);
     final onCooldown = state.isOnCooldown;
+    final locale = Localizations.localeOf(context).languageCode;
+    final analysis = state.analysis;
+
+    final period = analysis == null
+        ? null
+        : '${DateFormat.MMMd(locale).format(analysis.periodStart)} — '
+            '${DateFormat.MMMd(locale).format(analysis.periodEnd)}'
+            '${onCooldown ? ' · ${l10n.lifeNextOn(DateFormat.MMMd(locale).format(state.cooldownUntil!))}' : ''}';
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.lifeTitle),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: (state.loading || onCooldown) ? null : controller.generateNow,
-            tooltip: onCooldown ? l10n.lifeCooldownTooltip : l10n.lifeRegenerate,
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: RefreshIndicator(
-        color: palette.accent,
-        onRefresh: controller.loadLatest,
-        child: state.loading
-            ? Center(child: CircularProgressIndicator(color: palette.accent))
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
-                children: [
-                  if (state.error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(state.error!, style: TextStyle(color: palette.warning)),
-                    ),
-                  if (state.analysis == null && state.error == null)
-                    _EmptyState(onGenerate: controller.generateNow, palette: palette)
-                  else if (state.analysis != null) ...[
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          color: palette.accent,
+          onRefresh: controller.loadLatest,
+          child: state.loading
+              ? Center(child: CircularProgressIndicator(color: palette.accent))
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
+                  children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Text(
-                            '${DateFormat.yMMMd().format(state.analysis!.periodStart)} — '
-                            '${DateFormat.yMMMd().format(state.analysis!.periodEnd)}',
-                            style: AppTypography.footnote.copyWith(color: palette.textTertiary),
-                          ),
-                        ),
-                        if (onCooldown)
-                          Text(
-                            'Sonraki: ${DateFormat.yMMMd().format(state.cooldownUntil!)}',
-                            style: AppTypography.caption.copyWith(color: palette.textTertiary),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    GlassSurface(
-                      radius: 24,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.insights_outlined, size: 18, color: palette.accent),
-                              const SizedBox(width: 8),
-                              Text(l10n.lifeOverview,
+                              Text(l10n.lifeTitle,
                                   style: AppTypography.title2.copyWith(color: palette.textPrimary)),
+                              if (period != null) ...[
+                                const SizedBox(height: 4),
+                                Text(period,
+                                    style: AppTypography.footnote
+                                        .copyWith(color: palette.textSecondary)),
+                              ],
                             ],
                           ),
-                          const SizedBox(height: 10),
-                          Text(
-                            state.analysis!.narrative,
-                            style: AppTypography.body.copyWith(color: palette.textPrimary),
+                        ),
+                        const SizedBox(width: 12),
+                        Tooltip(
+                          message: onCooldown ? l10n.lifeCooldownTooltip : l10n.lifeRegenerate,
+                          child: SquareIconButton(
+                            icon: Icons.refresh_rounded,
+                            iconColor: palette.accent,
+                            onPressed: onCooldown ? null : controller.generateNow,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    if (state.analysis!.keyPatterns.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      _BulletCard(
-                        icon: Icons.pattern_rounded,
-                        title: l10n.lifePatterns,
-                        items: state.analysis!.keyPatterns,
-                        bulletColor: palette.accent,
-                        titleColor: palette.textPrimary,
-                        palette: palette,
+                    const SizedBox(height: 16),
+                    const _PeriodStreakCard(),
+                    if (state.error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(state.error!, style: TextStyle(color: palette.warning)),
                       ),
-                    ],
-                    if (state.analysis!.doList.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      _BulletCard(
-                        icon: Icons.check_circle_outline_rounded,
-                        title: l10n.lifeDoList,
-                        items: state.analysis!.doList,
-                        bulletColor: palette.accent,
-                        titleColor: palette.textPrimary,
-                        palette: palette,
+                    if (analysis == null && state.error == null)
+                      _EmptyState(onGenerate: controller.generateNow, palette: palette)
+                    else if (analysis != null) ...[
+                      SectionLabel(l10n.lifeOverview),
+                      const SizedBox(height: 8),
+                      Text(
+                        analysis.narrative,
+                        style: AppTypography.subheadline
+                            .copyWith(color: palette.textPrimary, fontSize: 14.5, height: 1.65),
                       ),
-                    ],
-                    if (state.analysis!.dontList.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      _BulletCard(
-                        icon: Icons.do_not_disturb_on_outlined,
-                        title: l10n.lifeDontList,
-                        items: state.analysis!.dontList,
-                        bulletColor: palette.warning,
-                        titleColor: palette.textPrimary,
-                        palette: palette,
-                      ),
+                      if (analysis.keyPatterns.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _StripeCard(
+                          title: l10n.lifePatterns,
+                          items: analysis.keyPatterns,
+                          color: palette.accent,
+                          palette: palette,
+                        ),
+                      ],
+                      if (analysis.doList.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        _StripeCard(
+                          title: l10n.lifeDoList,
+                          items: analysis.doList,
+                          color: palette.accentAlt,
+                          palette: palette,
+                        ),
+                      ],
+                      if (analysis.dontList.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        _StripeCard(
+                          title: l10n.lifeDontList,
+                          items: analysis.dontList,
+                          color: palette.warning,
+                          palette: palette,
+                        ),
+                      ],
                     ],
                   ],
-                ],
-              ),
+                ),
+        ),
       ),
     );
   }
 }
 
-class _BulletCard extends StatelessWidget {
-  final IconData icon;
+/// How much of the last week actually got recorded, as the run of dots
+/// the design uses here instead of the home screen's bars — same data,
+/// read as "did I show up" rather than "how much did I do".
+class _PeriodStreakCard extends ConsumerWidget {
+  const _PeriodStreakCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+    final streak = ref.watch(streakProvider).valueOrNull;
+    if (streak == null || streak.periodActive == 0) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: GlassSurface(
+        radius: 18,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SectionLabel(l10n.streakPeriodLabel),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.streakPeriodValue(streak.periodActive, streak.periodDays),
+                  style: AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 20),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                for (var i = 0; i < streak.lastSeven.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 4),
+                  Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: streak.lastSeven[i] > 0 ? palette.accent : palette.separator,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A card with a colored stripe down its leading edge — the design's way
+/// of separating "patterns", "what helps" and "what doesn't" without
+/// three competing headline colors. Built as a clipped row rather than a
+/// one-sided border, which Flutter won't combine with a corner radius.
+class _StripeCard extends StatelessWidget {
   final String title;
   final List<String> items;
-  final Color bulletColor;
-  final Color titleColor;
+  final Color color;
   final AppPalette palette;
 
-  const _BulletCard({
-    required this.icon,
+  const _StripeCard({
     required this.title,
     required this.items,
-    required this.bulletColor,
-    required this.titleColor,
+    required this.color,
     required this.palette,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GlassSurface(
-      radius: 24,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: ColoredBox(
+        color: palette.glassFill,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(icon, size: 18, color: bulletColor),
-              const SizedBox(width: 8),
+              SizedBox(width: 3, child: ColoredBox(color: color)),
               Expanded(
-                child: Text(title, style: AppTypography.headline.copyWith(color: titleColor)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SectionLabel(title, color: color),
+                      const SizedBox(height: 11),
+                      for (final item in items)
+                        Padding(
+                          padding: EdgeInsets.only(bottom: item == items.last ? 0 : 10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(top: 8),
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(item,
+                                    style: AppTypography.subheadline
+                                        .copyWith(color: palette.textPrimary)),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          for (final item in items)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 7),
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(color: bulletColor, shape: BoxShape.circle),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(item,
-                        style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
-                  ),
-                ],
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -197,35 +255,34 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Padding(
-      padding: const EdgeInsets.only(top: 48),
+      padding: const EdgeInsets.only(top: 40),
       child: Column(
         children: [
           Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(18)),
+            width: 52,
+            height: 52,
+            decoration:
+                BoxDecoration(color: palette.surfaceMuted, borderRadius: BorderRadius.circular(16)),
             alignment: Alignment.center,
-            child: Icon(Icons.insights_outlined, size: 28, color: palette.accent),
+            child: Icon(Icons.insights_outlined, size: 22, color: palette.accent),
           ),
-          const SizedBox(height: 16),
-          Text(
-            AppLocalizations.of(context)!.lifeEmpty,
-            style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
-          ),
+          const SizedBox(height: 14),
+          Text(l10n.lifeEmpty,
+              textAlign: TextAlign.center,
+              style: AppTypography.headline.copyWith(color: palette.textPrimary)),
           const SizedBox(height: 6),
           Text(
-            AppLocalizations.of(context)!.lifeEmptyBody,
+            l10n.lifeEmptyBody,
             textAlign: TextAlign.center,
-            style: AppTypography.footnote.copyWith(color: palette.textTertiary),
+            style: AppTypography.footnote.copyWith(color: palette.textSecondary),
           ),
           const SizedBox(height: 20),
           SizedBox(
             width: 220,
-            child: AppPrimaryButton(
-              label: AppLocalizations.of(context)!.lifeGenerate,
-              onPressed: onGenerate,
-            ),
+            child: AppPrimaryButton(label: l10n.lifeGenerate, onPressed: onGenerate),
           ),
         ],
       ),

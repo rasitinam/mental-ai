@@ -28,6 +28,12 @@ class AppPalette {
   /// alert), so a "this is a legal disclaimer" box doesn't read with the
   /// same visual urgency as "you may be in crisis."
   final Color surfaceMuted;
+  /// The second accent, reserved for anything clinical — the
+  /// "professional support" list on a condition card, the "what works
+  /// for you" column in the life analysis. Separate from [accent] so
+  /// "here is what a clinician does" never wears the same color as "here
+  /// is what you did."
+  final Color accentAlt;
 
   const AppPalette({
     required this.canvasTop,
@@ -44,40 +50,43 @@ class AppPalette {
     required this.warning,
     required this.warningSoft,
     required this.surfaceMuted,
+    required this.accentAlt,
   });
 
   static const light = AppPalette(
     canvasTop: Color(0xFFF5F6F2),
-    canvasBottom: Color(0xFFEDEFE9),
+    canvasBottom: Color(0xFFF5F6F2),
     glassFill: Color(0xFFFFFFFF),
-    glassBorder: Color(0x40E2E4DD),
+    glassBorder: Color(0xFFE2E4DD),
     glassShadow: Color(0x0D191C18),
     accent: Color(0xFF5E7A57),
     accentSoft: Color(0xFFE8EEE4),
     textPrimary: Color(0xFF191C18),
     textSecondary: Color(0xFF666C63),
-    textTertiary: Color(0xFF8A9086),
+    textTertiary: Color(0xFF71776E),
     separator: Color(0xFFE2E4DD),
     warning: Color(0xFF8E3B3B),
     warningSoft: Color(0xFFF3E8E4),
     surfaceMuted: Color(0xFFEDEFE9),
+    accentAlt: Color(0xFF4E6E8E),
   );
 
   static const dark = AppPalette(
-    canvasTop: Color(0xFF16191C),
-    canvasBottom: Color(0xFF0E1013),
+    canvasTop: Color(0xFF15181B),
+    canvasBottom: Color(0xFF15181B),
     glassFill: Color(0xFF1D2126),
-    glassBorder: Color(0x14FFFFFF),
-    glassShadow: Color(0x4D000000),
+    glassBorder: Color(0x1AFFFFFF),
+    glassShadow: Color(0x00000000),
     accent: Color(0xFF93A2E6),
     accentSoft: Color(0x2E93A2E6),
     textPrimary: Color(0xFFECEDEF),
     textSecondary: Color(0xFF9AA0A8),
-    textTertiary: Color(0xFF6C7A99),
-    separator: Color(0x12FFFFFF),
+    textTertiary: Color(0xFF8B9198),
+    separator: Color(0x14FFFFFF),
     warning: Color(0xFFD98E7E),
     warningSoft: Color(0xFF2A1F1D),
-    surfaceMuted: Color(0xFF1D2126),
+    surfaceMuted: Color(0xFF252A30),
+    accentAlt: Color(0xFFDCCFB8),
   );
 
   static AppPalette of(BuildContext context) =>

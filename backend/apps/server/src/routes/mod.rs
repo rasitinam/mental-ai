@@ -10,6 +10,7 @@ mod profile;
 mod reports;
 mod state;
 mod stories;
+mod streak;
 
 use axum::http::StatusCode;
 use axum::Router;
@@ -33,6 +34,7 @@ pub fn build_router(app_state: AppState) -> Router {
         .merge(life_analysis::router())
         .merge(state::router())
         .merge(stories::router())
+        .merge(streak::router())
         .with_state(app_state)
 }
 

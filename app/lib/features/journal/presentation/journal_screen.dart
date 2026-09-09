@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/storage/local_prefs.dart';
 import '../../../core/widgets/countdown_text.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../streak/data/streak_api.dart';
 import '../domain/journal_entry.dart';
 import 'journal_controller.dart';
 
@@ -19,8 +21,19 @@ class JournalScreen extends ConsumerStatefulWidget {
   ConsumerState<JournalScreen> createState() => _JournalScreenState();
 }
 
+/// Where an unsent entry is parked between app launches. Local only —
+/// a draft is by definition the part someone hasn't decided to keep.
+const _draftKey = 'mental_ai.journal_draft';
+
 class _JournalScreenState extends ConsumerState<JournalScreen> {
   final _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = ref.read(sharedPreferencesProvider).getString(_draftKey);
+    if (draft != null) _controller.text = draft;
+  }
 
   @override
   void dispose() {
@@ -42,119 +55,194 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final journalController = ref.read(journalControllerProvider.notifier);
     final palette = AppPalette.of(context);
     final onCooldown = state.isOnCooldown;
+    final streak = ref.watch(streakProvider).valueOrNull;
 
     ref.listen(journalControllerProvider, (prev, next) {
       if (next.submitted && prev?.submitted != true) {
         _controller.clear();
+        ref.read(sharedPreferencesProvider).remove(_draftKey);
+        ref.invalidate(streakProvider);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.journalSaved)));
         journalController.acknowledgeSubmitted();
       }
     });
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.navJournal)),
-      body: RefreshIndicator(
-        color: palette.accent,
-        onRefresh: journalController.load,
-        // The composer and the labels are a fixed handful of widgets, but
-        // the archive below them grows by one card a day forever, so it is
-        // built lazily in its own sliver rather than in one eager list.
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-              sliver: SliverList.list(
-                children: [
-                  if (onCooldown)
-                    _CooldownCard(
-                      until: state.cooldownUntil!,
-                      format: _formatRemaining,
-                      palette: palette,
-                      // One rebuild when the cooldown lapses, to swap the
-                      // card back for the composer.
-                      onFinished: () => setState(() {}),
-                    )
-                  else ...[
-                    GlassSurface(
-                      radius: 26,
-                      padding: const EdgeInsets.all(4),
-                      child: TextField(
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          color: palette.accent,
+          onRefresh: journalController.load,
+          // The composer and the labels are a fixed handful of widgets, but
+          // the archive below them grows by one card a day forever, so it is
+          // built lazily in its own sliver rather than in one eager list.
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(22, 12, 22, 0),
+                sliver: SliverList.list(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(l10n.journalPrompt,
+                                  style:
+                                      AppTypography.title2.copyWith(color: palette.textPrimary)),
+                              const SizedBox(height: 5),
+                              Text(l10n.journalPromptNote,
+                                  style: AppTypography.footnote
+                                      .copyWith(color: palette.textSecondary)),
+                            ],
+                          ),
+                        ),
+                        if (streak != null && streak.current > 0) ...[
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text('${streak.current}',
+                                  style: AppTypography.headline
+                                      .copyWith(color: palette.accent, fontSize: 18)),
+                              const SizedBox(height: 2),
+                              SectionLabel(l10n.streakJournalLabel),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    if (onCooldown)
+                      _CooldownCard(
+                        until: state.cooldownUntil!,
+                        format: _formatRemaining,
+                        palette: palette,
+                        // One rebuild when the cooldown lapses, to swap the
+                        // card back for the composer.
+                        onFinished: () => setState(() {}),
+                      )
+                    else ...[
+                      _Composer(
                         controller: _controller,
-                        maxLines: 8,
-                        minLines: 6,
-                        textAlignVertical: TextAlignVertical.top,
-                        style: AppTypography.body.copyWith(color: palette.textPrimary),
-                        cursorColor: palette.accent,
-                        decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.all(18),
-                          hintText: l10n.journalHint,
-                          hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
-                          border: InputBorder.none,
+                        palette: palette,
+                        hint: l10n.journalHint,
+                        onChanged: (value) =>
+                            ref.read(sharedPreferencesProvider).setString(_draftKey, value),
+                        footer: (value) => Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(l10n.journalCharCount(value.length),
+                                style: AppTypography.caption
+                                    .copyWith(color: palette.textSecondary)),
+                            if (value.isNotEmpty)
+                              Text(l10n.journalDraftSaved,
+                                  style: AppTypography.caption
+                                      .copyWith(color: palette.textSecondary)),
+                          ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: ValueListenableBuilder<TextEditingValue>(
-                        valueListenable: _controller,
-                        builder: (context, value, _) => Text(
-                          l10n.journalCharCount(value.text.length),
-                          style: AppTypography.caption.copyWith(color: palette.textTertiary),
+                      const SizedBox(height: 18),
+                      if (state.error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(state.error!, style: TextStyle(color: palette.warning)),
                         ),
+                      AppPrimaryButton(
+                        label: l10n.commonSave,
+                        loading: state.submitting,
+                        onPressed: () => journalController.submit(_controller.text),
                       ),
-                    ),
+                    ],
+                    const SizedBox(height: 26),
+                    SectionLabel(l10n.journalPast),
                     const SizedBox(height: 10),
-                    if (state.error != null)
+                    if (state.loading)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text(state.error!, style: TextStyle(color: palette.warning)),
-                      ),
-                    AppPrimaryButton(
-                      label: l10n.commonSave,
-                      loading: state.submitting,
-                      onPressed: () => journalController.submit(_controller.text),
-                    ),
-                  ],
-                  const SizedBox(height: 28),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 10),
-                    child: Text(
-                      l10n.journalPast,
-                      style: AppTypography.caption.copyWith(
-                        color: palette.textTertiary,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                  ),
-                  if (state.loading)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: Center(child: CircularProgressIndicator(color: palette.accent)),
-                    )
-                  else if (state.entries.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Center(child: CircularProgressIndicator(color: palette.accent)),
+                      )
+                    else if (state.entries.isEmpty)
+                      Text(
                         l10n.journalEmpty,
-                        style: AppTypography.subheadline.copyWith(color: palette.textTertiary),
+                        style: AppTypography.footnote.copyWith(color: palette.textSecondary),
                       ),
-                    ),
-                ],
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 140),
-              sliver: SliverList.builder(
-                itemCount: state.loading ? 0 : state.entries.length,
-                itemBuilder: (context, i) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _JournalEntryCard(entry: state.entries[i], palette: palette),
+                  ],
                 ),
               ),
-            ),
-          ],
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+                sliver: SliverList.builder(
+                  itemCount: state.loading ? 0 : state.entries.length,
+                  itemBuilder: (context, i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _JournalEntryCard(entry: state.entries[i], palette: palette),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+/// The writing surface: a card outlined in the accent so it reads as the
+/// one thing on the screen waiting for input, with the counter and draft
+/// state pinned to its floor.
+class _Composer extends StatelessWidget {
+  final TextEditingController controller;
+  final AppPalette palette;
+  final String hint;
+  final ValueChanged<String> onChanged;
+  final Widget Function(String value) footer;
+
+  const _Composer({
+    required this.controller,
+    required this.palette,
+    required this.hint,
+    required this.onChanged,
+    required this.footer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 170),
+      decoration: BoxDecoration(
+        color: palette.glassFill,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.accent, width: 2),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: controller,
+            maxLines: null,
+            minLines: 5,
+            onChanged: onChanged,
+            textAlignVertical: TextAlignVertical.top,
+            style: AppTypography.body.copyWith(color: palette.textPrimary),
+            cursorColor: palette.accent,
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              hintText: hint,
+              hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
+              border: InputBorder.none,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, _) => footer(value.text),
+          ),
+        ],
       ),
     );
   }
@@ -178,10 +266,11 @@ class _CooldownCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return GlassSurface(
-      radius: 26,
+      radius: 20,
+      padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          Icon(Icons.check_circle_outline_rounded, size: 30, color: palette.accent),
+          Icon(Icons.check_circle_outline_rounded, size: 28, color: palette.accent),
           const SizedBox(height: 12),
           Text(
             l10n.journalDoneToday,
@@ -193,7 +282,7 @@ class _CooldownCard extends StatelessWidget {
             onFinished: onFinished,
             format: (remaining) => l10n.journalNextIn(format(remaining)),
             textAlign: TextAlign.center,
-            style: AppTypography.footnote.copyWith(color: palette.textTertiary),
+            style: AppTypography.footnote.copyWith(color: palette.textSecondary),
           ),
         ],
       ),
@@ -209,21 +298,17 @@ class _JournalEntryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassSurface(
-      radius: 22,
+      radius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.calendar_today_rounded, size: 14, color: palette.accent),
-              const SizedBox(width: 8),
-              Text(
-                DateFormat.yMMMMd().add_Hm().format(entry.createdAt),
-                style: AppTypography.caption.copyWith(color: palette.textTertiary),
-              ),
-            ],
+          Text(
+            DateFormat.yMMMMd(Localizations.localeOf(context).languageCode)
+                .add_Hm()
+                .format(entry.createdAt),
+            style: AppTypography.caption.copyWith(color: palette.textSecondary),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           Text(entry.body, style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
         ],
       ),

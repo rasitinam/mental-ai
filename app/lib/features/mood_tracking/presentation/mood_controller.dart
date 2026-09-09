@@ -2,10 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/local_prefs.dart';
 import '../data/mood_api.dart';
+import '../domain/mood_emotion.dart';
 
 class MoodState {
   final double valence;
   final double arousal;
+  /// Which words are currently picked. Kept alongside the two axes
+  /// rather than instead of them: the words are how someone answers,
+  /// the axes are what gets stored and compared over time.
+  final Set<String> emotions;
   final bool submitting;
   final bool submitted;
   final String? error;
@@ -17,6 +22,7 @@ class MoodState {
   const MoodState({
     this.valence = 0,
     this.arousal = 0,
+    this.emotions = const {},
     this.submitting = false,
     this.submitted = false,
     this.error,
@@ -29,6 +35,7 @@ class MoodState {
   MoodState copyWith({
     double? valence,
     double? arousal,
+    Set<String>? emotions,
     bool? submitting,
     bool? submitted,
     String? error,
@@ -39,6 +46,7 @@ class MoodState {
       MoodState(
         valence: valence ?? this.valence,
         arousal: arousal ?? this.arousal,
+        emotions: emotions ?? this.emotions,
         submitting: submitting ?? this.submitting,
         submitted: submitted ?? this.submitted,
         error: error,
@@ -73,11 +81,28 @@ class MoodController extends Notifier<MoodState> {
     }
   }
 
-  /// Both axes in one write. The pad moves on both at once, and setting
-  /// them separately emitted two states per pointer event — at drag speed
-  /// that was over a hundred rebuilds a second for one gesture.
+  /// Both axes in one write. A drag moves along one axis at a time but
+  /// the same call covers both, and setting them separately emitted two
+  /// states per pointer event — at drag speed that was over a hundred
+  /// rebuilds a second for one gesture.
   void setMood(double valence, double arousal) =>
       state = state.copyWith(valence: valence, arousal: arousal, submitted: false);
+
+  /// Picking words re-derives the two axes from their average. Dragging
+  /// afterwards still wins — [setMood] doesn't clear the words, so the
+  /// selection stays visible as the reason the dot started where it did.
+  void toggleEmotion(String key) {
+    final next = Set<String>.from(state.emotions);
+    if (!next.remove(key)) next.add(key);
+
+    final position = averageOf(next);
+    state = state.copyWith(
+      emotions: next,
+      valence: position.valence,
+      arousal: position.arousal,
+      submitted: false,
+    );
+  }
 
   Future<void> submit({String? note}) async {
     state = state.copyWith(submitting: true, error: null);

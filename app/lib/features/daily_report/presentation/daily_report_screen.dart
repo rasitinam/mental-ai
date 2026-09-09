@@ -10,16 +10,15 @@ import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
 import '../../profile/presentation/profile_controller.dart';
+import '../../streak/data/streak_api.dart';
+import '../../streak/domain/streak_summary.dart';
 import '../domain/user_state.dart';
 import 'daily_report_controller.dart';
 import 'state_controller.dart';
 
-/// The app's landing screen. Above the daily report sits a live read of
-/// where the person is right now: a face, a five-star rating on each axis
-/// and a good/bad bar, all driven by an assessment the backend makes from
-/// chat, the latest report, the life analysis, journal entries and mood
-/// check-ins together — so it moves when their situation moves, instead of
-/// being frozen to the last time they touched a slider.
+/// The app's landing screen, in the order the design puts things: where
+/// you are right now, how long you've kept it up, what today's note
+/// says, and the three places you'd go next.
 class DailyReportScreen extends ConsumerWidget {
   const DailyReportScreen({super.key});
 
@@ -33,6 +32,7 @@ class DailyReportScreen extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           color: palette.accent,
           // Pull-to-refresh reassesses rather than re-reads: the whole point
@@ -43,44 +43,50 @@ class DailyReportScreen extends ConsumerWidget {
               ref.read(stateControllerProvider.notifier).refresh(),
               reportController.loadLatest(),
             ]);
+            ref.invalidate(streakProvider);
           },
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 140),
+            padding: const EdgeInsets.fromLTRB(22, 8, 22, 140),
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(_greeting(l10n),
-                          style: AppTypography.title1.copyWith(color: palette.textPrimary)),
-                      const SizedBox(height: 4),
-                      Text(
-                        // Locale-aware on purpose: this used to render
-                        // "September Tuesday" for a Turkish user because the
-                        // format followed the device, not the app.
-                        DateFormat.MMMMEEEEd(Localizations.localeOf(context).languageCode)
-                            .format(DateTime.now()),
-                        style: AppTypography.footnote.copyWith(color: palette.textTertiary),
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_greeting(l10n),
+                            style: AppTypography.title2.copyWith(color: palette.textPrimary)),
+                        const SizedBox(height: 3),
+                        Text(
+                          // Locale-aware on purpose: this used to render
+                          // "September Tuesday" for a Turkish user because the
+                          // format followed the device, not the app.
+                          DateFormat.MMMMEEEEd(Localizations.localeOf(context).languageCode)
+                              .format(DateTime.now()),
+                          style: AppTypography.footnote.copyWith(color: palette.textSecondary),
+                        ),
+                      ],
+                    ),
                   ),
-                  _IconButton(
+                  const SizedBox(width: 12),
+                  SquareIconButton(
                     icon: Icons.refresh_rounded,
-                    palette: palette,
-                    onTap: home.refreshing
+                    iconColor: palette.accent,
+                    onPressed: home.refreshing
                         ? null
                         : () => ref.read(stateControllerProvider.notifier).refresh(),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              _MoodHero(data: home, palette: palette, l10n: l10n),
+              const SizedBox(height: 16),
+              _StateCard(data: home, palette: palette, l10n: l10n),
+              const SizedBox(height: 16),
+              const _StreakCard(),
               // Reads the profile itself, so saving a diagnosis rebuilds
               // this strip instead of the whole landing screen.
               _DiagnosesStrip(palette: palette, title: l10n.homeDiagnosesTitle),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               if (report.error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
@@ -96,28 +102,21 @@ class DailyReportScreen extends ConsumerWidget {
               else if (report.report != null) ...[
                 if (report.report!.crisisFlag) ...[
                   _CrisisBanner(palette: palette, l10n: l10n),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                 ],
-                GlassSurface(
-                  radius: 24,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(l10n.homeToday,
-                          style: AppTypography.title2.copyWith(color: palette.textPrimary)),
-                      const SizedBox(height: 10),
-                      Text(report.report!.summary,
-                          style: AppTypography.body.copyWith(color: palette.textPrimary)),
-                    ],
-                  ),
+                SectionLabel(l10n.homeToday),
+                const SizedBox(height: 8),
+                Text(
+                  report.report!.summary,
+                  style: AppTypography.subheadline
+                      .copyWith(color: palette.textPrimary, fontSize: 14.5, height: 1.6),
                 ),
                 if (report.report!.recommendations.isNotEmpty) ...[
-                  const SizedBox(height: 14),
-                  _RecommendationsCard(
-                    items: report.report!.recommendations,
-                    palette: palette,
-                    title: l10n.homeRecommendations,
-                  ),
+                  const SizedBox(height: 18),
+                  SectionLabel(l10n.homeRecommendations),
+                  const SizedBox(height: 8),
+                  for (final item in report.report!.recommendations)
+                    _Bullet(text: item, color: palette.accent, palette: palette),
                 ],
                 const SizedBox(height: 20),
               ],
@@ -138,81 +137,88 @@ class DailyReportScreen extends ConsumerWidget {
   }
 }
 
-/// Maps a -1..1 valence reading to the face someone sees first.
-String _faceFor(double? valence) {
-  if (valence == null) return '🙂';
-  if (valence >= 0.5) return '😄';
-  if (valence >= 0.15) return '😊';
-  if (valence > -0.15) return '😐';
-  if (valence > -0.5) return '😟';
-  return '😢';
-}
-
-class _MoodHero extends StatelessWidget {
+class _StateCard extends StatelessWidget {
   final HomeStateData data;
   final AppPalette palette;
   final AppLocalizations l10n;
-  const _MoodHero({required this.data, required this.palette, required this.l10n});
+  const _StateCard({required this.data, required this.palette, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
     final state = data.state;
 
     return GlassSurface(
-      radius: 28,
-      padding: const EdgeInsets.fromLTRB(20, 26, 20, 22),
+      radius: 22,
+      padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_faceFor(state?.valence), style: const TextStyle(fontSize: 52)),
-          const SizedBox(height: 12),
-          Text(
-            state?.headline ?? (data.loading ? l10n.commonLoading : l10n.homeStateNoData),
-            textAlign: TextAlign.center,
-            style: AppTypography.title2.copyWith(color: palette.textPrimary),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            data.refreshing
-                ? l10n.homeRefreshing
-                : (state?.note ?? l10n.homeStateNoDataNote),
-            textAlign: TextAlign.center,
-            style: AppTypography.footnote.copyWith(color: palette.textTertiary),
-          ),
-          if (state != null) ...[
-            const SizedBox(height: 20),
-            _LevelBar(
-              label: l10n.homeMoodLabel,
-              level: UserState.stars(state.valence),
-              palette: palette,
-            ),
-            const SizedBox(height: 10),
-            _LevelBar(
-              label: l10n.homeEnergyLabel,
-              level: UserState.stars(state.energy),
-              palette: palette,
-            ),
-            const SizedBox(height: 22),
-            _GoodBadBar(value: state.valence, palette: palette),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(l10n.homeBarBad,
-                    style: AppTypography.caption
-                        .copyWith(color: palette.textTertiary, letterSpacing: 0.4)),
-                Text(l10n.homeBarGood,
-                    style: AppTypography.caption
-                        .copyWith(color: palette.textTertiary, letterSpacing: 0.4)),
-              ],
-            ),
-            if (state.basis.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              Text(
-                l10n.homeBasedOn(state.basis.join(', ')),
-                textAlign: TextAlign.center,
-                style: AppTypography.caption.copyWith(color: palette.textTertiary),
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(color: palette.accentSoft, shape: BoxShape.circle),
+                alignment: Alignment.center,
+                child: CustomPaint(
+                  size: const Size(22, 12),
+                  painter: _MoodArcPainter(valence: state?.valence, color: palette.accent),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      state?.headline ?? (data.loading ? l10n.commonLoading : l10n.homeStateNoData),
+                      style: AppTypography.headline.copyWith(color: palette.textPrimary),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      data.refreshing
+                          ? l10n.homeRefreshing
+                          : (state?.note ?? l10n.homeStateNoDataNote),
+                      style: AppTypography.footnote
+                          .copyWith(color: palette.textSecondary, fontSize: 13.5, height: 1.45),
+                    ),
+                  ],
+                ),
               ),
             ],
+          ),
+          if (state != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.only(top: 14),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: palette.separator)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _LevelBar(
+                    label: l10n.homeMoodLabel,
+                    level: UserState.stars(state.valence),
+                    palette: palette,
+                  ),
+                  const SizedBox(height: 14),
+                  _LevelBar(
+                    label: l10n.homeEnergyLabel,
+                    level: UserState.stars(state.energy),
+                    palette: palette,
+                  ),
+                  if (state.basis.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.homeBasedOn(state.basis.join(', ')),
+                      style: AppTypography.footnote
+                          .copyWith(color: palette.textSecondary, fontSize: 12, height: 1.5),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         ],
       ),
@@ -220,10 +226,44 @@ class _MoodHero extends StatelessWidget {
   }
 }
 
-/// A labeled 0-5 level as five equal bars, filled up to the level — the
-/// same reading as a star row (five is five, half-full is roughly
-/// "middling"), just steadier at a glance since every segment is the
-/// same shape.
+/// The face, reduced to the one line that carries it: a mouth that
+/// curves up, flattens, or turns down with valence. Drawn rather than
+/// set as an emoji so it takes the theme's accent and can sit at any
+/// curvature between the two extremes instead of snapping between five
+/// stock glyphs.
+class _MoodArcPainter extends CustomPainter {
+  final double? valence;
+  final Color color;
+  const _MoodArcPainter({required this.valence, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final v = (valence ?? 0).clamp(-1.0, 1.0);
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+
+    // The control point rides valence: above the baseline for a frown,
+    // below it for a smile.
+    final path = Path()
+      ..moveTo(0, size.height / 2)
+      ..quadraticBezierTo(
+        size.width / 2,
+        size.height / 2 + v * size.height,
+        size.width,
+        size.height / 2,
+      );
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_MoodArcPainter oldDelegate) =>
+      oldDelegate.valence != valence || oldDelegate.color != color;
+}
+
+/// A labeled 0-5 level as five equal bars, filled up to the level.
 class _LevelBar extends StatelessWidget {
   final String label;
   final int level;
@@ -238,17 +278,16 @@ class _LevelBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+            Text(label,
+                style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
             Text(
               '$level / 5',
-              style: AppTypography.footnote.copyWith(
-                color: palette.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTypography.footnote
+                  .copyWith(color: palette.textPrimary, fontWeight: FontWeight.w500),
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Row(
           children: [
             for (var i = 1; i <= 5; i++) ...[
@@ -270,103 +309,113 @@ class _LevelBar extends StatelessWidget {
   }
 }
 
-class _GoodBadBar extends StatelessWidget {
-  final double value;
-  final AppPalette palette;
-  const _GoodBadBar({required this.value, required this.palette});
+/// Days in a row, with the last seven as a sparkline. Reads its own
+/// provider so a slow streak request never holds up the state card
+/// above it.
+class _StreakCard extends ConsumerWidget {
+  const _StreakCard();
 
   @override
-  Widget build(BuildContext context) {
-    final fraction = ((value.clamp(-1.0, 1.0) + 1) / 2);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+    final streak = ref.watch(streakProvider).valueOrNull;
+    if (streak == null || streak.current == 0) return const SizedBox.shrink();
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final thumbLeft = fraction * constraints.maxWidth;
-        return SizedBox(
-          height: 18,
-          child: Stack(
-            alignment: Alignment.centerLeft,
+    return GlassSurface(
+      radius: 18,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                height: 10,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(100),
-                  gradient: LinearGradient(
-                    colors: [palette.warning, palette.textTertiary, palette.accent],
+              SectionLabel(l10n.streakLabel),
+              const SizedBox(height: 2),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '${streak.current}',
+                    style: AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 20),
                   ),
-                ),
-              ),
-              Positioned(
-                left: (thumbLeft - 9).clamp(0.0, constraints.maxWidth - 18),
-                child: Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: palette.textPrimary,
-                    border: Border.all(color: palette.accent, width: 3),
-                    boxShadow: [
-                      BoxShadow(color: palette.glassShadow, blurRadius: 6, offset: const Offset(0, 2)),
-                    ],
+                  const SizedBox(width: 5),
+                  Text(
+                    l10n.streakDays,
+                    style: AppTypography.footnote.copyWith(color: palette.textSecondary),
                   ),
-                ),
+                ],
               ),
             ],
           ),
-        );
-      },
+          _Sparkline(streak: streak, palette: palette),
+        ],
+      ),
     );
   }
 }
 
-class _RecommendationsCard extends StatelessWidget {
-  final List<String> items;
+class _Sparkline extends StatelessWidget {
+  final StreakSummary streak;
   final AppPalette palette;
-  final String title;
-  const _RecommendationsCard({
-    required this.items,
-    required this.palette,
-    required this.title,
-  });
+  const _Sparkline({required this.streak, required this.palette});
 
   @override
   Widget build(BuildContext context) {
-    return GlassSurface(
-      radius: 24,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final peak = streak.peak;
+
+    return SizedBox(
+      height: 26,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Row(
-            children: [
-              _SectionBadge(icon: Icons.lightbulb_outline_rounded, palette: palette),
-              const SizedBox(width: 10),
-              Text(title, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          for (var i = 0; i < items.length; i++)
+          for (var i = 0; i < streak.lastSeven.length; i++) ...[
+            if (i > 0) const SizedBox(width: 5),
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 11),
-              decoration: i == items.length - 1
-                  ? null
-                  : BoxDecoration(border: Border(bottom: BorderSide(color: palette.separator))),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 7),
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(color: palette.accent, shape: BoxShape.circle),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(items[i],
-                        style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
-                  ),
-                ],
+              width: 8,
+              // Floored so an empty day still leaves a stub to read the
+              // rhythm against, rather than a gap.
+              height: 8 + (streak.lastSeven[i] / peak).clamp(0.0, 1.0) * 15,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                color: i == streak.lastSeven.length - 1 && streak.lastSeven[i] > 0
+                    ? palette.accent
+                    : palette.separator,
               ),
             ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Bullet extends StatelessWidget {
+  final String text;
+  final Color color;
+  final AppPalette palette;
+  const _Bullet({required this.text, required this.color, required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+                style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
+          ),
         ],
       ),
     );
@@ -394,33 +443,30 @@ class _DiagnosesStrip extends ConsumerWidget {
     if (resolved.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(top: 20),
+      padding: const EdgeInsets.only(top: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style:
-                  AppTypography.caption.copyWith(color: palette.textTertiary, letterSpacing: 0.6)),
+          SectionLabel(title),
           const SizedBox(height: 10),
           SizedBox(
-            height: 36,
+            height: 34,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: resolved.length,
               itemBuilder: (context, i) => Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
                   decoration: BoxDecoration(
                     color: palette.accentSoft,
                     borderRadius: BorderRadius.circular(100),
-                    border: Border.all(color: palette.accent.withValues(alpha: 0.33)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(resolved[i].emoji, style: const TextStyle(fontSize: 13)),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 7),
                       Text(resolved[i].name,
                           style: AppTypography.footnote.copyWith(color: palette.accent)),
                     ],
@@ -489,66 +535,28 @@ class _QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassSurface(
-      radius: 18,
-      padding: EdgeInsets.zero,
+    return Material(
+      color: palette.surfaceMuted,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 60),
+          padding: const EdgeInsets.all(11),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, size: 19, color: palette.accent),
-              const SizedBox(height: 8),
+              Icon(icon, size: 16, color: palette.accent),
+              const SizedBox(height: 10),
               Text(label,
-                  style: AppTypography.caption
-                      .copyWith(color: palette.textPrimary, fontWeight: FontWeight.w600)),
+                  style: AppTypography.footnote
+                      .copyWith(color: palette.textPrimary, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class _IconButton extends StatelessWidget {
-  final IconData icon;
-  final AppPalette palette;
-  final VoidCallback? onTap;
-  const _IconButton({required this.icon, required this.palette, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: palette.accentSoft,
-      borderRadius: BorderRadius.circular(14),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: SizedBox(
-          width: 40,
-          height: 40,
-          child: Icon(icon, size: 19, color: palette.accent),
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionBadge extends StatelessWidget {
-  final IconData icon;
-  final AppPalette palette;
-  const _SectionBadge({required this.icon, required this.palette});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(11)),
-      alignment: Alignment.center,
-      child: Icon(icon, size: 16, color: palette.accent),
     );
   }
 }
@@ -562,21 +570,22 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 24, bottom: 24),
+      padding: const EdgeInsets.only(top: 8, bottom: 20),
       child: Column(
         children: [
           Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(18)),
+            width: 52,
+            height: 52,
+            decoration:
+                BoxDecoration(color: palette.surfaceMuted, borderRadius: BorderRadius.circular(16)),
             alignment: Alignment.center,
-            child: Icon(Icons.event_note_outlined, size: 28, color: palette.accent),
+            child: Icon(Icons.event_note_outlined, size: 22, color: palette.accent),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text(l10n.homeNoReport,
               textAlign: TextAlign.center,
-              style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
-          const SizedBox(height: 20),
+              style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+          const SizedBox(height: 18),
           SizedBox(
             width: 200,
             child: AppPrimaryButton(label: l10n.homeGenerateReport, onPressed: onGenerate),
@@ -595,19 +604,33 @@ class _CrisisBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette.warningSoft,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.favorite_border_rounded, size: 18, color: palette.warning),
-          const SizedBox(width: 10),
+          Container(
+            width: 20,
+            height: 20,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: palette.warning, width: 2),
+            ),
+            child: Text('!',
+                style: TextStyle(
+                    fontSize: 12,
+                    height: 1,
+                    fontWeight: FontWeight.w700,
+                    color: palette.warning)),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(l10n.homeCrisisWarning,
-                style: AppTypography.subheadline.copyWith(color: palette.warning)),
+                style: AppTypography.footnote.copyWith(color: palette.warning)),
           ),
         ],
       ),

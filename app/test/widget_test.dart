@@ -51,7 +51,7 @@ void main() {
 
     // No stored session (default in a fresh test) → the router's
     // redirect logic should land on /login rather than the app shell.
-    expect(find.text('Hesabına giriş yap'), findsOneWidget);
+    expect(find.text('Tekrar hoş geldin'), findsOneWidget);
   });
 
   testWidgets('shows the app shell when a session is already stored', (WidgetTester tester) async {
@@ -108,6 +108,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign in to your account'), findsOneWidget);
+    expect(find.text('Welcome back'), findsOneWidget);
   });
 }

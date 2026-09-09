@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mental_domain::repository::{
-    AuthRepository, ChatRepository, ExplainerRepository, InsightRepository, JournalRepository,
-    LifeAnalysisRepository, LifeStoryRepository, MoodRepository, ReportRepository,
-    ResearchRepository, UserRepository, UserStateRepository,
+    ActivityRepository, AuthRepository, ChatRepository, ExplainerRepository, InsightRepository,
+    JournalRepository, LifeAnalysisRepository, LifeStoryRepository, MoodRepository,
+    ReportRepository, ResearchRepository, UserRepository, UserStateRepository,
 };
 use mental_domain::report::LifeAnalysis;
 use mental_domain::{
@@ -797,6 +797,49 @@ impl UserStateRepository for SqliteUserStateRepository {
         .await?;
 
         Ok(())
+    }
+}
+
+pub struct SqliteActivityRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteActivityRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl ActivityRepository for SqliteActivityRepository {
+    async fn daily_counts(
+        &self,
+        user_id: Uuid,
+        since: DateTime<Utc>,
+    ) -> anyhow::Result<Vec<(String, u32)>> {
+        // `date()` parses the RFC3339 text these columns are stored as and
+        // truncates to the UTC day — see `StreakSummary` on why UTC is
+        // good enough here. Assistant chat messages are excluded: a
+        // streak should count what the person did, not what was said back.
+        let rows = sqlx::query_as::<_, (String, i64)>(
+            "SELECT day, SUM(n) AS total FROM (
+                 SELECT date(recorded_at) AS day, COUNT(*) AS n FROM mood_entries
+                 WHERE user_id = ?1 AND recorded_at >= ?2 GROUP BY day
+                 UNION ALL
+                 SELECT date(created_at) AS day, COUNT(*) AS n FROM journal_entries
+                 WHERE user_id = ?1 AND created_at >= ?2 GROUP BY day
+                 UNION ALL
+                 SELECT date(created_at) AS day, COUNT(*) AS n FROM chat_messages
+                 WHERE user_id = ?1 AND role = 'user' AND created_at >= ?2 GROUP BY day
+             )
+             GROUP BY day ORDER BY day ASC",
+        )
+        .bind(user_id.to_string())
+        .bind(since)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(|(day, total)| (day, total.max(0) as u32)).collect())
     }
 }
 

@@ -88,10 +88,27 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get homeDiagnosesTitle => 'TANILARIM';
+  String get homeDiagnosesTitle => 'Tanılarım';
 
   @override
-  String get homeToday => 'Bugün';
+  String get homeToday => 'Bugünün notu';
+
+  @override
+  String get streakLabel => 'Seri';
+
+  @override
+  String get streakDays => 'gün';
+
+  @override
+  String get streakJournalLabel => 'gün seri';
+
+  @override
+  String get streakPeriodLabel => 'Dönem serisi';
+
+  @override
+  String streakPeriodValue(int active, int total) {
+    return '$active / $total gün';
+  }
 
   @override
   String get homeRecommendations => 'Öneriler';
@@ -133,6 +150,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get guideResearchInCategory => 'Bu kategoriden araştırmalar';
+
+  @override
+  String get guideResearchFeed => 'Bu hafta okunanlardan';
 
   @override
   String get guideEmptyInCategory => 'Bu kategoride henüz araştırma kartı yok';
@@ -228,24 +248,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsStories => 'Hikayeler';
 
   @override
-  String get settingsStoriesBody =>
-      'Deneyimini paylaş, başkalarının hikayelerini oku.';
-
-  @override
   String get settingsModeration => 'Moderasyon';
 
   @override
-  String get settingsModerationBody =>
-      'Bekleyen ve bildirilen hikayeleri incele.';
+  String get settingsAdminBadge => 'Admin';
 
   @override
   String get settingsAccount => 'Hesap';
 
   @override
   String get settingsProfile => 'Profilim';
-
-  @override
-  String get settingsProfileBody => 'E-posta, yaş, dil ve tanıların.';
 
   @override
   String get settingsLogout => 'Çıkış yap';
@@ -302,6 +314,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String diagnosesCatalogSize(int categories, int total) {
+    return '$categories kategori · $total tanı';
+  }
+
+  @override
   String get diagnosesSaved => 'Tanıların kaydedildi.';
 
   @override
@@ -311,7 +328,36 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authRegisterTitle => 'Hesabını oluştur';
 
   @override
+  String get authRegisterNote =>
+      'Birkaç saniye sürer. Hiçbir şey paylaşmak zorunda değilsin.';
+
+  @override
+  String get authWelcomeBack => 'Tekrar hoş geldin';
+
+  @override
+  String get authWelcomeNote =>
+      'Kaldığın yerden devam edelim. Hiçbir şey paylaşmak zorunda değilsin.';
+
+  @override
   String get authLoginTitle => 'Hesabına giriş yap';
+
+  @override
+  String get authPasswordLabel => 'Şifre';
+
+  @override
+  String get authPasswordRule => 'En az 8 karakter.';
+
+  @override
+  String get authShowPassword => 'Göster';
+
+  @override
+  String get authHidePassword => 'Gizle';
+
+  @override
+  String get authHaveAccount => 'Zaten hesabın var mı?';
+
+  @override
+  String get authNoAccount => 'Hesabın yok mu?';
 
   @override
   String get authPassword => 'Şifre (en az 8 karakter)';
@@ -336,7 +382,51 @@ class AppLocalizationsTr extends AppLocalizations {
   String get moodDoneToday => 'Bugünkü kaydın alındı';
 
   @override
-  String get moodHowAreYou => 'Şu an nasılsın?';
+  String get moodHowAreYou => 'Şu an sana en yakın olan hangisi?';
+
+  @override
+  String get moodPickHint => 'Birkaçını seçebilirsin. Doğru cevap yok.';
+
+  @override
+  String get moodWhereItLands => 'Nereye düşüyor';
+
+  @override
+  String get moodAxisHint =>
+      'Seçtiklerin bu iki eksene çevriliyor — noktayı elle de oynatabilirsin.';
+
+  @override
+  String get moodOncePerDay =>
+      'Günde bir kez kaydediliyor · sonraki 24 sa sonra';
+
+  @override
+  String get moodWordCalm => 'Sakin';
+
+  @override
+  String get moodWordHopeful => 'Umutlu';
+
+  @override
+  String get moodWordTired => 'Yorgun';
+
+  @override
+  String get moodWordTense => 'Gergin';
+
+  @override
+  String get moodWordUnsure => 'Kararsız';
+
+  @override
+  String get moodWordRelieved => 'Hafiflemiş';
+
+  @override
+  String get moodWordHeavy => 'Ağır';
+
+  @override
+  String get moodWordJoyful => 'Neşeli';
+
+  @override
+  String get moodWordAngry => 'Kızgın';
+
+  @override
+  String get moodWordEmpty => 'Boşlukta';
 
   @override
   String moodNextIn(String time) {
@@ -373,10 +463,19 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get journalHint => 'Bugün aklından ne geçti?';
+  String get journalHint => 'Yarım cümle de olur...';
 
   @override
-  String get journalPast => 'GEÇMİŞ GÜNLÜKLER';
+  String get journalPrompt => 'Bugün aklından ne geçti?';
+
+  @override
+  String get journalPromptNote => 'Kimse okumuyor. Yarım cümle de olur.';
+
+  @override
+  String get journalDraftSaved => 'Taslak kaydedildi';
+
+  @override
+  String get journalPast => 'Önceki günler';
 
   @override
   String get journalEmpty => 'Henüz bir günlük yazmadın.';
@@ -400,6 +499,12 @@ class AppLocalizationsTr extends AppLocalizations {
       'Zor bir an gibi görünüyor. Acil durumdaysan 112\'yi ara; konuşmak istersen bir uzmana ulaşmayı düşünebilirsin.';
 
   @override
+  String get chatToday => 'bugün';
+
+  @override
+  String get chatCrisisTitle => 'Bunu yalnız taşımak zorunda değilsin';
+
+  @override
   String get chatCallEmergency => '112\'yi ara';
 
   @override
@@ -410,6 +515,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get lifeCooldownTooltip => 'Haftada bir yenilenebilir';
+
+  @override
+  String lifeNextOn(String date) {
+    return 'sonraki $date';
+  }
 
   @override
   String get lifeRegenerate => 'Yeniden analiz et';
@@ -448,6 +558,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get storiesSearchHint => 'Tanı veya kategori ara';
+
+  @override
+  String get storiesAnonymous => 'isimsiz';
 
   @override
   String get storiesTabFeed => 'Hikayeler';
@@ -565,4 +678,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get storiesModerationCrisisFlag => 'Kriz dili';
+
+  @override
+  String get storiesModerationReporterNote => 'Bildiren notu:';
 }

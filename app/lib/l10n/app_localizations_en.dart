@@ -88,10 +88,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeDiagnosesTitle => 'MY DIAGNOSES';
+  String get homeDiagnosesTitle => 'My diagnoses';
 
   @override
-  String get homeToday => 'Today';
+  String get homeToday => 'Today\'s note';
+
+  @override
+  String get streakLabel => 'Streak';
+
+  @override
+  String get streakDays => 'days';
+
+  @override
+  String get streakJournalLabel => 'day streak';
+
+  @override
+  String get streakPeriodLabel => 'Period streak';
+
+  @override
+  String streakPeriodValue(int active, int total) {
+    return '$active / $total days';
+  }
 
   @override
   String get homeRecommendations => 'Suggestions';
@@ -133,6 +150,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideResearchInCategory => 'Research in this category';
+
+  @override
+  String get guideResearchFeed => 'From this week\'s reading';
 
   @override
   String get guideEmptyInCategory => 'No research cards in this category yet';
@@ -228,23 +248,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsStories => 'Stories';
 
   @override
-  String get settingsStoriesBody =>
-      'Share your experience, read others\' stories.';
-
-  @override
   String get settingsModeration => 'Moderation';
 
   @override
-  String get settingsModerationBody => 'Review pending and reported stories.';
+  String get settingsAdminBadge => 'Admin';
 
   @override
   String get settingsAccount => 'Account';
 
   @override
   String get settingsProfile => 'My profile';
-
-  @override
-  String get settingsProfileBody => 'Email, age, language and your diagnoses.';
 
   @override
   String get settingsLogout => 'Log out';
@@ -301,6 +314,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String diagnosesCatalogSize(int categories, int total) {
+    return '$categories categories · $total conditions';
+  }
+
+  @override
   String get diagnosesSaved => 'Your diagnoses have been saved.';
 
   @override
@@ -310,7 +328,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authRegisterTitle => 'Create your account';
 
   @override
+  String get authRegisterNote =>
+      'It takes a few seconds. You don\'t have to share anything.';
+
+  @override
+  String get authWelcomeBack => 'Welcome back';
+
+  @override
+  String get authWelcomeNote =>
+      'Let\'s pick up where you left off. You don\'t have to share anything.';
+
+  @override
   String get authLoginTitle => 'Sign in to your account';
+
+  @override
+  String get authPasswordLabel => 'Password';
+
+  @override
+  String get authPasswordRule => 'At least 8 characters.';
+
+  @override
+  String get authShowPassword => 'Show';
+
+  @override
+  String get authHidePassword => 'Hide';
+
+  @override
+  String get authHaveAccount => 'Already have an account?';
+
+  @override
+  String get authNoAccount => 'No account yet?';
 
   @override
   String get authPassword => 'Password (at least 8 characters)';
@@ -335,7 +382,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moodDoneToday => 'Today\'s check-in is in';
 
   @override
-  String get moodHowAreYou => 'How are you right now?';
+  String get moodHowAreYou => 'Which of these is closest right now?';
+
+  @override
+  String get moodPickHint =>
+      'You can pick more than one. There\'s no right answer.';
+
+  @override
+  String get moodWhereItLands => 'Where it lands';
+
+  @override
+  String get moodAxisHint =>
+      'Your picks translate onto these two axes — you can nudge the dot by hand too.';
+
+  @override
+  String get moodOncePerDay => 'Saved once a day · next one in 24h';
+
+  @override
+  String get moodWordCalm => 'Calm';
+
+  @override
+  String get moodWordHopeful => 'Hopeful';
+
+  @override
+  String get moodWordTired => 'Tired';
+
+  @override
+  String get moodWordTense => 'Tense';
+
+  @override
+  String get moodWordUnsure => 'Unsure';
+
+  @override
+  String get moodWordRelieved => 'Relieved';
+
+  @override
+  String get moodWordHeavy => 'Heavy';
+
+  @override
+  String get moodWordJoyful => 'Joyful';
+
+  @override
+  String get moodWordAngry => 'Angry';
+
+  @override
+  String get moodWordEmpty => 'Empty';
 
   @override
   String moodNextIn(String time) {
@@ -372,10 +463,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get journalHint => 'What was on your mind today?';
+  String get journalHint => 'Half a sentence is fine...';
 
   @override
-  String get journalPast => 'PAST ENTRIES';
+  String get journalPrompt => 'What was on your mind today?';
+
+  @override
+  String get journalPromptNote => 'Nobody reads this. Half a sentence is fine.';
+
+  @override
+  String get journalDraftSaved => 'Draft saved';
+
+  @override
+  String get journalPast => 'Past entries';
 
   @override
   String get journalEmpty => 'You haven\'t written an entry yet.';
@@ -399,6 +499,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'This sounds like a hard moment. If this is an emergency, call your local emergency number; if you want to talk, reaching a professional is worth considering.';
 
   @override
+  String get chatToday => 'today';
+
+  @override
+  String get chatCrisisTitle => 'You don\'t have to carry this alone';
+
+  @override
   String get chatCallEmergency => 'Call 112';
 
   @override
@@ -409,6 +515,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lifeCooldownTooltip => 'Can be refreshed once a week';
+
+  @override
+  String lifeNextOn(String date) {
+    return 'next $date';
+  }
 
   @override
   String get lifeRegenerate => 'Re-analyze';
@@ -447,6 +558,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storiesSearchHint => 'Search condition or category';
+
+  @override
+  String get storiesAnonymous => 'anonymous';
 
   @override
   String get storiesTabFeed => 'Stories';
@@ -564,4 +678,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storiesModerationCrisisFlag => 'Crisis language';
+
+  @override
+  String get storiesModerationReporterNote => 'Reporter\'s note:';
 }

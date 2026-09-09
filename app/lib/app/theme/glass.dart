@@ -4,20 +4,19 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// The app's one shared surface material: a frosted panel with a hairline
-/// border and a soft, low-spread shadow — no gradient border, no glow, no
-/// saturated tint. The corner is Apple's continuous ("squircle") curve
-/// rather than a plain circular arc, which is the detail that makes it read
-/// as native instead of generic-rounded-card.
+/// The app's one card surface: an opaque panel with a soft continuous
+/// ("squircle") corner and, in light mode, a shadow just heavy enough to
+/// lift it off the canvas — `0 1px 2px` at 5%, not a drop shadow anyone
+/// would describe as a drop shadow. Dark mode drops the shadow entirely
+/// and separates by fill alone, since a shadow under a near-black card
+/// on a near-black canvas is only ever mud.
 ///
 /// [blur] is off by default, and that is a deliberate performance call.
 /// `BackdropFilter` forces a save-layer and a read-back of everything
-/// painted behind it, per surface, per frame — with a dozen cards on screen
-/// that alone was dropping frames on a mid-range phone. What sits behind
-/// these cards is [AppBackground]: a smooth two-stop gradient. Blurring a
-/// smooth gradient returns almost exactly the same pixels a translucent fill
-/// does, so the cost bought nothing. The blur is kept only where something
-/// genuinely scrolls underneath the surface — the floating tab bar.
+/// painted behind it, per surface, per frame — with a dozen cards on
+/// screen that alone was dropping frames on a mid-range phone. The blur
+/// is kept only where something genuinely scrolls underneath the
+/// surface: the floating tab bar.
 class GlassSurface extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -28,13 +27,18 @@ class GlassSurface extends StatelessWidget {
   /// this surface; see the class docs.
   final bool blur;
 
+  /// A hairline outline. Off for cards (the design separates them with
+  /// fill and shadow), on for surfaces that float over moving content.
+  final bool bordered;
+
   const GlassSurface({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(20),
-    this.radius = 28,
+    this.padding = const EdgeInsets.all(16),
+    this.radius = 18,
     this.blurSigma = 24,
     this.blur = false,
+    this.bordered = false,
   });
 
   @override
@@ -42,15 +46,15 @@ class GlassSurface extends StatelessWidget {
     final palette = AppPalette.of(context);
     final shape = RoundedSuperellipseBorder(
       borderRadius: BorderRadius.circular(radius),
-      side: BorderSide(color: palette.glassBorder),
+      side: bordered ? BorderSide(color: palette.glassBorder) : BorderSide.none,
     );
 
     final surface = DecoratedBox(
       decoration: ShapeDecoration(
-        color: palette.glassFill,
+        color: blur ? palette.glassFill.withValues(alpha: 0.82) : palette.glassFill,
         shape: shape,
         shadows: [
-          BoxShadow(color: palette.glassShadow, blurRadius: 28, offset: const Offset(0, 10)),
+          BoxShadow(color: palette.glassShadow, blurRadius: 2, offset: const Offset(0, 1)),
         ],
       ),
       child: Padding(padding: padding, child: child),
@@ -68,14 +72,10 @@ class GlassSurface extends StatelessWidget {
   }
 }
 
-/// The app's constant backdrop: a calm two-stop gradient plus one very
-/// faint radial highlight in the accent color, anchored off-canvas at the
-/// top. Kept deliberately quiet — this is meant to give the glass panels
-/// something to refract, not to be a decoration in its own right.
-///
-/// Painted once into its own layer: it never changes while a screen
-/// scrolls, so isolating it keeps scrolling content from dragging two
-/// full-screen gradients through every repaint.
+/// The app's constant backdrop: one flat, quiet ground the cards sit on.
+/// Painted once into its own layer — it never changes while a screen
+/// scrolls, so isolating it keeps scrolling content from dragging a
+/// full-screen repaint behind it.
 class AppBackground extends StatelessWidget {
   final Widget child;
   const AppBackground({super.key, required this.child});
@@ -86,60 +86,17 @@ class AppBackground extends StatelessWidget {
 
     return Stack(
       children: [
-        Positioned.fill(
-          child: RepaintBoundary(
-            child: CustomPaint(painter: _BackdropPainter(palette)),
-          ),
-        ),
+        Positioned.fill(child: ColoredBox(color: palette.canvasTop)),
         child,
       ],
     );
   }
 }
 
-/// One painter for the whole backdrop instead of a `DecoratedBox` plus two
-/// gradient-filled `Container`s in a `Stack`: same picture, a third of the
-/// render objects, and nothing to lay out.
-class _BackdropPainter extends CustomPainter {
-  final AppPalette palette;
-  const _BackdropPainter(this.palette);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bounds = Offset.zero & size;
-
-    canvas.drawRect(
-      bounds,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [palette.canvasTop, palette.canvasBottom],
-        ).createShader(bounds),
-    );
-
-    _glow(canvas, Offset(size.width + 120, -180), 210, palette.accent.withValues(alpha: 0.10));
-    _glow(canvas, Offset(-160, size.height + 220), 230, palette.accent.withValues(alpha: 0.06));
-  }
-
-  void _glow(Canvas canvas, Offset center, double radius, Color color) {
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [color, color.withValues(alpha: 0)],
-        ).createShader(rect),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_BackdropPainter oldDelegate) => oldDelegate.palette != palette;
-}
-
-/// A single-line, single-accent pill button — the app's one primary
-/// call-to-action style. Deliberately not a gradient-filled button.
+/// A single-accent block button — the app's one primary call-to-action
+/// style. Deliberately not a gradient-filled button, and deliberately a
+/// soft rectangle rather than a full pill: at 54pt tall a stadium border
+/// reads as a toggle, not a commit.
 class AppPrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -157,15 +114,16 @@ class AppPrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final disabled = loading || onPressed == null;
 
     return SizedBox(
-      height: 52,
+      height: 54,
       child: Material(
-        color: palette.accent,
-        shape: const StadiumBorder(),
+        color: disabled ? palette.accent.withValues(alpha: 0.5) : palette.accent,
+        borderRadius: BorderRadius.circular(18),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: (loading || onPressed == null) ? null : onPressed,
+          onTap: disabled ? null : onPressed,
           child: Center(
             child: loading
                 ? const SizedBox(
@@ -186,11 +144,69 @@ class AppPrimaryButton extends StatelessWidget {
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
+                          letterSpacing: -0.1,
                         ),
                       ),
                     ],
                   ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The small uppercase label that heads almost every section in the
+/// design — 11px, semibold, wide tracking, secondary color. Common
+/// enough that every screen was repeating the same four lines of
+/// `copyWith`.
+class SectionLabel extends StatelessWidget {
+  final String text;
+  final Color? color;
+  const SectionLabel(this.text, {super.key, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
+    return Text(
+      text.toUpperCase(),
+      style: TextStyle(
+        fontSize: 11,
+        height: 1.3,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.99,
+        color: color ?? palette.textSecondary,
+      ),
+    );
+  }
+}
+
+/// The 44×44 rounded-square icon button the design uses for back
+/// navigation and for the refresh affordance on the home and life
+/// screens.
+class SquareIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final Color? iconColor;
+  const SquareIconButton({super.key, required this.icon, this.onPressed, this.iconColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
+    return Material(
+      color: palette.surfaceMuted,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Opacity(
+            opacity: onPressed == null ? 0.5 : 1,
+            child: Icon(icon, size: 19, color: iconColor ?? palette.textSecondary),
           ),
         ),
       ),

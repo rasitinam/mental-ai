@@ -150,6 +150,20 @@ pub trait LifeAnalysisRepository: Send + Sync {
 }
 
 #[async_trait]
+pub trait ActivityRepository: Send + Sync {
+    /// Per-day counts of everything someone did from `since` onward —
+    /// mood check-ins, journal entries and their own chat messages
+    /// together — as `(yyyy-mm-dd, count)` in ascending date order.
+    /// One query across the three tables rather than three round trips
+    /// the caller then has to merge.
+    async fn daily_counts(
+        &self,
+        user_id: Uuid,
+        since: DateTime<Utc>,
+    ) -> anyhow::Result<Vec<(String, u32)>>;
+}
+
+#[async_trait]
 pub trait LifeStoryRepository: Send + Sync {
     async fn create(&self, story: &LifeStory) -> anyhow::Result<()>;
     async fn get(&self, id: Uuid) -> anyhow::Result<Option<LifeStory>>;

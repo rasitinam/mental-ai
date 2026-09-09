@@ -9,9 +9,8 @@ import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
 import 'stories_controller.dart';
 
-/// The write flow for a life story. Free text only — no separate
-/// "medication" field — and shown together with a disclaimer and a
-/// consent checkbox that must be ticked before submitting. See
+/// The write flow for a life story. Free text plus one required
+/// diagnosis tag — no structured "medication" field, deliberately. See
 /// `mental_domain::life_story` on the backend for why: this is meant to
 /// read as one person's own account, not a searchable directory of who
 /// recommends which drug.
@@ -72,15 +71,27 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
         _consent && _diagnosis != null && _controller.text.trim().isNotEmpty && !state.submitting;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.storiesSubmitTitle)),
       body: SafeArea(
+        bottom: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Row(
+                children: [
+                  SquareIconButton(
+                    icon: Icons.arrow_back_rounded,
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
+                  const SizedBox(width: 14),
+                  Text(l10n.storiesSubmitTitle,
+                      style: AppTypography.title3.copyWith(color: palette.textPrimary)),
+                ],
+              ),
+              const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: palette.surfaceMuted,
                   borderRadius: BorderRadius.circular(16),
@@ -92,13 +103,13 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
               ),
               const SizedBox(height: 16),
               GlassSurface(
-                radius: 20,
+                radius: 16,
                 padding: EdgeInsets.zero,
                 child: InkWell(
                   onTap: _pickDiagnosis,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     child: Row(
                       children: [
                         Icon(Icons.local_offer_outlined, size: 18, color: palette.accent),
@@ -106,7 +117,7 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
                         Expanded(
                           child: Text(
                             _diagnosis?.name ?? l10n.storiesPickDiagnosis,
-                            style: AppTypography.subheadline.copyWith(
+                            style: AppTypography.label.copyWith(
                               color: _diagnosis != null ? palette.textPrimary : palette.textTertiary,
                               fontWeight: _diagnosis != null ? FontWeight.w600 : FontWeight.w400,
                             ),
@@ -119,67 +130,81 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              GlassSurface(
-                radius: 26,
-                padding: const EdgeInsets.all(4),
-                child: TextField(
-                  controller: _controller,
-                  maxLines: 10,
-                  minLines: 8,
-                  onChanged: (_) => setState(() {}),
-                  textAlignVertical: TextAlignVertical.top,
-                  style: AppTypography.body.copyWith(color: palette.textPrimary),
-                  cursorColor: palette.accent,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.all(18),
-                    hintText: l10n.storiesSubmitHint,
-                    hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
-                    border: InputBorder.none,
-                  ),
+              Container(
+                constraints: const BoxConstraints(minHeight: 230),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: palette.glassFill,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: palette.accent, width: 2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: _controller,
+                      maxLines: null,
+                      minLines: 7,
+                      onChanged: (_) => setState(() {}),
+                      textAlignVertical: TextAlignVertical.top,
+                      style: AppTypography.body.copyWith(color: palette.textPrimary),
+                      cursorColor: palette.accent,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                        hintText: l10n.storiesSubmitHint,
+                        hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.storiesCharCount(_controller.text.length),
+                      style: AppTypography.caption.copyWith(color: palette.textSecondary),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 6),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  l10n.storiesCharCount(_controller.text.length),
-                  style: AppTypography.caption.copyWith(color: palette.textTertiary),
-                ),
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               InkWell(
                 onTap: () => setState(() => _consent = !_consent),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Checkbox(
-                        value: _consent,
-                        onChanged: (v) => setState(() => _consent = v ?? false),
-                        activeColor: palette.accent,
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: _consent ? palette.accent : Colors.transparent,
+                          borderRadius: BorderRadius.circular(7),
+                          border:
+                              _consent ? null : Border.all(color: palette.textTertiary, width: 1.5),
+                        ),
+                        child: _consent
+                            ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                            : null,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Text(
-                            l10n.storiesConsentLabel,
-                            style: AppTypography.footnote.copyWith(color: palette.textSecondary),
-                          ),
+                        child: Text(
+                          l10n.storiesConsentLabel,
+                          style: AppTypography.footnote
+                              .copyWith(color: palette.textPrimary, fontSize: 13.5),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 14),
               Text(
                 l10n.storiesModerationNotice,
-                style: AppTypography.footnote.copyWith(color: palette.textTertiary),
+                style: AppTypography.footnote.copyWith(color: palette.textSecondary, fontSize: 12),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
               if (state.error != null) ...[
                 Text(state.error!, style: TextStyle(color: palette.warning), textAlign: TextAlign.center),
                 const SizedBox(height: 12),
@@ -218,7 +243,7 @@ class _DiagnosisPickerSheet extends StatelessWidget {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: palette.canvasBottom,
+            color: palette.canvasTop,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
@@ -233,16 +258,19 @@ class _DiagnosisPickerSheet extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
-                child: Text(
-                  l10n.storiesPickDiagnosis,
-                  style: AppTypography.headline.copyWith(color: palette.textPrimary),
+                padding: const EdgeInsets.fromLTRB(22, 16, 22, 12),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l10n.storiesPickDiagnosis,
+                    style: AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 20),
+                  ),
                 ),
               ),
               Expanded(
                 child: ListView.builder(
                   controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  padding: const EdgeInsets.fromLTRB(22, 0, 22, 24),
                   itemCount: categories.length,
                   itemBuilder: (context, i) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
@@ -275,30 +303,34 @@ class _PickerCategoryTileState extends State<_PickerCategoryTile> {
     final palette = widget.palette;
 
     return GlassSurface(
-      radius: 18,
+      radius: 16,
       padding: EdgeInsets.zero,
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-          childrenPadding: const EdgeInsets.only(bottom: 6),
+          childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
           onExpansionChanged: (v) => setState(() => _expanded = v),
           title: Text(
             '${widget.category.emoji}  ${widget.category.name}',
-            style: AppTypography.subheadline.copyWith(color: palette.textPrimary),
+            style: AppTypography.label.copyWith(color: palette.textPrimary),
           ),
           iconColor: palette.accent,
           collapsedIconColor: palette.textTertiary,
           children: _expanded
               ? [
                   for (final disorder in widget.category.disorders)
-                    ListTile(
-                      dense: true,
-                      title: Text(
-                        disorder.name,
-                        style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
-                      ),
+                    InkWell(
                       onTap: () => Navigator.of(context).pop(disorder),
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 44),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          disorder.name,
+                          style:
+                              AppTypography.subheadline.copyWith(color: palette.textSecondary),
+                        ),
+                      ),
                     ),
                 ]
               : const [],

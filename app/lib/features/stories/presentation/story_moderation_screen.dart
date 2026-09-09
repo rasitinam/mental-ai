@@ -32,77 +32,291 @@ class _StoryModerationScreenState extends ConsumerState<StoryModerationScreen> {
     final controller = ref.read(moderationControllerProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.storiesModerationTitle)),
-      body: RefreshIndicator(
-        color: palette.accent,
-        onRefresh: controller.load,
-        child: state.loading
-            ? ListView(children: [const SizedBox(height: 120), Center(child: CircularProgressIndicator(color: palette.accent))])
-            : Column(
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
+              child: Row(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _SegmentButton(
-                            label: l10n.storiesModerationQueueTab(state.pending.length),
-                            selected: !_showReports,
-                            palette: palette,
-                            onTap: () => setState(() => _showReports = false),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _SegmentButton(
-                            label: l10n.storiesModerationReportsTab(state.reports.length),
-                            selected: _showReports,
-                            palette: palette,
-                            onTap: () => setState(() => _showReports = true),
-                          ),
-                        ),
-                      ],
-                    ),
+                  SquareIconButton(
+                    icon: Icons.arrow_back_rounded,
+                    onPressed: () => Navigator.of(context).maybePop(),
                   ),
-                  Expanded(
-                    child: _showReports
-                        ? _ReportsList(reports: state.reports, processing: state.processing, palette: palette, l10n: l10n, controller: controller)
-                        : _PendingList(pending: state.pending, processing: state.processing, palette: palette, l10n: l10n, controller: controller),
-                  ),
+                  const SizedBox(width: 14),
+                  Text(l10n.storiesModerationTitle,
+                      style: AppTypography.title3.copyWith(color: palette.textPrimary)),
                 ],
               ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
+              child: _Segmented(
+                left: l10n.storiesModerationQueueTab(state.pending.length),
+                right: l10n.storiesModerationReportsTab(state.reports.length),
+                rightSelected: _showReports,
+                palette: palette,
+                onSelect: (reports) => setState(() => _showReports = reports),
+              ),
+            ),
+            Expanded(
+              child: RefreshIndicator(
+                color: palette.accent,
+                onRefresh: controller.load,
+                child: state.loading
+                    ? ListView(children: [
+                        const SizedBox(height: 100),
+                        Center(child: CircularProgressIndicator(color: palette.accent)),
+                      ])
+                    : _showReports
+                        ? _ReportsList(
+                            reports: state.reports,
+                            processing: state.processing,
+                            palette: palette,
+                            l10n: l10n,
+                            controller: controller,
+                          )
+                        : _PendingList(
+                            pending: state.pending,
+                            processing: state.processing,
+                            palette: palette,
+                            l10n: l10n,
+                            controller: controller,
+                          ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _SegmentButton extends StatelessWidget {
-  final String label;
-  final bool selected;
+class _Segmented extends StatelessWidget {
+  final String left;
+  final String right;
+  final bool rightSelected;
   final AppPalette palette;
-  final VoidCallback onTap;
+  final ValueChanged<bool> onSelect;
 
-  const _SegmentButton({required this.label, required this.selected, required this.palette, required this.onTap});
+  const _Segmented({
+    required this.left,
+    required this.right,
+    required this.rightSelected,
+    required this.palette,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: palette.surfaceMuted,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          _half(left, !rightSelected, () => onSelect(false)),
+          _half(right, rightSelected, () => onSelect(true)),
+        ],
+      ),
+    );
+  }
+
+  Widget _half(String label, bool selected, VoidCallback onTap) {
+    return Expanded(
+      child: Material(
+        color: selected ? palette.glassFill : Colors.transparent,
+        borderRadius: BorderRadius.circular(11),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Center(
+            child: Text(
+              label,
+              style: AppTypography.footnote.copyWith(
+                fontSize: 13.5,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                color: selected ? palette.textPrimary : palette.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One submission, with whatever the moderator needs to judge it: who
+/// wrote it, when, whether the crisis screen flagged it, and — when a
+/// reader sent it back — what they said about it.
+class _ReviewCard extends StatelessWidget {
+  final AdminStoryView story;
+  final String? note;
+  final bool busy;
+  final String approveLabel;
+  final AppPalette palette;
+  final AppLocalizations l10n;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+
+  const _ReviewCard({
+    required this.story,
+    required this.note,
+    required this.busy,
+    required this.approveLabel,
+    required this.palette,
+    required this.l10n,
+    required this.onApprove,
+    required this.onReject,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      radius: 18,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(story.handle,
+                    style: AppTypography.footnote.copyWith(
+                        color: palette.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+              if (story.crisisFlag)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: palette.warningSoft,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    l10n.storiesModerationCrisisFlag.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      height: 1.2,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.44,
+                      color: palette.warning,
+                    ),
+                  ),
+                )
+              else
+                Text(
+                  DateFormat.MMMd(Localizations.localeOf(context).languageCode)
+                      .add_Hm()
+                      .format(story.createdAt),
+                  style: AppTypography.caption.copyWith(color: palette.textSecondary),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(story.body,
+              style: AppTypography.subheadline
+                  .copyWith(color: palette.textPrimary, height: 1.6)),
+          if (note != null && note!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: palette.surfaceMuted,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: RichText(
+                text: TextSpan(
+                  style: AppTypography.footnote.copyWith(color: palette.textSecondary),
+                  children: [
+                    TextSpan(
+                      text: '${l10n.storiesModerationReporterNote} ',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600, color: palette.textPrimary),
+                    ),
+                    TextSpan(text: note),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  label: l10n.storiesModerationReject,
+                  filled: false,
+                  palette: palette,
+                  onTap: busy ? null : onReject,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ActionButton(
+                  label: approveLabel,
+                  filled: true,
+                  busy: busy,
+                  palette: palette,
+                  onTap: busy ? null : onApprove,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final bool filled;
+  final bool busy;
+  final AppPalette palette;
+  final VoidCallback? onTap;
+
+  const _ActionButton({
+    required this.label,
+    required this.filled,
+    required this.palette,
+    required this.onTap,
+    this.busy = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? palette.accent : palette.glassFill,
-      borderRadius: BorderRadius.circular(100),
+      color: filled ? palette.accent : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Center(
-            child: Text(
-              label,
-              style: AppTypography.subheadline.copyWith(
-                color: selected ? palette.canvasBottom : palette.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+        child: Container(
+          height: 44,
+          alignment: Alignment.center,
+          decoration: filled
+              ? null
+              : BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: palette.warning.withValues(alpha: 0.45)),
+                ),
+          child: busy
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : Text(
+                  label,
+                  style: AppTypography.label.copyWith(
+                    fontSize: 14,
+                    fontWeight: filled ? FontWeight.w600 : FontWeight.w500,
+                    color: filled ? Colors.white : palette.warning,
+                  ),
+                ),
         ),
       ),
     );
@@ -128,75 +342,33 @@ class _PendingList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (pending.isEmpty) {
       return ListView(
-        padding: const EdgeInsets.fromLTRB(28, 60, 28, 0),
+        padding: const EdgeInsets.fromLTRB(28, 50, 28, 0),
         children: [
-          Icon(Icons.task_alt_rounded, size: 30, color: palette.accent),
+          Icon(Icons.task_alt_rounded, size: 28, color: palette.accent),
           const SizedBox(height: 14),
-          Text(l10n.storiesModerationEmpty, textAlign: TextAlign.center, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
+          Text(l10n.storiesModerationEmpty,
+              textAlign: TextAlign.center,
+              style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17)),
         ],
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
+      padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
       itemCount: pending.length,
-      itemBuilder: (context, i) {
-        final story = pending[i];
-        final busy = processing.contains(story.id);
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: GlassSurface(
-            radius: 24,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(story.handle, style: AppTypography.subheadline.copyWith(color: palette.textSecondary, fontWeight: FontWeight.w600)),
-                    ),
-                    if (story.crisisFlag)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: palette.warningSoft, borderRadius: BorderRadius.circular(100)),
-                        child: Text(l10n.storiesModerationCrisisFlag, style: AppTypography.caption.copyWith(color: palette.warning)),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(story.body, style: AppTypography.body.copyWith(color: palette.textPrimary)),
-                const SizedBox(height: 4),
-                Text(
-                  DateFormat.yMMMd(Localizations.localeOf(context).languageCode).format(story.createdAt),
-                  style: AppTypography.caption.copyWith(color: palette.textTertiary),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: busy ? null : () => controller.reject(story.id),
-                        style: OutlinedButton.styleFrom(foregroundColor: palette.warning, side: BorderSide(color: palette.warning)),
-                        child: Text(l10n.storiesModerationReject),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: busy ? null : () => controller.approve(story.id),
-                        style: FilledButton.styleFrom(backgroundColor: palette.accent),
-                        child: busy
-                            ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : Text(l10n.storiesModerationApprove),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      itemBuilder: (context, i) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: _ReviewCard(
+          story: pending[i],
+          note: null,
+          busy: processing.contains(pending[i].id),
+          approveLabel: l10n.storiesModerationApprove,
+          palette: palette,
+          l10n: l10n,
+          onApprove: () => controller.approve(pending[i].id),
+          onReject: () => controller.reject(pending[i].id),
+        ),
+      ),
     );
   }
 }
@@ -220,66 +392,33 @@ class _ReportsList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (reports.isEmpty) {
       return ListView(
-        padding: const EdgeInsets.fromLTRB(28, 60, 28, 0),
+        padding: const EdgeInsets.fromLTRB(28, 50, 28, 0),
         children: [
-          Icon(Icons.flag_outlined, size: 30, color: palette.accent),
+          Icon(Icons.flag_outlined, size: 28, color: palette.accent),
           const SizedBox(height: 14),
-          Text(l10n.storiesModerationNoReports, textAlign: TextAlign.center, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
+          Text(l10n.storiesModerationNoReports,
+              textAlign: TextAlign.center,
+              style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17)),
         ],
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
+      padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
       itemCount: reports.length,
-      itemBuilder: (context, i) {
-        final report = reports[i];
-        final busy = processing.contains(report.story.id);
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: GlassSurface(
-            radius: 24,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(report.story.handle, style: AppTypography.subheadline.copyWith(color: palette.textSecondary, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Text(report.story.body, style: AppTypography.body.copyWith(color: palette.textPrimary)),
-                if (report.note != null && report.note!.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: palette.warningSoft, borderRadius: BorderRadius.circular(14)),
-                    child: Text(report.note!, style: AppTypography.footnote.copyWith(color: palette.warning)),
-                  ),
-                ],
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: busy ? null : () => controller.reject(report.story.id),
-                        style: OutlinedButton.styleFrom(foregroundColor: palette.warning, side: BorderSide(color: palette.warning)),
-                        child: Text(l10n.storiesModerationReject),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: busy ? null : () => controller.approve(report.story.id),
-                        style: FilledButton.styleFrom(backgroundColor: palette.accent),
-                        child: busy
-                            ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : Text(l10n.storiesModerationKeep),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      itemBuilder: (context, i) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: _ReviewCard(
+          story: reports[i].story,
+          note: reports[i].note,
+          busy: processing.contains(reports[i].story.id),
+          approveLabel: l10n.storiesModerationKeep,
+          palette: palette,
+          l10n: l10n,
+          onApprove: () => controller.approve(reports[i].story.id),
+          onReject: () => controller.reject(reports[i].story.id),
+        ),
+      ),
     );
   }
 }

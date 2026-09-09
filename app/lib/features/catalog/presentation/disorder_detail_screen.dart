@@ -20,20 +20,22 @@ class DisorderDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = AppPalette.of(context);
     final explainer = ref.watch(explainerProvider(slug));
-    final categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
+    final categories = ref.watch(categoriesProvider).valueOrNull ?? const <DisorderCategory>[];
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)!.cardTitle)),
-      body: explainer.when(
-        loading: () => _LoadingState(palette: palette),
-        error: (error, _) => _ErrorState(
-          palette: palette,
-          onRetry: () => ref.invalidate(explainerProvider(slug)),
+      body: SafeArea(
+        bottom: false,
+        child: explainer.when(
+          loading: () => _LoadingState(palette: palette),
+          error: (error, _) => _ErrorState(
+            palette: palette,
+            onRetry: () => ref.invalidate(explainerProvider(slug)),
+          ),
+          data: (data) {
+            final category = categories.where((c) => c.slug == data.category).firstOrNull;
+            return _Content(explainer: data, category: category, palette: palette);
+          },
         ),
-        data: (data) {
-          final category = categories.where((c) => c.slug == data.category).firstOrNull;
-          return _Content(explainer: data, category: category, palette: palette);
-        },
       ),
     );
   }
@@ -48,79 +50,87 @@ class _Content extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final emoji = category?.emoji ?? '🧠';
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
+      padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
       children: [
-        if (category != null) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-            decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(100)),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(category!.emoji, style: const TextStyle(fontSize: 13)),
-                const SizedBox(width: 7),
-                Text(
-                  category!.name.toUpperCase(),
-                  style: AppTypography.caption.copyWith(color: palette.accent, letterSpacing: 0.6),
-                ),
-              ],
+        Row(
+          children: [
+            SquareIconButton(
+              icon: Icons.arrow_back_rounded,
+              onPressed: () => Navigator.of(context).maybePop(),
             ),
-          ),
-          const SizedBox(height: 16),
-        ],
+            if (category != null) ...[
+              const SizedBox(width: 14),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: palette.accentSoft,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    category!.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.footnote
+                        .copyWith(color: palette.accent, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 18),
         Row(
           children: [
             Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(20)),
+              width: 48,
+              height: 48,
+              decoration:
+                  BoxDecoration(color: palette.accent, borderRadius: BorderRadius.circular(14)),
               alignment: Alignment.center,
-              child: Text(emoji, style: const TextStyle(fontSize: 26)),
+              child: Text(
+                explainer.name.substring(0, 1).toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 19,
+                  height: 1,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             Expanded(
-              child: Text(explainer.name, style: AppTypography.title1.copyWith(color: palette.textPrimary)),
+              child: Text(explainer.name,
+                  style: AppTypography.title1.copyWith(color: palette.textPrimary)),
             ),
           ],
         ),
         const SizedBox(height: 22),
-        _Section(
-          icon: Icons.help_outline_rounded,
-          title: l10n.cardWhatIsIt,
-          body: explainer.whatItIs,
-          palette: palette,
-        ),
-        const SizedBox(height: 14),
-        _Section(
-          icon: Icons.timeline_rounded,
-          title: l10n.cardHowDevelops,
-          body: explainer.howItDevelops,
-          palette: palette,
-        ),
+        _Section(title: l10n.cardWhatIsIt, body: explainer.whatItIs, palette: palette),
+        const SizedBox(height: 18),
+        _Section(title: l10n.cardHowDevelops, body: explainer.howItDevelops, palette: palette),
         if (explainer.copingPaths.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          _ListSection(
-            icon: Icons.self_improvement_rounded,
+          const SizedBox(height: 18),
+          _ListCard(
             title: l10n.cardWhatHelps,
             items: explainer.copingPaths,
+            bulletColor: palette.accent,
             palette: palette,
           ),
         ],
         if (explainer.treatmentPaths.isNotEmpty) ...[
           const SizedBox(height: 14),
-          _ListSection(
-            icon: Icons.medical_services_outlined,
+          _ListCard(
             title: l10n.cardProfessionalHelp,
             items: explainer.treatmentPaths,
+            bulletColor: palette.accentAlt,
             palette: palette,
           ),
         ],
         const SizedBox(height: 18),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: palette.surfaceMuted,
             borderRadius: BorderRadius.circular(16),
@@ -135,108 +145,66 @@ class _Content extends StatelessWidget {
   }
 }
 
-/// Small circular icon badge used atop every section card — the visual
-/// anchor that lets someone scan the page by icon before reading titles.
-class _IconBadge extends StatelessWidget {
-  final IconData icon;
-  final AppPalette palette;
-  const _IconBadge({required this.icon, required this.palette});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(11)),
-      alignment: Alignment.center,
-      child: Icon(icon, size: 16, color: palette.accent),
-    );
-  }
-}
-
+/// A plain labelled paragraph — the design leaves these uncarded so the
+/// two list sections below them are the things that read as boxes.
 class _Section extends StatelessWidget {
-  final IconData icon;
   final String title;
   final String body;
   final AppPalette palette;
-  const _Section({
-    required this.icon,
-    required this.title,
-    required this.body,
-    required this.palette,
-  });
+  const _Section({required this.title, required this.body, required this.palette});
 
   @override
   Widget build(BuildContext context) {
-    return GlassSurface(
-      radius: 24,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              _IconBadge(icon: icon, palette: palette),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(title, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(body, style: AppTypography.body.copyWith(color: palette.textSecondary)),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionLabel(title),
+        const SizedBox(height: 7),
+        Text(body,
+            style: AppTypography.subheadline
+                .copyWith(color: palette.textPrimary, fontSize: 14.5, height: 1.65)),
+      ],
     );
   }
 }
 
-class _ListSection extends StatelessWidget {
-  final IconData icon;
+class _ListCard extends StatelessWidget {
   final String title;
   final List<String> items;
+  final Color bulletColor;
   final AppPalette palette;
-  const _ListSection({
-    required this.icon,
+
+  const _ListCard({
     required this.title,
     required this.items,
+    required this.bulletColor,
     required this.palette,
   });
 
   @override
   Widget build(BuildContext context) {
     return GlassSurface(
-      radius: 24,
+      radius: 18,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _IconBadge(icon: icon, palette: palette),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(title, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          for (var i = 0; i < items.length; i++)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 11),
-              decoration: i == items.length - 1
-                  ? null
-                  : BoxDecoration(border: Border(bottom: BorderSide(color: palette.separator))),
+          SectionLabel(title),
+          const SizedBox(height: 10),
+          for (final item in items)
+            Padding(
+              padding: EdgeInsets.only(bottom: item == items.last ? 0 : 9),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    margin: const EdgeInsets.only(top: 7),
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(color: palette.accent, shape: BoxShape.circle),
+                    margin: const EdgeInsets.only(top: 8),
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(color: bulletColor, shape: BoxShape.circle),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(items[i],
+                    child: Text(item,
                         style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
                   ),
                 ],
@@ -254,6 +222,8 @@ class _LoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -262,15 +232,13 @@ class _LoadingState extends StatelessWidget {
           children: [
             CircularProgressIndicator(color: palette.accent),
             const SizedBox(height: 20),
-            Text(
-              AppLocalizations.of(context)!.cardPreparing,
-              style: AppTypography.headline.copyWith(color: palette.textPrimary),
-            ),
+            Text(l10n.cardPreparing,
+                style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17)),
             const SizedBox(height: 8),
             Text(
-              AppLocalizations.of(context)!.cardPreparingBody,
+              l10n.cardPreparingBody,
               textAlign: TextAlign.center,
-              style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
+              style: AppTypography.footnote.copyWith(color: palette.textSecondary),
             ),
           ],
         ),
@@ -286,25 +254,22 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off_rounded, size: 30, color: palette.warning),
+            Icon(Icons.cloud_off_rounded, size: 28, color: palette.warning),
             const SizedBox(height: 14),
-            Text(
-              AppLocalizations.of(context)!.cardLoadFailed,
-              style: AppTypography.headline.copyWith(color: palette.textPrimary),
-            ),
+            Text(l10n.cardLoadFailed,
+                style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17)),
             const SizedBox(height: 20),
             SizedBox(
               width: 200,
-              child: AppPrimaryButton(
-                label: AppLocalizations.of(context)!.commonRetry,
-                onPressed: onRetry,
-              ),
+              child: AppPrimaryButton(label: l10n.commonRetry, onPressed: onRetry),
             ),
           ],
         ),

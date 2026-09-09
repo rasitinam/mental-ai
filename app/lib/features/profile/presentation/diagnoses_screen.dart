@@ -46,22 +46,24 @@ class DiagnosesScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.diagnosesTitle)),
-      body: categories.when(
-        loading: () => Center(child: CircularProgressIndicator(color: palette.accent)),
-        error: (error, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Text(l10n.diagnosesLoadFailed,
-                style: AppTypography.subheadline.copyWith(color: palette.warning)),
+      body: SafeArea(
+        bottom: false,
+        child: categories.when(
+          loading: () => Center(child: CircularProgressIndicator(color: palette.accent)),
+          error: (error, _) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Text(l10n.diagnosesLoadFailed,
+                  style: AppTypography.subheadline.copyWith(color: palette.warning)),
+            ),
           ),
+          data: (data) => loading
+              ? Center(child: CircularProgressIndicator(color: palette.accent))
+              : _CategoryList(categories: data, palette: palette, l10n: l10n),
         ),
-        data: (data) => loading
-            ? Center(child: CircularProgressIndicator(color: palette.accent))
-            : _CategoryList(categories: data, palette: palette, l10n: l10n),
       ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        minimum: const EdgeInsets.fromLTRB(22, 0, 22, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -95,25 +97,52 @@ class _CategoryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // itemCount is categories + 1 so the explanatory note scrolls with the
-    // list instead of forcing a second scrollable around it.
+    final total = categories.fold<int>(0, (sum, c) => sum + c.disorders.length);
+
+    // itemCount is categories + a header and a footer, so both scroll with
+    // the list instead of forcing a second scrollable around it.
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-      itemCount: categories.length + 1,
+      padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+      itemCount: categories.length + 2,
       itemBuilder: (context, index) {
         if (index == 0) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  SquareIconButton(
+                    icon: Icons.arrow_back_rounded,
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
+                  const SizedBox(width: 14),
+                  Text(l10n.diagnosesTitle,
+                      style: AppTypography.title3.copyWith(color: palette.textPrimary)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: palette.surfaceMuted,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  l10n.diagnosesNote,
+                  style: AppTypography.footnote.copyWith(color: palette.textSecondary),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          );
+        }
+
+        if (index == categories.length + 1) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 18),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: palette.surfaceMuted,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                l10n.diagnosesNote,
-                style: AppTypography.footnote.copyWith(color: palette.textSecondary),
-              ),
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              l10n.diagnosesCatalogSize(categories.length, total),
+              style: AppTypography.footnote.copyWith(color: palette.textSecondary),
             ),
           );
         }
@@ -157,28 +186,46 @@ class _CategoryTileState extends State<_CategoryTile> {
     final palette = widget.palette;
 
     return GlassSurface(
-      radius: 22,
+      radius: 16,
       padding: EdgeInsets.zero,
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 18),
-          childrenPadding: const EdgeInsets.only(bottom: 8),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
           onExpansionChanged: (value) => setState(() => _expanded = value),
-          title: Text(
-            '${widget.category.emoji}  ${widget.category.name}',
-            style: AppTypography.subheadline.copyWith(color: palette.textPrimary),
+          leading: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: palette.accentSoft,
+              borderRadius: BorderRadius.circular(7),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              widget.category.name.substring(0, 1).toUpperCase(),
+              style: TextStyle(
+                fontSize: 11,
+                height: 1,
+                fontWeight: FontWeight.w700,
+                color: palette.accent,
+              ),
+            ),
           ),
-          subtitle: _SelectedCount(category: widget.category, palette: palette, l10n: widget.l10n),
-          iconColor: palette.accent,
-          collapsedIconColor: palette.textTertiary,
+          title: Text(
+            widget.category.name,
+            style: AppTypography.label
+                .copyWith(color: palette.textPrimary, fontWeight: FontWeight.w600),
+          ),
+          trailing: _SelectedCount(category: widget.category, palette: palette),
           children: _expanded
               ? [
                   for (final disorder in widget.category.disorders)
-                    _DisorderCheckbox(
+                    _DisorderRow(
                       slug: disorder.slug,
                       name: disorder.name,
                       palette: palette,
+                      last: disorder == widget.category.disorders.last,
                     ),
                 ]
               : const [],
@@ -189,13 +236,12 @@ class _CategoryTileState extends State<_CategoryTile> {
 }
 
 /// Watches only this category's count, so ticking a box in one category
-/// leaves every other subtitle untouched.
+/// leaves every other badge untouched.
 class _SelectedCount extends ConsumerWidget {
   final DisorderCategory category;
   final AppPalette palette;
-  final AppLocalizations l10n;
 
-  const _SelectedCount({required this.category, required this.palette, required this.l10n});
+  const _SelectedCount({required this.category, required this.palette});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -205,23 +251,50 @@ class _SelectedCount extends ConsumerWidget {
       ),
     );
 
-    if (count == 0) return const SizedBox.shrink();
-
-    return Text(
-      l10n.diagnosesSelectedCount(count),
-      style: AppTypography.caption.copyWith(color: palette.accent),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (count > 0)
+          Container(
+            constraints: const BoxConstraints(minWidth: 22),
+            height: 22,
+            padding: const EdgeInsets.symmetric(horizontal: 7),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: palette.accent,
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Text(
+              '$count',
+              style: const TextStyle(
+                fontSize: 11.5,
+                height: 1,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        const SizedBox(width: 8),
+        Icon(Icons.expand_more_rounded, size: 20, color: palette.textTertiary),
+      ],
     );
   }
 }
 
 /// One row, watching one boolean. This is what makes ticking a box cost a
 /// single-row rebuild rather than a rebuild of the whole catalog.
-class _DisorderCheckbox extends ConsumerWidget {
+class _DisorderRow extends ConsumerWidget {
   final String slug;
   final String name;
   final AppPalette palette;
+  final bool last;
 
-  const _DisorderCheckbox({required this.slug, required this.name, required this.palette});
+  const _DisorderRow({
+    required this.slug,
+    required this.name,
+    required this.palette,
+    required this.last,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -229,16 +302,35 @@ class _DisorderCheckbox extends ConsumerWidget {
       profileControllerProvider.select((state) => state.diagnoses.contains(slug)),
     );
 
-    return CheckboxListTile(
-      value: selected,
-      onChanged: (_) => ref.read(profileControllerProvider.notifier).toggle(slug),
-      title: Text(
-        name,
-        style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
+    return InkWell(
+      onTap: () => ref.read(profileControllerProvider.notifier).toggle(slug),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 46),
+        decoration: last
+            ? null
+            : BoxDecoration(border: Border(bottom: BorderSide(color: palette.separator))),
+        child: Row(
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: selected ? palette.accent : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                border: selected ? null : Border.all(color: palette.textTertiary, width: 1.5),
+              ),
+              child: selected
+                  ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(name,
+                  style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
+            ),
+          ],
+        ),
       ),
-      activeColor: palette.accent,
-      controlAffinity: ListTileControlAffinity.leading,
-      dense: true,
     );
   }
 }

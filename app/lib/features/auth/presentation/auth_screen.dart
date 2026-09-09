@@ -22,6 +22,7 @@ class AuthScreen extends ConsumerStatefulWidget {
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _isRegister = false;
+  bool _showPassword = false;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -50,51 +51,119 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(20)),
-                  alignment: Alignment.center,
-                  child: Icon(Icons.self_improvement_rounded, size: 32, color: palette.accent),
-                ),
-                const SizedBox(height: 24),
-                Text('Mental AI', style: AppTypography.largeTitle.copyWith(color: palette.textPrimary)),
-                const SizedBox(height: 8),
-                Text(
-                  _isRegister ? l10n.authRegisterTitle : l10n.authLoginTitle,
-                  style: AppTypography.body.copyWith(color: palette.textSecondary),
-                ),
-                const SizedBox(height: 28),
-                GlassSurface(
-                  radius: 24,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(26, 40, 26, 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight - 64),
+              // IntrinsicHeight gives the column a definite height inside a
+              // scroll view, which is what lets the disclaimer sit at the
+              // bottom via Spacer without unbounded-height errors.
+              child: IntrinsicHeight(
+                child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
                     children: [
-                      _AuthField(
-                        controller: _emailController,
-                        label: l10n.profileEmail,
-                        icon: Icons.mail_outline_rounded,
-                        keyboardType: TextInputType.emailAddress,
+                      Container(
+                        width: 11,
+                        height: 11,
+                        decoration: BoxDecoration(color: palette.accent, shape: BoxShape.circle),
                       ),
-                      const SizedBox(height: 14),
-                      _AuthField(
-                        controller: _passwordController,
-                        label: l10n.authPassword,
-                        icon: Icons.lock_outline_rounded,
-                        obscureText: true,
-                        onSubmitted: (_) => _submit(),
+                      const SizedBox(width: 9),
+                      Text(
+                        'mental',
+                        style: AppTypography.label.copyWith(
+                          color: palette.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.28,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                if (_isRegister) ...[
+                  const SizedBox(height: 26),
+                  Text(
+                    _isRegister ? l10n.authRegisterTitle : l10n.authWelcomeBack,
+                    style: AppTypography.largeTitle.copyWith(color: palette.textPrimary),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    _isRegister ? l10n.authRegisterNote : l10n.authWelcomeNote,
+                    style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
+                  ),
+                  const SizedBox(height: 26),
+                  _FieldLabel(text: l10n.profileEmail, palette: palette),
+                  const SizedBox(height: 6),
+                  _AuthField(
+                    controller: _emailController,
+                    palette: palette,
+                    keyboardType: TextInputType.emailAddress,
+                    hint: 'ornek@eposta.com',
+                  ),
+                  const SizedBox(height: 12),
+                  _FieldLabel(text: l10n.authPasswordLabel, palette: palette),
+                  const SizedBox(height: 6),
+                  _AuthField(
+                    controller: _passwordController,
+                    palette: palette,
+                    obscureText: !_showPassword,
+                    onSubmitted: (_) => _submit(),
+                    trailing: InkWell(
+                      onTap: () => setState(() => _showPassword = !_showPassword),
+                      child: Text(
+                        _showPassword ? l10n.authHidePassword : l10n.authShowPassword,
+                        style: AppTypography.footnote
+                            .copyWith(color: palette.accent, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(l10n.authPasswordRule,
+                      style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                  if (state.error != null) ...[
+                    const SizedBox(height: 14),
+                    Text(state.error!,
+                        style: TextStyle(color: palette.warning), textAlign: TextAlign.center),
+                  ],
+                  const SizedBox(height: 26),
+                  AppPrimaryButton(
+                    label: _isRegister ? l10n.authRegisterCta : l10n.authLoginCta,
+                    loading: state.submitting,
+                    onPressed: _submit,
+                  ),
                   const SizedBox(height: 14),
+                  Center(
+                    child: InkWell(
+                      onTap: state.submitting
+                          ? null
+                          : () {
+                              setState(() => _isRegister = !_isRegister);
+                              ref.read(authControllerProvider.notifier).clearError();
+                            },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Text.rich(
+                          TextSpan(
+                            style: AppTypography.subheadline
+                                .copyWith(color: palette.textSecondary),
+                            children: [
+                              TextSpan(
+                                  text: _isRegister
+                                      ? '${l10n.authHaveAccount} '
+                                      : '${l10n.authNoAccount} '),
+                              TextSpan(
+                                text: _isRegister ? l10n.authLoginCta : l10n.authRegisterCta,
+                                style: TextStyle(
+                                    color: palette.accent, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  const SizedBox(height: 26),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -116,9 +185,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             '!',
                             style: TextStyle(
                               fontSize: 12,
+                              height: 1,
                               fontWeight: FontWeight.w700,
                               color: palette.warning,
-                              height: 1,
                             ),
                           ),
                         ),
@@ -133,30 +202,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     ),
                   ),
                 ],
-                if (state.error != null) ...[
-                  const SizedBox(height: 14),
-                  Text(state.error!, style: TextStyle(color: palette.warning), textAlign: TextAlign.center),
-                ],
-                const SizedBox(height: 20),
-                AppPrimaryButton(
-                  label: _isRegister ? l10n.authRegisterCta : l10n.authLoginCta,
-                  loading: state.submitting,
-                  onPressed: _submit,
                 ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: state.submitting
-                      ? null
-                      : () {
-                          setState(() => _isRegister = !_isRegister);
-                          ref.read(authControllerProvider.notifier).clearError();
-                        },
-                  child: Text(
-                    _isRegister ? l10n.authSwitchToLogin : l10n.authSwitchToRegister,
-                    style: AppTypography.subheadline.copyWith(color: palette.accent),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -165,48 +212,72 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 }
 
+class _FieldLabel extends StatelessWidget {
+  final String text;
+  final AppPalette palette;
+  const _FieldLabel({required this.text, required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: AppTypography.footnote
+          .copyWith(color: palette.textSecondary, fontWeight: FontWeight.w500, fontSize: 12),
+    );
+  }
+}
+
 class _AuthField extends StatelessWidget {
   final TextEditingController controller;
-  final String label;
-  final IconData icon;
+  final AppPalette palette;
   final bool obscureText;
   final TextInputType? keyboardType;
   final ValueChanged<String>? onSubmitted;
+  final Widget? trailing;
+  final String? hint;
 
   const _AuthField({
     required this.controller,
-    required this.label,
-    required this.icon,
+    required this.palette,
     this.obscureText = false,
     this.keyboardType,
     this.onSubmitted,
+    this.trailing,
+    this.hint,
   });
 
   @override
   Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: palette.textTertiary),
-        const SizedBox(width: 10),
-        Expanded(
-          child: TextField(
-            controller: controller,
-            obscureText: obscureText,
-            keyboardType: keyboardType,
-            onSubmitted: onSubmitted,
-            style: AppTypography.body.copyWith(color: palette.textPrimary),
-            cursorColor: palette.accent,
-            decoration: InputDecoration(
-              isDense: true,
-              border: InputBorder.none,
-              hintText: label,
-              hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: palette.glassFill,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.separator),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              obscureText: obscureText,
+              keyboardType: keyboardType,
+              onSubmitted: onSubmitted,
+              style: AppTypography.body.copyWith(color: palette.textPrimary),
+              cursorColor: palette.accent,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                border: InputBorder.none,
+                hintText: hint,
+                hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
+              ),
             ),
           ),
-        ),
-      ],
+          if (trailing != null) ...[const SizedBox(width: 10), trailing!],
+        ],
+      ),
     );
   }
 }

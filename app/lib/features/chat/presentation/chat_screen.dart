@@ -4,8 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
-import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../streak/data/streak_api.dart';
 import '../domain/chat_message.dart';
 import 'chat_controller.dart';
 
@@ -31,6 +31,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (text.trim().isEmpty) return;
     _inputController.clear();
     ref.read(chatControllerProvider.notifier).send(text);
+    // A message is one of the three things a day can be "active" by.
+    ref.invalidate(streakProvider);
   }
 
   void _scrollToBottomSoon() {
@@ -41,7 +43,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   @override
+  void dispose() {
+    _inputController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(chatControllerProvider);
     final palette = AppPalette.of(context);
 
@@ -51,34 +61,46 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)!.navChat)),
-      body: Column(
-        children: [
-          Expanded(
-            child: state.loadingHistory && state.messages.isEmpty
-                ? Center(child: CircularProgressIndicator(color: palette.accent))
-                : state.messages.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Text(
-                            AppLocalizations.of(context)!.chatEmptyPrompt,
-                            style: AppTypography.body.copyWith(color: palette.textTertiary),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                        itemCount: state.messages.length,
-                        itemBuilder: (context, index) => _ChatBubble(message: state.messages[index]),
-                      ),
-          ),
-          if (state.sending)
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: SizedBox(
+              padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(l10n.navChat,
+                      style: AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 20)),
+                  Text(l10n.chatToday,
+                      style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: state.loadingHistory && state.messages.isEmpty
+                  ? Center(child: CircularProgressIndicator(color: palette.accent))
+                  : state.messages.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Text(
+                              l10n.chatEmptyPrompt,
+                              style: AppTypography.body.copyWith(color: palette.textTertiary),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.fromLTRB(22, 0, 22, 8),
+                          itemCount: state.messages.length,
+                          itemBuilder: (context, index) =>
+                              _ChatBubble(message: state.messages[index]),
+                        ),
+            ),
+            if (state.sending)
+              SizedBox(
                 height: 2,
                 child: LinearProgressIndicator(
                   minHeight: 2,
@@ -86,39 +108,51 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   color: palette.accent,
                 ),
               ),
-            ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: GlassSurface(
-                radius: 26,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(22, 8, 22, 88),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: _inputController,
-                        onSubmitted: (_) => _send(),
-                        textInputAction: TextInputAction.send,
-                        style: AppTypography.body.copyWith(color: palette.textPrimary),
-                        cursorColor: palette.accent,
-                        decoration: InputDecoration(
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          hintText: AppLocalizations.of(context)!.chatInputHint,
-                          hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
-                          border: InputBorder.none,
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 52),
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        alignment: Alignment.centerLeft,
+                        decoration: BoxDecoration(
+                          color: palette.glassFill,
+                          borderRadius: BorderRadius.circular(26),
+                          border: Border.all(color: palette.separator),
+                        ),
+                        child: TextField(
+                          controller: _inputController,
+                          onSubmitted: (_) => _send(),
+                          textInputAction: TextInputAction.send,
+                          style: AppTypography.label
+                              .copyWith(color: palette.textPrimary, fontWeight: FontWeight.w400),
+                          cursorColor: palette.accent,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                            hintText: l10n.chatInputHint,
+                            hintStyle: AppTypography.label.copyWith(
+                              color: palette.textTertiary,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            border: InputBorder.none,
+                          ),
                         ),
                       ),
                     ),
+                    const SizedBox(width: 10),
                     _SendButton(color: palette.accent, onTap: _send),
                   ],
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -137,9 +171,10 @@ class _SendButton extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: const Padding(
-          padding: EdgeInsets.all(10),
-          child: Icon(Icons.arrow_upward_rounded, size: 18, color: Colors.white),
+        child: const SizedBox(
+          width: 52,
+          height: 52,
+          child: Icon(Icons.arrow_upward_rounded, size: 20, color: Colors.white),
         ),
       ),
     );
@@ -161,8 +196,7 @@ class _ChatBubbleState extends State<_ChatBubble> {
   bool _dismissed = false;
 
   Future<void> _call() async {
-    final uri = Uri(scheme: 'tel', path: _emergencyNumber);
-    await launchUrl(uri);
+    await launchUrl(Uri(scheme: 'tel', path: _emergencyNumber));
   }
 
   @override
@@ -177,9 +211,11 @@ class _ChatBubbleState extends State<_ChatBubble> {
         Align(
           alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 5),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * (isUser ? 0.72 : 0.8),
+            ),
             decoration: BoxDecoration(
               color: isUser ? palette.accent : palette.glassFill,
               borderRadius: BorderRadius.only(
@@ -188,53 +224,82 @@ class _ChatBubbleState extends State<_ChatBubble> {
                 bottomLeft: Radius.circular(isUser ? 20 : 6),
                 bottomRight: Radius.circular(isUser ? 6 : 20),
               ),
-              border: isUser ? null : Border.all(color: palette.glassBorder, width: 1),
+              border: isUser ? null : Border.all(color: palette.separator),
             ),
             child: Text(
               widget.message.text,
-              style: AppTypography.body.copyWith(color: isUser ? Colors.white : palette.textPrimary),
+              style: AppTypography.label.copyWith(
+                fontWeight: FontWeight.w400,
+                height: 1.55,
+                color: isUser ? Colors.white : palette.textPrimary,
+              ),
             ),
           ),
         ),
         if (widget.message.crisisFlag && !_dismissed)
           Container(
             width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 10, top: 2),
-            padding: const EdgeInsets.all(14),
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: palette.warningSoft,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: palette.warning.withValues(alpha: 0.35)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  l10n.chatCrisis,
-                  style: AppTypography.subheadline.copyWith(color: palette.warning),
+                Row(
+                  children: [
+                    Container(
+                      width: 18,
+                      height: 18,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: palette.warning, shape: BoxShape.circle),
+                      child: Text('!',
+                          style: TextStyle(
+                            fontSize: 11,
+                            height: 1,
+                            fontWeight: FontWeight.w700,
+                            color: palette.warningSoft,
+                          )),
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        l10n.chatCrisisTitle,
+                        style: AppTypography.footnote.copyWith(
+                          color: palette.warning,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
+                Text(
+                  l10n.chatCrisis,
+                  style: AppTypography.footnote.copyWith(color: palette.warning),
+                ),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
-                      child: FilledButton(
-                        onPressed: _call,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: palette.warning,
-                          minimumSize: const Size.fromHeight(40),
-                        ),
-                        child: Text(l10n.chatCallEmergency),
+                      child: _CrisisAction(
+                        label: l10n.chatCallEmergency,
+                        filled: true,
+                        palette: palette,
+                        onTap: _call,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => setState(() => _dismissed = true),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: palette.warning,
-                          side: BorderSide(color: palette.warning.withValues(alpha: 0.4)),
-                          minimumSize: const Size.fromHeight(40),
-                        ),
-                        child: Text(l10n.chatContinue),
+                      child: _CrisisAction(
+                        label: l10n.chatContinue,
+                        filled: false,
+                        palette: palette,
+                        onTap: () => setState(() => _dismissed = true),
                       ),
                     ),
                   ],
@@ -243,6 +308,50 @@ class _ChatBubbleState extends State<_ChatBubble> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _CrisisAction extends StatelessWidget {
+  final String label;
+  final bool filled;
+  final AppPalette palette;
+  final VoidCallback onTap;
+
+  const _CrisisAction({
+    required this.label,
+    required this.filled,
+    required this.palette,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: filled ? palette.warning : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 40,
+          alignment: Alignment.center,
+          decoration: filled
+              ? null
+              : BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: palette.warning.withValues(alpha: 0.45)),
+                ),
+          child: Text(
+            label,
+            style: AppTypography.footnote.copyWith(
+              fontSize: 13.5,
+              fontWeight: filled ? FontWeight.w600 : FontWeight.w500,
+              color: filled ? palette.warningSoft : palette.warning,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -35,85 +35,195 @@ class SettingsScreen extends ConsumerWidget {
     final isAdmin = ref.watch(myProfileProvider).valueOrNull?.isAdmin ?? false;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.settingsTitle)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
-        children: [
-          _SettingsGroup(
-            title: l10n.settingsConnection,
-            rows: [
-              _SettingsRow(
-                  icon: Icons.dns_outlined,
-                  label: l10n.settingsServer,
-                  value: AppConstants.apiBaseUrl),
-              _SettingsRow(
-                  icon: Icons.fingerprint_rounded, label: l10n.settingsDeviceId, value: userId),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _AppearanceGroup(title: l10n.settingsAppearance),
-          const SizedBox(height: 20),
-          _SettingsGroup(
-            title: l10n.settingsPrivacy,
-            rows: [
-              _SettingsRow(
-                icon: Icons.lock_outline_rounded,
-                label: l10n.settingsDataLocation,
-                description: l10n.settingsDataLocationBody,
-              ),
-              _SettingsRow(
-                icon: Icons.shield_outlined,
-                label: l10n.settingsLegal,
-                description: l10n.settingsLegalBody,
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _SettingsGroup(
-            title: l10n.settingsCommunity,
-            rows: [
-              _SettingsRow(
-                icon: Icons.auto_stories_outlined,
-                label: l10n.settingsStories,
-                description: l10n.settingsStoriesBody,
-                onTap: () => context.go('/settings/stories'),
-              ),
-              if (isAdmin)
-                _SettingsRow(
-                  icon: Icons.fact_check_outlined,
-                  label: l10n.settingsModeration,
-                  description: l10n.settingsModerationBody,
-                  onTap: () => context.go('/settings/stories/moderation'),
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
+          children: [
+            Text(l10n.settingsTitle,
+                style: AppTypography.title2.copyWith(color: palette.textPrimary)),
+            const SizedBox(height: 20),
+            _Group(
+              title: l10n.settingsConnection,
+              children: [
+                _Row(label: l10n.settingsServer, value: AppConstants.apiBaseUrl),
+                _Row(label: l10n.settingsDeviceId, value: userId),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const _AppearanceGroup(),
+            const SizedBox(height: 20),
+            _Group(
+              title: l10n.settingsPrivacy,
+              children: [
+                _Row(label: l10n.settingsDataLocation, description: l10n.settingsDataLocationBody),
+                _Row(label: l10n.settingsLegal, description: l10n.settingsLegalBody),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _Group(
+              title: l10n.settingsCommunity,
+              children: [
+                _Row(
+                  label: l10n.settingsStories,
+                  onTap: () => context.go('/settings/stories'),
                 ),
+                if (isAdmin)
+                  _Row(
+                    label: l10n.settingsModeration,
+                    badge: l10n.settingsAdminBadge,
+                    onTap: () => context.go('/settings/stories/moderation'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _Group(
+              title: l10n.settingsAccount,
+              children: [
+                _Row(label: l10n.settingsProfile, onTap: () => context.go('/settings/profile')),
+                _Row(
+                  label: l10n.settingsLogout,
+                  labelColor: palette.warning,
+                  onTap: () => _logout(context, ref),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Group extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+  const _Group({required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionLabel(title),
+        const SizedBox(height: 8),
+        GlassSurface(
+          radius: 16,
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                children[i],
+                if (i != children.length - 1)
+                  Divider(height: 1, thickness: 1, color: palette.separator),
+              ],
             ],
           ),
-          const SizedBox(height: 20),
-          _SettingsGroup(
-            title: l10n.settingsAccount,
-            rows: [
-              _SettingsRow(
-                icon: Icons.person_outline_rounded,
-                label: l10n.settingsProfile,
-                description: l10n.settingsProfileBody,
-                onTap: () => context.go('/settings/profile'),
+        ),
+      ],
+    );
+  }
+}
+
+/// One settings line. Three shapes in one widget because the design uses
+/// exactly three: a read-only value on the right, a paragraph under the
+/// label, or a chevron that goes somewhere.
+class _Row extends StatelessWidget {
+  final String label;
+  final String? value;
+  final String? description;
+  final String? badge;
+  final Color? labelColor;
+  final VoidCallback? onTap;
+
+  const _Row({
+    required this.label,
+    this.value,
+    this.description,
+    this.badge,
+    this.labelColor,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 56),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(label,
+                            style: AppTypography.label
+                                .copyWith(color: labelColor ?? palette.textPrimary)),
+                      ),
+                      if (badge != null) ...[
+                        const SizedBox(width: 9),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: palette.surfaceMuted,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Text(
+                            badge!.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              height: 1.2,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.42,
+                              color: palette.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (description != null) ...[
+                    const SizedBox(height: 3),
+                    Text(description!,
+                        style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                  ],
+                ],
               ),
-              _SettingsRow(
-                icon: Icons.logout_rounded,
-                label: l10n.settingsLogout,
-                iconColor: palette.warning,
-                onTap: () => _logout(context, ref),
+            ),
+            if (value != null)
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 170),
+                child: Text(
+                  value!,
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.footnote
+                      .copyWith(color: palette.textSecondary, fontSize: 13),
+                ),
               ),
+            if (onTap != null) ...[
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right_rounded, size: 20, color: palette.textTertiary),
             ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _AppearanceGroup extends ConsumerWidget {
-  final String title;
-  const _AppearanceGroup({required this.title});
+  const _AppearanceGroup();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -125,15 +235,10 @@ class _AppearanceGroup extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            title.toUpperCase(),
-            style: AppTypography.caption.copyWith(color: palette.textTertiary, letterSpacing: 0.6),
-          ),
-        ),
+        SectionLabel(l10n.settingsAppearance),
+        const SizedBox(height: 8),
         GlassSurface(
-          radius: 22,
+          radius: 16,
           padding: const EdgeInsets.all(6),
           child: Row(
             children: [
@@ -188,7 +293,7 @@ class _ThemeOption extends StatelessWidget {
     return Expanded(
       child: Material(
         color: selected ? palette.accent : Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -196,114 +301,18 @@ class _ThemeOption extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Column(
               children: [
-                Icon(icon, size: 18, color: selected ? palette.canvasBottom : palette.textSecondary),
+                Icon(icon, size: 18, color: selected ? Colors.white : palette.textSecondary),
                 const SizedBox(height: 6),
                 Text(
                   label,
                   style: AppTypography.caption.copyWith(
-                    color: selected ? palette.canvasBottom : palette.textSecondary,
+                    color: selected ? Colors.white : palette.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsGroup extends StatelessWidget {
-  final String title;
-  final List<_SettingsRow> rows;
-  const _SettingsGroup({required this.title, required this.rows});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            title.toUpperCase(),
-            style: AppTypography.caption.copyWith(color: palette.textTertiary, letterSpacing: 0.6),
-          ),
-        ),
-        GlassSurface(
-          radius: 22,
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              for (var i = 0; i < rows.length; i++) ...[
-                rows[i],
-                if (i != rows.length - 1) Divider(height: 1, indent: 56, color: palette.separator),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SettingsRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String? value;
-  final String? description;
-  final Color? iconColor;
-  final VoidCallback? onTap;
-
-  const _SettingsRow({
-    required this.icon,
-    required this.label,
-    this.value,
-    this.description,
-    this.iconColor,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 20, color: iconColor ?? palette.accent),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: AppTypography.headline.copyWith(color: iconColor ?? palette.textPrimary),
-                  ),
-                  if (value != null) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      value!,
-                      style: AppTypography.footnote.copyWith(color: palette.textSecondary),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  if (description != null) ...[
-                    const SizedBox(height: 3),
-                    Text(description!, style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
-                  ],
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
