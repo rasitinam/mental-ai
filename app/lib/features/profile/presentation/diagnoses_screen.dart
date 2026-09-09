@@ -104,20 +104,15 @@ class _CategoryList extends StatelessWidget {
         if (index == 0) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 18),
-            child: GlassSurface(
-              radius: 22,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.info_outline_rounded, size: 18, color: palette.accent),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      l10n.diagnosesNote,
-                      style: AppTypography.footnote.copyWith(color: palette.textSecondary),
-                    ),
-                  ),
-                ],
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: palette.surfaceMuted,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                l10n.diagnosesNote,
+                style: AppTypography.footnote.copyWith(color: palette.textSecondary),
               ),
             ),
           );

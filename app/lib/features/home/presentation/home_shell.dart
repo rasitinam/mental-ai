@@ -102,7 +102,7 @@ class _TabIcon extends StatelessWidget {
           height: 44,
           decoration: BoxDecoration(
             color: selected ? color.withValues(alpha: 0.14) : Colors.transparent,
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(14),
           ),
           alignment: Alignment.center,
           child: Icon(

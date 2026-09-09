@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
@@ -7,6 +8,11 @@ import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
 import '../domain/chat_message.dart';
 import 'chat_controller.dart';
+
+/// Turkey's single emergency number — not configurable per user, since
+/// there's no reliable, low-risk way to infer someone's actual country
+/// from inside the app.
+const _emergencyNumber = '112';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -140,14 +146,30 @@ class _SendButton extends StatelessWidget {
   }
 }
 
-class _ChatBubble extends StatelessWidget {
+class _ChatBubble extends StatefulWidget {
   final ChatMessage message;
   const _ChatBubble({required this.message});
 
   @override
+  State<_ChatBubble> createState() => _ChatBubbleState();
+}
+
+class _ChatBubbleState extends State<_ChatBubble> {
+  // Dismissing only hides this message's own crisis card — it doesn't
+  // change anything server-side, so scrolling away and back (or a
+  // future message) can still surface it again if it's still relevant.
+  bool _dismissed = false;
+
+  Future<void> _call() async {
+    final uri = Uri(scheme: 'tel', path: _emergencyNumber);
+    await launchUrl(uri);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final isUser = message.sender == ChatSender.user;
+    final l10n = AppLocalizations.of(context)!;
+    final isUser = widget.message.sender == ChatSender.user;
 
     return Column(
       crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -169,22 +191,55 @@ class _ChatBubble extends StatelessWidget {
               border: isUser ? null : Border.all(color: palette.glassBorder, width: 1),
             ),
             child: Text(
-              message.text,
+              widget.message.text,
               style: AppTypography.body.copyWith(color: isUser ? Colors.white : palette.textPrimary),
             ),
           ),
         ),
-        if (message.crisisFlag)
+        if (widget.message.crisisFlag && !_dismissed)
           Container(
+            width: double.infinity,
             margin: const EdgeInsets.only(bottom: 10, top: 2),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: palette.warningSoft,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
             ),
-            child: Text(
-              AppLocalizations.of(context)!.chatCrisis,
-              style: AppTypography.subheadline.copyWith(color: palette.warning),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.chatCrisis,
+                  style: AppTypography.subheadline.copyWith(color: palette.warning),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _call,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: palette.warning,
+                          minimumSize: const Size.fromHeight(40),
+                        ),
+                        child: Text(l10n.chatCallEmergency),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => setState(() => _dismissed = true),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: palette.warning,
+                          side: BorderSide(color: palette.warning.withValues(alpha: 0.4)),
+                          minimumSize: const Size.fromHeight(40),
+                        ),
+                        child: Text(l10n.chatContinue),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
       ],

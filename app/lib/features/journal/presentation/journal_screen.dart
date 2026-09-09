@@ -93,7 +93,18 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _controller,
+                        builder: (context, value, _) => Text(
+                          l10n.journalCharCount(value.text.length),
+                          style: AppTypography.caption.copyWith(color: palette.textTertiary),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     if (state.error != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),

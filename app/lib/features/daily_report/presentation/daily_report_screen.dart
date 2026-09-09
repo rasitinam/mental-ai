@@ -180,15 +180,15 @@ class _MoodHero extends StatelessWidget {
           ),
           if (state != null) ...[
             const SizedBox(height: 20),
-            _StarRow(
+            _LevelBar(
               label: l10n.homeMoodLabel,
-              stars: UserState.stars(state.valence),
+              level: UserState.stars(state.valence),
               palette: palette,
             ),
-            const SizedBox(height: 8),
-            _StarRow(
+            const SizedBox(height: 10),
+            _LevelBar(
               label: l10n.homeEnergyLabel,
-              stars: UserState.stars(state.energy),
+              level: UserState.stars(state.energy),
               palette: palette,
             ),
             const SizedBox(height: 22),
@@ -220,35 +220,51 @@ class _MoodHero extends StatelessWidget {
   }
 }
 
-class _StarRow extends StatelessWidget {
+/// A labeled 0-5 level as five equal bars, filled up to the level — the
+/// same reading as a star row (five is five, half-full is roughly
+/// "middling"), just steadier at a glance since every segment is the
+/// same shape.
+class _LevelBar extends StatelessWidget {
   final String label;
-  final int stars;
+  final int level;
   final AppPalette palette;
-  const _StarRow({required this.label, required this.stars, required this.palette});
+  const _LevelBar({required this.label, required this.level, required this.palette});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 64,
-          child: Text(
-            label,
-            textAlign: TextAlign.right,
-            style: AppTypography.footnote.copyWith(color: palette.textSecondary),
-          ),
-        ),
-        const SizedBox(width: 12),
-        for (var i = 1; i <= 5; i++)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Icon(
-              i <= stars ? Icons.star_rounded : Icons.star_outline_rounded,
-              size: 20,
-              color: i <= stars ? palette.accent : palette.textTertiary,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+            Text(
+              '$level / 5',
+              style: AppTypography.footnote.copyWith(
+                color: palette.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            for (var i = 1; i <= 5; i++) ...[
+              if (i > 1) const SizedBox(width: 5),
+              Expanded(
+                child: Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    color: i <= level ? palette.accent : palette.separator,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }

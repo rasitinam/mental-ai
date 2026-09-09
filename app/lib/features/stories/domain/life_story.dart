@@ -48,6 +48,7 @@ class LifeStory {
 /// A submission as an admin sees it while moderating — identity included.
 class AdminStoryView {
   final String id;
+  final String userId;
   final String displayName;
   final String body;
   final StoryStatus status;
@@ -56,6 +57,7 @@ class AdminStoryView {
 
   const AdminStoryView({
     required this.id,
+    required this.userId,
     required this.displayName,
     required this.body,
     required this.status,
@@ -63,8 +65,15 @@ class AdminStoryView {
     required this.createdAt,
   });
 
+  /// Every account's `display_name` defaults to the same placeholder and
+  /// is rarely changed, so it doesn't actually distinguish submitters in
+  /// the moderation queue — a short, stable handle derived from the id
+  /// does. Purely a display choice; nothing is sent or stored under it.
+  String get handle => 'kullanıcı_${(userId.hashCode.abs() % 1000).toString().padLeft(3, '0')}';
+
   factory AdminStoryView.fromJson(Map<String, dynamic> json) => AdminStoryView(
         id: json['id'] as String,
+        userId: json['user_id'] as String,
         displayName: json['display_name'] as String,
         body: json['body'] as String,
         status: _statusFromJson(json['status'] as String),

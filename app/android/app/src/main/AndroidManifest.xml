@@ -48,5 +48,13 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Lets the chat crisis banner's "112'yi ara" button actually open
+             the dialer via url_launcher's tel: scheme — without this,
+             Android 11+'s package-visibility rules make the dialer
+             invisible to the app and the button silently does nothing. -->
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
+        </intent>
     </queries>
 </manifest>

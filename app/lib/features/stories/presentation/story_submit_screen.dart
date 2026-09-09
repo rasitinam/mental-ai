@@ -59,21 +59,15 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              GlassSurface(
-                radius: 20,
+              Container(
                 padding: const EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.info_outline_rounded, size: 18, color: palette.warning),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        l10n.storiesDisclaimer,
-                        style: AppTypography.footnote.copyWith(color: palette.textSecondary),
-                      ),
-                    ),
-                  ],
+                decoration: BoxDecoration(
+                  color: palette.surfaceMuted,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  l10n.storiesDisclaimer,
+                  style: AppTypography.footnote.copyWith(color: palette.textSecondary),
                 ),
               ),
               const SizedBox(height: 16),
@@ -96,7 +90,15 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  l10n.storiesCharCount(_controller.text.length),
+                  style: AppTypography.caption.copyWith(color: palette.textTertiary),
+                ),
+              ),
+              const SizedBox(height: 10),
               InkWell(
                 onTap: () => setState(() => _consent = !_consent),
                 borderRadius: BorderRadius.circular(16),

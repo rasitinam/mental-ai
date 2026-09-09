@@ -355,6 +355,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalSaved => 'Journal entry saved.';
 
   @override
+  String journalCharCount(int count) {
+    return '$count characters';
+  }
+
+  @override
   String get journalHint => 'What was on your mind today?';
 
   @override
@@ -380,6 +385,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatCrisis =>
       'This sounds like a hard moment. If this is an emergency, call your local emergency number; if you want to talk, reaching a professional is worth considering.';
+
+  @override
+  String get chatCallEmergency => 'Call 112';
+
+  @override
+  String get chatContinue => 'Continue';
 
   @override
   String get lifeTitle => 'Life Analysis';
@@ -474,6 +485,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get storiesSubmitHint =>
       'What did you go through, what helped, what didn\'t? Tell it in your own words...';
+
+  @override
+  String storiesCharCount(int count) {
+    return '$count characters · at least 8 lines suggested';
+  }
 
   @override
   String get storiesDisclaimer =>

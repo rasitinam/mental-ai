@@ -740,6 +740,12 @@ abstract class AppLocalizations {
   /// **'Günlük kaydedildi.'**
   String get journalSaved;
 
+  /// No description provided for @journalCharCount.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} karakter'**
+  String journalCharCount(int count);
+
   /// No description provided for @journalHint.
   ///
   /// In tr, this message translates to:
@@ -787,6 +793,18 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Zor bir an gibi görünüyor. Acil durumdaysan 112\'yi ara; konuşmak istersen bir uzmana ulaşmayı düşünebilirsin.'**
   String get chatCrisis;
+
+  /// No description provided for @chatCallEmergency.
+  ///
+  /// In tr, this message translates to:
+  /// **'112\'yi ara'**
+  String get chatCallEmergency;
+
+  /// No description provided for @chatContinue.
+  ///
+  /// In tr, this message translates to:
+  /// **'Devam et'**
+  String get chatContinue;
 
   /// No description provided for @lifeTitle.
   ///
@@ -967,6 +985,12 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Neler yaşadın, neyin işine yaradı, neyin yaramadı? Kendi cümlelerinle anlat...'**
   String get storiesSubmitHint;
+
+  /// No description provided for @storiesCharCount.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} karakter · en az 8 satır önerilir'**
+  String storiesCharCount(int count);
 
   /// No description provided for @storiesDisclaimer.
   ///

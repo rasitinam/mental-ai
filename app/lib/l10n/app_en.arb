@@ -125,6 +125,8 @@
   "moodPleasant": "Pleasant",
 
   "journalSaved": "Journal entry saved.",
+  "journalCharCount": "{count} characters",
+  "@journalCharCount": { "placeholders": { "count": { "type": "int" } } },
   "journalHint": "What was on your mind today?",
   "journalPast": "PAST ENTRIES",
   "journalEmpty": "You haven't written an entry yet.",
@@ -135,6 +137,8 @@
   "chatEmptyPrompt": "Want to share something?",
   "chatInputHint": "Write something...",
   "chatCrisis": "This sounds like a hard moment. If this is an emergency, call your local emergency number; if you want to talk, reaching a professional is worth considering.",
+  "chatCallEmergency": "Call 112",
+  "chatContinue": "Continue",
 
   "lifeTitle": "Life Analysis",
   "lifeCooldownTooltip": "Can be refreshed once a week",
@@ -167,6 +171,8 @@
   "storiesReportSent": "Your report has been received, thank you.",
   "storiesSubmitTitle": "Write Your Story",
   "storiesSubmitHint": "What did you go through, what helped, what didn't? Tell it in your own words...",
+  "storiesCharCount": "{count} characters · at least 8 lines suggested",
+  "@storiesCharCount": { "placeholders": { "count": { "type": "int" } } },
   "storiesDisclaimer": "This is not medical advice. Always make medication and treatment decisions together with a doctor. What you share here is your own personal experience — someone else's situation may be different.",
   "storiesConsentLabel": "I understand that once approved, this story will be shared with other users (without my identity shown).",
   "storiesModerationNotice": "Your story is reviewed before it's published. You can withdraw it at any time.",

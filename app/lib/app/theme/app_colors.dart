@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// Every color the app uses, resolved for the current [Brightness]. One
-/// restrained accent (a muted sage — fits a wellness app, avoids the
-/// generic purple/blue "AI product" gradient), near-black/near-white text
-/// per Apple's label-color convention, and glass tokens (fill/border/
-/// shadow) tuned separately for light and dark since a translucent
-/// surface needs a different alpha over a light background than over a
-/// dark one to still read as "frosted glass" rather than "smudge".
+/// Every color the app uses, resolved for the current [Brightness]. Two
+/// distinct directions rather than one recolored twice: light is a cool
+/// off-white with a moss-green accent and Instrument Sans; dark is
+/// layered near-black surfaces with a periwinkle accent and Sora — see
+/// `app/theme/app_theme.dart` for the font wiring. Both keep one warning
+/// tone reserved for genuine crisis moments (the chat/home crisis
+/// banners), separate from [surfaceMuted], which is for merely
+/// informational notices (disclaimers, "here's how this works" boxes)
+/// that shouldn't visually read as alarms.
 class AppPalette {
   final Color canvasTop;
   final Color canvasBottom;
@@ -21,6 +23,11 @@ class AppPalette {
   final Color separator;
   final Color warning;
   final Color warningSoft;
+  /// Neutral, low-emphasis surface for informational notices — distinct
+  /// from [glassFill] (a card) and [warningSoft] (an active crisis
+  /// alert), so a "this is a legal disclaimer" box doesn't read with the
+  /// same visual urgency as "you may be in crisis."
+  final Color surfaceMuted;
 
   const AppPalette({
     required this.canvasTop,
@@ -36,38 +43,41 @@ class AppPalette {
     required this.separator,
     required this.warning,
     required this.warningSoft,
+    required this.surfaceMuted,
   });
 
   static const light = AppPalette(
-    canvasTop: Color(0xFFF6F4EF),
-    canvasBottom: Color(0xFFEAE7DF),
-    glassFill: Color(0x8CFFFFFF),
-    glassBorder: Color(0xB3FFFFFF),
-    glassShadow: Color(0x141C1C1E),
-    accent: Color(0xFF3E6259),
-    accentSoft: Color(0x1F3E6259),
-    textPrimary: Color(0xFF1C1C1E),
-    textSecondary: Color(0xFF6E6E73),
-    textTertiary: Color(0xFF9A9A9E),
-    separator: Color(0x1F1C1C1E),
-    warning: Color(0xFFB5723B),
-    warningSoft: Color(0x1FB5723B),
+    canvasTop: Color(0xFFF5F6F2),
+    canvasBottom: Color(0xFFEDEFE9),
+    glassFill: Color(0xFFFFFFFF),
+    glassBorder: Color(0x40E2E4DD),
+    glassShadow: Color(0x0D191C18),
+    accent: Color(0xFF5E7A57),
+    accentSoft: Color(0xFFE8EEE4),
+    textPrimary: Color(0xFF191C18),
+    textSecondary: Color(0xFF666C63),
+    textTertiary: Color(0xFF8A9086),
+    separator: Color(0xFFE2E4DD),
+    warning: Color(0xFF8E3B3B),
+    warningSoft: Color(0xFFF3E8E4),
+    surfaceMuted: Color(0xFFEDEFE9),
   );
 
   static const dark = AppPalette(
-    canvasTop: Color(0xFF17181A),
-    canvasBottom: Color(0xFF0B0C0D),
-    glassFill: Color(0x14FFFFFF),
-    glassBorder: Color(0x1FFFFFFF),
-    glassShadow: Color(0x66000000),
-    accent: Color(0xFF8DBBAC),
-    accentSoft: Color(0x298DBBAC),
-    textPrimary: Color(0xFFF2F2F5),
-    textSecondary: Color(0xFFA6A6AB),
-    textTertiary: Color(0xFF77777C),
-    separator: Color(0x1FFFFFFF),
-    warning: Color(0xFFE0A868),
-    warningSoft: Color(0x33E0A868),
+    canvasTop: Color(0xFF16191C),
+    canvasBottom: Color(0xFF0E1013),
+    glassFill: Color(0xFF1D2126),
+    glassBorder: Color(0x14FFFFFF),
+    glassShadow: Color(0x4D000000),
+    accent: Color(0xFF93A2E6),
+    accentSoft: Color(0x2E93A2E6),
+    textPrimary: Color(0xFFECEDEF),
+    textSecondary: Color(0xFF9AA0A8),
+    textTertiary: Color(0xFF6C7A99),
+    separator: Color(0x12FFFFFF),
+    warning: Color(0xFFD98E7E),
+    warningSoft: Color(0xFF2A1F1D),
+    surfaceMuted: Color(0xFF1D2126),
   );
 
   static AppPalette of(BuildContext context) =>

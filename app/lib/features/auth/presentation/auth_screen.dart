@@ -95,14 +95,34 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 ),
                 if (_isRegister) ...[
                   const SizedBox(height: 14),
-                  GlassSurface(
-                    radius: 20,
+                  Container(
                     padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: palette.surfaceMuted,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.info_outline_rounded, size: 18, color: palette.textSecondary),
-                        const SizedBox(width: 10),
+                        Container(
+                          width: 20,
+                          height: 20,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: palette.warning, width: 2),
+                          ),
+                          child: Text(
+                            '!',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: palette.warning,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             l10n.authDisclaimer,

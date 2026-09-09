@@ -125,6 +125,8 @@
   "moodPleasant": "Keyifli",
 
   "journalSaved": "Günlük kaydedildi.",
+  "journalCharCount": "{count} karakter",
+  "@journalCharCount": { "placeholders": { "count": { "type": "int" } } },
   "journalHint": "Bugün aklından ne geçti?",
   "journalPast": "GEÇMİŞ GÜNLÜKLER",
   "journalEmpty": "Henüz bir günlük yazmadın.",
@@ -135,6 +137,8 @@
   "chatEmptyPrompt": "Bir şey paylaşmak ister misin?",
   "chatInputHint": "Bir şey yaz...",
   "chatCrisis": "Zor bir an gibi görünüyor. Acil durumdaysan 112'yi ara; konuşmak istersen bir uzmana ulaşmayı düşünebilirsin.",
+  "chatCallEmergency": "112'yi ara",
+  "chatContinue": "Devam et",
 
   "lifeTitle": "Yaşam Analizi",
   "lifeCooldownTooltip": "Haftada bir yenilenebilir",
@@ -167,6 +171,8 @@
   "storiesReportSent": "Bildirimin alındı, teşekkürler.",
   "storiesSubmitTitle": "Hikayeni Yaz",
   "storiesSubmitHint": "Neler yaşadın, neyin işine yaradı, neyin yaramadı? Kendi cümlelerinle anlat...",
+  "storiesCharCount": "{count} karakter · en az 8 satır önerilir",
+  "@storiesCharCount": { "placeholders": { "count": { "type": "int" } } },
   "storiesDisclaimer": "Bu bir tıbbi tavsiye değildir. İlaç ve tedavi kararlarını mutlaka bir hekimle birlikte al. Burada paylaştığın kendi kişisel deneyimindir — başka birinin durumu farklı olabilir.",
   "storiesConsentLabel": "Bu hikayenin, onaylandıktan sonra diğer kullanıcılarla (kimliğim gösterilmeden) paylaşılacağını biliyorum.",
   "storiesModerationNotice": "Hikayen yayınlanmadan önce incelenir. İstediğin zaman geri çekebilirsin.",

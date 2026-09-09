@@ -153,7 +153,7 @@ class _PendingList extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(story.displayName, style: AppTypography.subheadline.copyWith(color: palette.textSecondary, fontWeight: FontWeight.w600)),
+                      child: Text(story.handle, style: AppTypography.subheadline.copyWith(color: palette.textSecondary, fontWeight: FontWeight.w600)),
                     ),
                     if (story.crisisFlag)
                       Container(
@@ -242,7 +242,7 @@ class _ReportsList extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(report.story.displayName, style: AppTypography.subheadline.copyWith(color: palette.textSecondary, fontWeight: FontWeight.w600)),
+                Text(report.story.handle, style: AppTypography.subheadline.copyWith(color: palette.textSecondary, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Text(report.story.body, style: AppTypography.body.copyWith(color: palette.textPrimary)),
                 if (report.note != null && report.note!.isNotEmpty) ...[

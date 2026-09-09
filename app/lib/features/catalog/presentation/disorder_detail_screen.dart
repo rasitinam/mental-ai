@@ -122,30 +122,12 @@ class _Content extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: palette.warningSoft,
-            borderRadius: BorderRadius.circular(20),
+            color: palette.surfaceMuted,
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: palette.warning.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                alignment: Alignment.center,
-                child: Icon(Icons.info_outline_rounded, size: 14, color: palette.warning),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  l10n.cardDisclaimer,
-                  style: AppTypography.footnote.copyWith(color: palette.warning),
-                ),
-              ),
-            ],
+          child: Text(
+            l10n.cardDisclaimer,
+            style: AppTypography.footnote.copyWith(color: palette.textSecondary),
           ),
         ),
       ],

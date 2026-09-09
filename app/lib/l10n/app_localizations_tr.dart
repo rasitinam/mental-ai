@@ -356,6 +356,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get journalSaved => 'Günlük kaydedildi.';
 
   @override
+  String journalCharCount(int count) {
+    return '$count karakter';
+  }
+
+  @override
   String get journalHint => 'Bugün aklından ne geçti?';
 
   @override
@@ -381,6 +386,12 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get chatCrisis =>
       'Zor bir an gibi görünüyor. Acil durumdaysan 112\'yi ara; konuşmak istersen bir uzmana ulaşmayı düşünebilirsin.';
+
+  @override
+  String get chatCallEmergency => '112\'yi ara';
+
+  @override
+  String get chatContinue => 'Devam et';
 
   @override
   String get lifeTitle => 'Yaşam Analizi';
@@ -475,6 +486,11 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get storiesSubmitHint =>
       'Neler yaşadın, neyin işine yaradı, neyin yaramadı? Kendi cümlelerinle anlat...';
+
+  @override
+  String storiesCharCount(int count) {
+    return '$count karakter · en az 8 satır önerilir';
+  }
 
   @override
   String get storiesDisclaimer =>
