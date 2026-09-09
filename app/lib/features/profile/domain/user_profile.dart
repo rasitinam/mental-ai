@@ -10,6 +10,7 @@ class UserProfile {
   final int? birthYear;
   final int? age;
   final List<String> diagnoses;
+  final bool isAdmin;
 
   const UserProfile({
     required this.id,
@@ -19,6 +20,7 @@ class UserProfile {
     required this.birthYear,
     required this.age,
     required this.diagnoses,
+    required this.isAdmin,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -29,5 +31,6 @@ class UserProfile {
         birthYear: json['birth_year'] as int?,
         age: json['age'] as int?,
         diagnoses: (json['diagnoses'] as List<dynamic>? ?? []).cast<String>(),
+        isAdmin: json['is_admin'] as bool? ?? false,
       );
 }

@@ -210,6 +210,23 @@ class AppLocalizationsTr extends AppLocalizations {
       'Mental AI lisanslı bir sağlık uzmanının yerini tutmaz. Acil bir durumdaysan 112\'yi ara.';
 
   @override
+  String get settingsCommunity => 'Topluluk';
+
+  @override
+  String get settingsStories => 'Hikayeler';
+
+  @override
+  String get settingsStoriesBody =>
+      'Deneyimini paylaş, başkalarının hikayelerini oku.';
+
+  @override
+  String get settingsModeration => 'Moderasyon';
+
+  @override
+  String get settingsModerationBody =>
+      'Bekleyen ve bildirilen hikayeleri incele.';
+
+  @override
   String get settingsAccount => 'Hesap';
 
   @override
@@ -395,4 +412,116 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get lifeGenerate => 'Analiz oluştur';
+
+  @override
+  String get storiesTitle => 'Hikayeler';
+
+  @override
+  String get storiesTabFeed => 'Hikayeler';
+
+  @override
+  String get storiesTabMine => 'Hikayem';
+
+  @override
+  String get storiesWriteCta => 'Hikayeni paylaş';
+
+  @override
+  String get storiesFeedEmpty => 'Henüz paylaşılan hikaye yok';
+
+  @override
+  String get storiesFeedEmptyBody => 'Onaylanan hikayeler burada listelenecek.';
+
+  @override
+  String get storiesMineEmpty => 'Henüz bir hikaye yazmadın';
+
+  @override
+  String get storiesMineEmptyBody =>
+      'Yaşadıklarını, neyin işine yaradığını ya da yaramadığını başkalarıyla paylaşabilirsin. Gönderdiğin hikaye yayınlanmadan önce incelenir.';
+
+  @override
+  String get storiesStatusPending => 'İnceleniyor';
+
+  @override
+  String get storiesStatusApproved => 'Yayında';
+
+  @override
+  String get storiesStatusRejected => 'Yayınlanmadı';
+
+  @override
+  String get storiesWithdrawTitle => 'Hikayeni kaldır';
+
+  @override
+  String get storiesWithdrawBody =>
+      'Bu hikaye kalıcı olarak silinecek. Emin misin?';
+
+  @override
+  String get storiesWithdraw => 'Kaldır';
+
+  @override
+  String get storiesReportTitle => 'Bu hikayeyi bildir';
+
+  @override
+  String get storiesReportNoteHint => 'İsteğe bağlı not';
+
+  @override
+  String get storiesReport => 'Bildir';
+
+  @override
+  String get storiesReportSent => 'Bildirimin alındı, teşekkürler.';
+
+  @override
+  String get storiesSubmitTitle => 'Hikayeni Yaz';
+
+  @override
+  String get storiesSubmitHint =>
+      'Neler yaşadın, neyin işine yaradı, neyin yaramadı? Kendi cümlelerinle anlat...';
+
+  @override
+  String get storiesDisclaimer =>
+      'Bu bir tıbbi tavsiye değildir. İlaç ve tedavi kararlarını mutlaka bir hekimle birlikte al. Burada paylaştığın kendi kişisel deneyimindir — başka birinin durumu farklı olabilir.';
+
+  @override
+  String get storiesConsentLabel =>
+      'Bu hikayenin, onaylandıktan sonra diğer kullanıcılarla (kimliğim gösterilmeden) paylaşılacağını biliyorum.';
+
+  @override
+  String get storiesModerationNotice =>
+      'Hikayen yayınlanmadan önce incelenir. İstediğin zaman geri çekebilirsin.';
+
+  @override
+  String get storiesSubmit => 'Gönder';
+
+  @override
+  String get storiesSubmitSuccess => 'Hikayen incelemeye gönderildi.';
+
+  @override
+  String get storiesModerationTitle => 'Hikaye Moderasyonu';
+
+  @override
+  String storiesModerationQueueTab(int count) {
+    return '$count bekleyen';
+  }
+
+  @override
+  String storiesModerationReportsTab(int count) {
+    return '$count bildirilen';
+  }
+
+  @override
+  String get storiesModerationEmpty => 'Bekleyen hikaye yok';
+
+  @override
+  String get storiesModerationNoReports => 'Bildirilen hikaye yok';
+
+  @override
+  String get storiesModerationApprove => 'Onayla';
+
+  @override
+  String get storiesModerationReject => 'Reddet';
+
+  @override
+  String get storiesModerationKeep => 'Yayında tut';
+
+  @override
+  String get storiesModerationCrisisFlag => 'Kriz dili';
 }

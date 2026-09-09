@@ -23,6 +23,10 @@ pub struct User {
     /// returns `None` and the prompts stay age-neutral when it's unset.
     #[serde(default)]
     pub birth_year: Option<i32>,
+    /// Grants access to the life-story moderation queue. Set by hand
+    /// against the database — see `migrations/0007_life_stories.sql`.
+    #[serde(default)]
+    pub is_admin: bool,
     pub created_at: DateTime<Utc>,
 }
 

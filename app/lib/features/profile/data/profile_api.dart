@@ -6,6 +6,11 @@ import '../domain/user_profile.dart';
 
 final profileApiProvider = Provider<ProfileApi>((ref) => ProfileApi(ref.watch(apiClientProvider)));
 
+/// One-shot fetch used to decide whether to show admin-only entry points
+/// (the story moderation queue) — a full [ProfileController] would be
+/// overkill just to read `isAdmin` off of it.
+final myProfileProvider = FutureProvider<UserProfile>((ref) => ref.watch(profileApiProvider).profile());
+
 class ProfileApi {
   final Dio _dio;
   ProfileApi(this._dio);

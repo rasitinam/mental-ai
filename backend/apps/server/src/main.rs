@@ -12,8 +12,8 @@ use mental_llm_connector::LlmProvider;
 use mental_storage::{
     init_pool, SqliteAuthRepository, SqliteChatRepository, SqliteExplainerRepository,
     SqliteInsightRepository, SqliteJournalRepository, SqliteLifeAnalysisRepository,
-    SqliteMoodRepository, SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
-    SqliteUserStateRepository,
+    SqliteLifeStoryRepository, SqliteMoodRepository, SqliteReportRepository,
+    SqliteResearchRepository, SqliteUserRepository, SqliteUserStateRepository,
 };
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
@@ -55,6 +55,7 @@ async fn main() -> anyhow::Result<()> {
         chats: Arc::new(SqliteChatRepository::new(pool.clone())),
         explainers: Arc::new(SqliteExplainerRepository::new(pool.clone())),
         user_states: Arc::new(SqliteUserStateRepository::new(pool.clone())),
+        life_stories: Arc::new(SqliteLifeStoryRepository::new(pool.clone())),
         vector_store: Arc::new(SqliteVectorStore::new(pool.clone())),
         embedder: Arc::new(Embedder::new(llm.clone())),
         llm,

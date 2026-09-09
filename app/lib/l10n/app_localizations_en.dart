@@ -210,6 +210,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Mental AI is not a substitute for a licensed professional. In an emergency, call your local emergency number.';
 
   @override
+  String get settingsCommunity => 'Community';
+
+  @override
+  String get settingsStories => 'Stories';
+
+  @override
+  String get settingsStoriesBody =>
+      'Share your experience, read others\' stories.';
+
+  @override
+  String get settingsModeration => 'Moderation';
+
+  @override
+  String get settingsModerationBody => 'Review pending and reported stories.';
+
+  @override
   String get settingsAccount => 'Account';
 
   @override
@@ -395,4 +411,116 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lifeGenerate => 'Generate analysis';
+
+  @override
+  String get storiesTitle => 'Stories';
+
+  @override
+  String get storiesTabFeed => 'Stories';
+
+  @override
+  String get storiesTabMine => 'Mine';
+
+  @override
+  String get storiesWriteCta => 'Share your story';
+
+  @override
+  String get storiesFeedEmpty => 'No stories yet';
+
+  @override
+  String get storiesFeedEmptyBody => 'Approved stories will be listed here.';
+
+  @override
+  String get storiesMineEmpty => 'You haven\'t written a story yet';
+
+  @override
+  String get storiesMineEmptyBody =>
+      'You can share what you went through, what helped and what didn\'t. Your story is reviewed before it\'s published.';
+
+  @override
+  String get storiesStatusPending => 'In review';
+
+  @override
+  String get storiesStatusApproved => 'Published';
+
+  @override
+  String get storiesStatusRejected => 'Not published';
+
+  @override
+  String get storiesWithdrawTitle => 'Remove your story';
+
+  @override
+  String get storiesWithdrawBody =>
+      'This story will be permanently deleted. Are you sure?';
+
+  @override
+  String get storiesWithdraw => 'Remove';
+
+  @override
+  String get storiesReportTitle => 'Report this story';
+
+  @override
+  String get storiesReportNoteHint => 'Optional note';
+
+  @override
+  String get storiesReport => 'Report';
+
+  @override
+  String get storiesReportSent => 'Your report has been received, thank you.';
+
+  @override
+  String get storiesSubmitTitle => 'Write Your Story';
+
+  @override
+  String get storiesSubmitHint =>
+      'What did you go through, what helped, what didn\'t? Tell it in your own words...';
+
+  @override
+  String get storiesDisclaimer =>
+      'This is not medical advice. Always make medication and treatment decisions together with a doctor. What you share here is your own personal experience — someone else\'s situation may be different.';
+
+  @override
+  String get storiesConsentLabel =>
+      'I understand that once approved, this story will be shared with other users (without my identity shown).';
+
+  @override
+  String get storiesModerationNotice =>
+      'Your story is reviewed before it\'s published. You can withdraw it at any time.';
+
+  @override
+  String get storiesSubmit => 'Submit';
+
+  @override
+  String get storiesSubmitSuccess => 'Your story has been sent for review.';
+
+  @override
+  String get storiesModerationTitle => 'Story Moderation';
+
+  @override
+  String storiesModerationQueueTab(int count) {
+    return '$count pending';
+  }
+
+  @override
+  String storiesModerationReportsTab(int count) {
+    return '$count reported';
+  }
+
+  @override
+  String get storiesModerationEmpty => 'No pending stories';
+
+  @override
+  String get storiesModerationNoReports => 'No reported stories';
+
+  @override
+  String get storiesModerationApprove => 'Approve';
+
+  @override
+  String get storiesModerationReject => 'Reject';
+
+  @override
+  String get storiesModerationKeep => 'Keep published';
+
+  @override
+  String get storiesModerationCrisisFlag => 'Crisis language';
 }

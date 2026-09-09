@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::report::LifeAnalysis;
 use crate::{
     ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, Insight, JournalEntry,
-    MoodEntry, ResearchArticle, Session, User, UserState,
+    LifeStory, LifeStoryReport, MoodEntry, ResearchArticle, Session, StoryStatus, User, UserState,
 };
 
 #[async_trait]
@@ -147,4 +147,31 @@ pub trait UserStateRepository: Send + Sync {
 pub trait LifeAnalysisRepository: Send + Sync {
     async fn save(&self, analysis: &LifeAnalysis) -> anyhow::Result<()>;
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<LifeAnalysis>>;
+}
+
+#[async_trait]
+pub trait LifeStoryRepository: Send + Sync {
+    async fn create(&self, story: &LifeStory) -> anyhow::Result<()>;
+    async fn get(&self, id: Uuid) -> anyhow::Result<Option<LifeStory>>;
+    /// Approved stories only, newest first — the public feed.
+    async fn list_approved(&self, limit: u32) -> anyhow::Result<Vec<LifeStory>>;
+    /// One author's own submissions regardless of status, newest first.
+    async fn list_for_user(&self, user_id: Uuid) -> anyhow::Result<Vec<LifeStory>>;
+    /// The moderation queue: everything still pending, oldest first, so
+    /// the longest-waiting submission surfaces first.
+    async fn list_pending(&self) -> anyhow::Result<Vec<LifeStory>>;
+    async fn set_status(
+        &self,
+        id: Uuid,
+        status: StoryStatus,
+        reviewed_at: DateTime<Utc>,
+    ) -> anyhow::Result<()>;
+    /// Scoped to `user_id` in the query itself, so deleting someone
+    /// else's story by id is a no-op rather than something the caller
+    /// has to check for separately.
+    async fn delete(&self, id: Uuid, user_id: Uuid) -> anyhow::Result<()>;
+    async fn add_report(&self, report: &LifeStoryReport) -> anyhow::Result<()>;
+    /// Every open report, newest first — the admin queue for
+    /// already-published stories a reader flagged.
+    async fn list_reports(&self) -> anyhow::Result<Vec<LifeStoryReport>>;
 }

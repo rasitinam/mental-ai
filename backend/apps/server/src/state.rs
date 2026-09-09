@@ -4,8 +4,8 @@ use mental_knowledge_base::{Embedder, SqliteVectorStore};
 use mental_llm_connector::LlmProvider;
 use mental_storage::{
     SqliteAuthRepository, SqliteChatRepository, SqliteExplainerRepository, SqliteInsightRepository,
-    SqliteJournalRepository, SqliteLifeAnalysisRepository, SqliteMoodRepository,
-    SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
+    SqliteJournalRepository, SqliteLifeAnalysisRepository, SqliteLifeStoryRepository,
+    SqliteMoodRepository, SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
     SqliteUserStateRepository,
 };
 
@@ -27,6 +27,7 @@ pub struct AppState {
     pub chats: Arc<SqliteChatRepository>,
     pub explainers: Arc<SqliteExplainerRepository>,
     pub user_states: Arc<SqliteUserStateRepository>,
+    pub life_stories: Arc<SqliteLifeStoryRepository>,
     pub vector_store: Arc<SqliteVectorStore>,
     pub llm: Arc<dyn LlmProvider>,
     pub embedder: Arc<Embedder>,

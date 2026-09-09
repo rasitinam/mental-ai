@@ -15,6 +15,9 @@ import '../features/mood_tracking/presentation/mood_screen.dart';
 import '../features/profile/presentation/diagnoses_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import '../features/stories/presentation/stories_screen.dart';
+import '../features/stories/presentation/story_moderation_screen.dart';
+import '../features/stories/presentation/story_submit_screen.dart';
 
 /// Notifies [GoRouter] whenever the signed-in session changes, so
 /// `redirect` below re-runs the moment someone logs in, registers, or
@@ -92,6 +95,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               routes: [
                 GoRoute(path: 'profile', builder: (context, state) => const ProfileScreen()),
                 GoRoute(path: 'diagnoses', builder: (context, state) => const DiagnosesScreen()),
+                GoRoute(
+                  path: 'stories',
+                  builder: (context, state) => const StoriesScreen(),
+                  routes: [
+                    GoRoute(path: 'new', builder: (context, state) => const StorySubmitScreen()),
+                    GoRoute(
+                        path: 'moderation', builder: (context, state) => const StoryModerationScreen()),
+                  ],
+                ),
               ],
             ),
           ]),

@@ -15,6 +15,19 @@ const CRISIS_KEYWORDS: &[&str] = &[
     "self harm",
     "self-harm",
     "no reason to live",
+    // Turkish — every app-facing surface is Turkish by default, so an
+    // English-only list was missing the language most crisis language
+    // actually shows up in. See `docs/PRIVACY.md`.
+    "kendimi öldür",
+    "canıma kıy",
+    "intihar",
+    "hayatıma son ver",
+    "ölmek istiyorum",
+    "yaşamak istemiyorum",
+    "kendime zarar",
+    "kendimi kesmek",
+    "yaşamın bir anlamı yok",
+    "yaşamının bir anlamı yok",
 ];
 
 #[derive(Debug, Clone)]

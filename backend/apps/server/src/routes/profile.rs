@@ -30,6 +30,7 @@ struct ProfileResponse {
     age: Option<i32>,
     diagnoses: Vec<String>,
     timezone: String,
+    is_admin: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -71,6 +72,7 @@ async fn profile(
         age: user.age(),
         diagnoses: user.diagnoses.clone(),
         timezone: user.timezone.clone(),
+        is_admin: user.is_admin,
     }))
 }
 

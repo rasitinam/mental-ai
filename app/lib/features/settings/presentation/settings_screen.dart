@@ -9,6 +9,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/local_prefs.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/data/auth_api.dart';
+import '../../profile/data/profile_api.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -30,6 +31,7 @@ class SettingsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final userId = ref.watch(currentUserIdProvider);
     final palette = AppPalette.of(context);
+    final isAdmin = ref.watch(myProfileProvider).valueOrNull?.isAdmin ?? false;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
@@ -61,6 +63,25 @@ class SettingsScreen extends ConsumerWidget {
                 label: l10n.settingsLegal,
                 description: l10n.settingsLegalBody,
               ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _SettingsGroup(
+            title: l10n.settingsCommunity,
+            rows: [
+              _SettingsRow(
+                icon: Icons.auto_stories_outlined,
+                label: l10n.settingsStories,
+                description: l10n.settingsStoriesBody,
+                onTap: () => context.go('/settings/stories'),
+              ),
+              if (isAdmin)
+                _SettingsRow(
+                  icon: Icons.fact_check_outlined,
+                  label: l10n.settingsModeration,
+                  description: l10n.settingsModerationBody,
+                  onTap: () => context.go('/settings/stories/moderation'),
+                ),
             ],
           ),
           const SizedBox(height: 20),

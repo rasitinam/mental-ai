@@ -2,13 +2,14 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mental_domain::repository::{
     AuthRepository, ChatRepository, ExplainerRepository, InsightRepository, JournalRepository,
-    LifeAnalysisRepository, MoodRepository, ReportRepository, ResearchRepository, UserRepository,
-    UserStateRepository,
+    LifeAnalysisRepository, LifeStoryRepository, MoodRepository, ReportRepository,
+    ResearchRepository, UserRepository, UserStateRepository,
 };
 use mental_domain::report::LifeAnalysis;
 use mental_domain::{
     ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, Insight,
-    JournalEntry, MoodEntry, ResearchArticle, Session, User, UserState,
+    JournalEntry, LifeStory, LifeStoryReport, MoodEntry, ResearchArticle, Session, StoryStatus,
+    User, UserState,
 };
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -34,8 +35,8 @@ impl SqliteUserRepository {
 #[async_trait]
 impl UserRepository for SqliteUserRepository {
     async fn get(&self, id: Uuid) -> anyhow::Result<Option<User>> {
-        let row = sqlx::query_as::<_, (String, String, String, String, String, Option<i32>, DateTime<Utc>)>(
-            "SELECT id, display_name, timezone, diagnoses, language, birth_year, created_at
+        let row = sqlx::query_as::<_, (String, String, String, String, String, Option<i32>, bool, DateTime<Utc>)>(
+            "SELECT id, display_name, timezone, diagnoses, language, birth_year, is_admin, created_at
              FROM users WHERE id = ?1",
         )
         .bind(id.to_string())
@@ -43,13 +44,14 @@ impl UserRepository for SqliteUserRepository {
         .await?;
 
         Ok(row.map(
-            |(id, display_name, timezone, diagnoses, language, birth_year, created_at)| User {
+            |(id, display_name, timezone, diagnoses, language, birth_year, is_admin, created_at)| User {
                 id: Uuid::parse_str(&id).unwrap_or_default(),
                 display_name,
                 timezone,
                 diagnoses: tags_from_json(&diagnoses),
                 language,
                 birth_year,
+                is_admin,
                 created_at,
             },
         ))
@@ -795,6 +797,164 @@ impl UserStateRepository for SqliteUserStateRepository {
         .await?;
 
         Ok(())
+    }
+}
+
+pub struct SqliteLifeStoryRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteLifeStoryRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+type StoryRow = (String, String, String, String, bool, DateTime<Utc>, Option<DateTime<Utc>>, DateTime<Utc>);
+
+fn story_from_row(
+    (id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at): StoryRow,
+) -> LifeStory {
+    LifeStory {
+        id: Uuid::parse_str(&id).unwrap_or_default(),
+        user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+        body,
+        status: StoryStatus::parse(&status),
+        crisis_flag,
+        consented_at,
+        reviewed_at,
+        created_at,
+    }
+}
+
+#[async_trait]
+impl LifeStoryRepository for SqliteLifeStoryRepository {
+    async fn create(&self, story: &LifeStory) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO life_stories (id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        )
+        .bind(story.id.to_string())
+        .bind(story.user_id.to_string())
+        .bind(&story.body)
+        .bind(story.status.as_str())
+        .bind(story.crisis_flag)
+        .bind(story.consented_at)
+        .bind(story.reviewed_at)
+        .bind(story.created_at)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn get(&self, id: Uuid) -> anyhow::Result<Option<LifeStory>> {
+        let row = sqlx::query_as::<_, StoryRow>(
+            "SELECT id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at
+             FROM life_stories WHERE id = ?1",
+        )
+        .bind(id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(story_from_row))
+    }
+
+    async fn list_approved(&self, limit: u32) -> anyhow::Result<Vec<LifeStory>> {
+        let rows = sqlx::query_as::<_, StoryRow>(
+            "SELECT id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at
+             FROM life_stories WHERE status = 'approved' ORDER BY created_at DESC LIMIT ?1",
+        )
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(story_from_row).collect())
+    }
+
+    async fn list_for_user(&self, user_id: Uuid) -> anyhow::Result<Vec<LifeStory>> {
+        let rows = sqlx::query_as::<_, StoryRow>(
+            "SELECT id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at
+             FROM life_stories WHERE user_id = ?1 ORDER BY created_at DESC",
+        )
+        .bind(user_id.to_string())
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(story_from_row).collect())
+    }
+
+    async fn list_pending(&self) -> anyhow::Result<Vec<LifeStory>> {
+        let rows = sqlx::query_as::<_, StoryRow>(
+            "SELECT id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at
+             FROM life_stories WHERE status = 'pending' ORDER BY created_at ASC",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(story_from_row).collect())
+    }
+
+    async fn set_status(
+        &self,
+        id: Uuid,
+        status: StoryStatus,
+        reviewed_at: DateTime<Utc>,
+    ) -> anyhow::Result<()> {
+        sqlx::query("UPDATE life_stories SET status = ?1, reviewed_at = ?2 WHERE id = ?3")
+            .bind(status.as_str())
+            .bind(reviewed_at)
+            .bind(id.to_string())
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn delete(&self, id: Uuid, user_id: Uuid) -> anyhow::Result<()> {
+        sqlx::query("DELETE FROM life_stories WHERE id = ?1 AND user_id = ?2")
+            .bind(id.to_string())
+            .bind(user_id.to_string())
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn add_report(&self, report: &LifeStoryReport) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO life_story_reports (id, story_id, reporter_user_id, note, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+        )
+        .bind(report.id.to_string())
+        .bind(report.story_id.to_string())
+        .bind(report.reporter_user_id.to_string())
+        .bind(&report.note)
+        .bind(report.created_at)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn list_reports(&self) -> anyhow::Result<Vec<LifeStoryReport>> {
+        let rows = sqlx::query_as::<_, (String, String, String, Option<String>, DateTime<Utc>)>(
+            "SELECT id, story_id, reporter_user_id, note, created_at
+             FROM life_story_reports ORDER BY created_at DESC",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(id, story_id, reporter_user_id, note, created_at)| LifeStoryReport {
+                id: Uuid::parse_str(&id).unwrap_or_default(),
+                story_id: Uuid::parse_str(&story_id).unwrap_or_default(),
+                reporter_user_id: Uuid::parse_str(&reporter_user_id).unwrap_or_default(),
+                note,
+                created_at,
+            })
+            .collect())
     }
 }
 

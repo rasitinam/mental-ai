@@ -470,6 +470,36 @@ abstract class AppLocalizations {
   /// **'Mental AI lisanslı bir sağlık uzmanının yerini tutmaz. Acil bir durumdaysan 112\'yi ara.'**
   String get settingsLegalBody;
 
+  /// No description provided for @settingsCommunity.
+  ///
+  /// In tr, this message translates to:
+  /// **'Topluluk'**
+  String get settingsCommunity;
+
+  /// No description provided for @settingsStories.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayeler'**
+  String get settingsStories;
+
+  /// No description provided for @settingsStoriesBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Deneyimini paylaş, başkalarının hikayelerini oku.'**
+  String get settingsStoriesBody;
+
+  /// No description provided for @settingsModeration.
+  ///
+  /// In tr, this message translates to:
+  /// **'Moderasyon'**
+  String get settingsModeration;
+
+  /// No description provided for @settingsModerationBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bekleyen ve bildirilen hikayeleri incele.'**
+  String get settingsModerationBody;
+
   /// No description provided for @settingsAccount.
   ///
   /// In tr, this message translates to:
@@ -817,6 +847,210 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Analiz oluştur'**
   String get lifeGenerate;
+
+  /// No description provided for @storiesTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayeler'**
+  String get storiesTitle;
+
+  /// No description provided for @storiesTabFeed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayeler'**
+  String get storiesTabFeed;
+
+  /// No description provided for @storiesTabMine.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayem'**
+  String get storiesTabMine;
+
+  /// No description provided for @storiesWriteCta.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayeni paylaş'**
+  String get storiesWriteCta;
+
+  /// No description provided for @storiesFeedEmpty.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz paylaşılan hikaye yok'**
+  String get storiesFeedEmpty;
+
+  /// No description provided for @storiesFeedEmptyBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Onaylanan hikayeler burada listelenecek.'**
+  String get storiesFeedEmptyBody;
+
+  /// No description provided for @storiesMineEmpty.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz bir hikaye yazmadın'**
+  String get storiesMineEmpty;
+
+  /// No description provided for @storiesMineEmptyBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yaşadıklarını, neyin işine yaradığını ya da yaramadığını başkalarıyla paylaşabilirsin. Gönderdiğin hikaye yayınlanmadan önce incelenir.'**
+  String get storiesMineEmptyBody;
+
+  /// No description provided for @storiesStatusPending.
+  ///
+  /// In tr, this message translates to:
+  /// **'İnceleniyor'**
+  String get storiesStatusPending;
+
+  /// No description provided for @storiesStatusApproved.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yayında'**
+  String get storiesStatusApproved;
+
+  /// No description provided for @storiesStatusRejected.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yayınlanmadı'**
+  String get storiesStatusRejected;
+
+  /// No description provided for @storiesWithdrawTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayeni kaldır'**
+  String get storiesWithdrawTitle;
+
+  /// No description provided for @storiesWithdrawBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu hikaye kalıcı olarak silinecek. Emin misin?'**
+  String get storiesWithdrawBody;
+
+  /// No description provided for @storiesWithdraw.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaldır'**
+  String get storiesWithdraw;
+
+  /// No description provided for @storiesReportTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu hikayeyi bildir'**
+  String get storiesReportTitle;
+
+  /// No description provided for @storiesReportNoteHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'İsteğe bağlı not'**
+  String get storiesReportNoteHint;
+
+  /// No description provided for @storiesReport.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildir'**
+  String get storiesReport;
+
+  /// No description provided for @storiesReportSent.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirimin alındı, teşekkürler.'**
+  String get storiesReportSent;
+
+  /// No description provided for @storiesSubmitTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayeni Yaz'**
+  String get storiesSubmitTitle;
+
+  /// No description provided for @storiesSubmitHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Neler yaşadın, neyin işine yaradı, neyin yaramadı? Kendi cümlelerinle anlat...'**
+  String get storiesSubmitHint;
+
+  /// No description provided for @storiesDisclaimer.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu bir tıbbi tavsiye değildir. İlaç ve tedavi kararlarını mutlaka bir hekimle birlikte al. Burada paylaştığın kendi kişisel deneyimindir — başka birinin durumu farklı olabilir.'**
+  String get storiesDisclaimer;
+
+  /// No description provided for @storiesConsentLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu hikayenin, onaylandıktan sonra diğer kullanıcılarla (kimliğim gösterilmeden) paylaşılacağını biliyorum.'**
+  String get storiesConsentLabel;
+
+  /// No description provided for @storiesModerationNotice.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayen yayınlanmadan önce incelenir. İstediğin zaman geri çekebilirsin.'**
+  String get storiesModerationNotice;
+
+  /// No description provided for @storiesSubmit.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gönder'**
+  String get storiesSubmit;
+
+  /// No description provided for @storiesSubmitSuccess.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayen incelemeye gönderildi.'**
+  String get storiesSubmitSuccess;
+
+  /// No description provided for @storiesModerationTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikaye Moderasyonu'**
+  String get storiesModerationTitle;
+
+  /// No description provided for @storiesModerationQueueTab.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} bekleyen'**
+  String storiesModerationQueueTab(int count);
+
+  /// No description provided for @storiesModerationReportsTab.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} bildirilen'**
+  String storiesModerationReportsTab(int count);
+
+  /// No description provided for @storiesModerationEmpty.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bekleyen hikaye yok'**
+  String get storiesModerationEmpty;
+
+  /// No description provided for @storiesModerationNoReports.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirilen hikaye yok'**
+  String get storiesModerationNoReports;
+
+  /// No description provided for @storiesModerationApprove.
+  ///
+  /// In tr, this message translates to:
+  /// **'Onayla'**
+  String get storiesModerationApprove;
+
+  /// No description provided for @storiesModerationReject.
+  ///
+  /// In tr, this message translates to:
+  /// **'Reddet'**
+  String get storiesModerationReject;
+
+  /// No description provided for @storiesModerationKeep.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yayında tut'**
+  String get storiesModerationKeep;
+
+  /// No description provided for @storiesModerationCrisisFlag.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kriz dili'**
+  String get storiesModerationCrisisFlag;
 }
 
 class _AppLocalizationsDelegate

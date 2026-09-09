@@ -86,6 +86,7 @@ async fn register(
             diagnoses: vec![],
             language: req.language.unwrap_or_else(|| "tr".to_string()),
             birth_year: None,
+            is_admin: false,
             created_at: now,
         })
         .await
