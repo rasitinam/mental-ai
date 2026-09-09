@@ -7,6 +7,7 @@ import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/local_prefs.dart';
+import '../../../core/theme/theme_mode_controller.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/data/auth_api.dart';
 import '../../profile/data/profile_api.dart';
@@ -49,6 +50,8 @@ class SettingsScreen extends ConsumerWidget {
                   icon: Icons.fingerprint_rounded, label: l10n.settingsDeviceId, value: userId),
             ],
           ),
+          const SizedBox(height: 20),
+          _AppearanceGroup(title: l10n.settingsAppearance),
           const SizedBox(height: 20),
           _SettingsGroup(
             title: l10n.settingsPrivacy,
@@ -103,6 +106,109 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AppearanceGroup extends ConsumerWidget {
+  final String title;
+  const _AppearanceGroup({required this.title});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+    final mode = ref.watch(themeModeControllerProvider);
+    final controller = ref.read(themeModeControllerProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            title.toUpperCase(),
+            style: AppTypography.caption.copyWith(color: palette.textTertiary, letterSpacing: 0.6),
+          ),
+        ),
+        GlassSurface(
+          radius: 22,
+          padding: const EdgeInsets.all(6),
+          child: Row(
+            children: [
+              _ThemeOption(
+                icon: Icons.smartphone_rounded,
+                label: l10n.settingsThemeSystem,
+                selected: mode == ThemeMode.system,
+                palette: palette,
+                onTap: () => controller.setMode(ThemeMode.system),
+              ),
+              const SizedBox(width: 6),
+              _ThemeOption(
+                icon: Icons.light_mode_outlined,
+                label: l10n.settingsThemeLight,
+                selected: mode == ThemeMode.light,
+                palette: palette,
+                onTap: () => controller.setMode(ThemeMode.light),
+              ),
+              const SizedBox(width: 6),
+              _ThemeOption(
+                icon: Icons.dark_mode_outlined,
+                label: l10n.settingsThemeDark,
+                selected: mode == ThemeMode.dark,
+                palette: palette,
+                onTap: () => controller.setMode(ThemeMode.dark),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final AppPalette palette;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.palette,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: selected ? palette.accent : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              children: [
+                Icon(icon, size: 18, color: selected ? palette.canvasBottom : palette.textSecondary),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: AppTypography.caption.copyWith(
+                    color: selected ? palette.canvasBottom : palette.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

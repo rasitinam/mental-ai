@@ -193,6 +193,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsDeviceId => 'Device ID';
 
   @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsThemeSystem => 'System';
+
+  @override
+  String get settingsThemeLight => 'Light';
+
+  @override
+  String get settingsThemeDark => 'Dark';
+
+  @override
   String get settingsPrivacy => 'Privacy and Security';
 
   @override
@@ -424,7 +436,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lifeGenerate => 'Generate analysis';
 
   @override
+  String get storiesEntryTitle => 'Community Stories';
+
+  @override
+  String get storiesEntryBody =>
+      'Read what others going through the same thing wrote, or share your own.';
+
+  @override
   String get storiesTitle => 'Stories';
+
+  @override
+  String get storiesSearchHint => 'Search condition or category';
 
   @override
   String get storiesTabFeed => 'Stories';
@@ -485,6 +507,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get storiesSubmitHint =>
       'What did you go through, what helped, what didn\'t? Tell it in your own words...';
+
+  @override
+  String get storiesPickDiagnosis => 'Which condition is this about?';
 
   @override
   String storiesCharCount(int count) {

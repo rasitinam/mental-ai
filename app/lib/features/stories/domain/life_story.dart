@@ -13,6 +13,7 @@ StoryStatus _statusFromJson(String raw) => switch (raw) {
 class LifeStory {
   final String id;
   final String body;
+  final String diagnosisSlug;
   final StoryStatus status;
   final bool crisisFlag;
   final DateTime createdAt;
@@ -20,16 +21,19 @@ class LifeStory {
   const LifeStory({
     required this.id,
     required this.body,
+    required this.diagnosisSlug,
     required this.status,
     required this.crisisFlag,
     required this.createdAt,
   });
 
-  /// `/stories` (the public feed) returns id/body/created_at only — no
-  /// status or crisis flag, since every entry there is already approved.
+  /// `/stories` (the public feed) returns id/body/diagnosis/created_at
+  /// only — no status or crisis flag, since every entry there is already
+  /// approved.
   factory LifeStory.fromPublicJson(Map<String, dynamic> json) => LifeStory(
         id: json['id'] as String,
         body: json['body'] as String,
+        diagnosisSlug: json['diagnosis_slug'] as String? ?? '',
         status: StoryStatus.approved,
         crisisFlag: false,
         createdAt: DateTime.parse(json['created_at'] as String),
@@ -39,6 +43,7 @@ class LifeStory {
   factory LifeStory.fromJson(Map<String, dynamic> json) => LifeStory(
         id: json['id'] as String,
         body: json['body'] as String,
+        diagnosisSlug: json['diagnosis_slug'] as String? ?? '',
         status: _statusFromJson(json['status'] as String),
         crisisFlag: json['crisis_flag'] as bool? ?? false,
         createdAt: DateTime.parse(json['created_at'] as String),

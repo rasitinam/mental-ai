@@ -5,6 +5,8 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../catalog/data/catalog_api.dart';
+import '../../catalog/domain/disorder_category.dart';
 import 'stories_controller.dart';
 
 /// The write flow for a life story. Free text only — no separate
@@ -23,6 +25,7 @@ class StorySubmitScreen extends ConsumerStatefulWidget {
 class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
   final _controller = TextEditingController();
   bool _consent = false;
+  Disorder? _diagnosis;
 
   @override
   void dispose() {
@@ -30,11 +33,27 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
     super.dispose();
   }
 
+  Future<void> _pickDiagnosis() async {
+    final categories = await ref.read(categoriesProvider.future);
+    if (!mounted) return;
+    final picked = await showModalBottomSheet<Disorder>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _DiagnosisPickerSheet(categories: categories),
+    );
+    if (picked != null) setState(() => _diagnosis = picked);
+  }
+
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
-    final ok = await ref
-        .read(storiesControllerProvider.notifier)
-        .submit(body: _controller.text.trim(), consent: _consent);
+    final diagnosis = _diagnosis;
+    if (diagnosis == null) return;
+    final ok = await ref.read(storiesControllerProvider.notifier).submit(
+          body: _controller.text.trim(),
+          diagnosisSlug: diagnosis.slug,
+          consent: _consent,
+        );
     if (!mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.storiesSubmitSuccess)));
@@ -49,7 +68,8 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
     final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
     final state = ref.watch(storiesControllerProvider);
-    final canSubmit = _consent && _controller.text.trim().isNotEmpty && !state.submitting;
+    final canSubmit =
+        _consent && _diagnosis != null && _controller.text.trim().isNotEmpty && !state.submitting;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.storiesSubmitTitle)),
@@ -68,6 +88,34 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
                 child: Text(
                   l10n.storiesDisclaimer,
                   style: AppTypography.footnote.copyWith(color: palette.textSecondary),
+                ),
+              ),
+              const SizedBox(height: 16),
+              GlassSurface(
+                radius: 20,
+                padding: EdgeInsets.zero,
+                child: InkWell(
+                  onTap: _pickDiagnosis,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(Icons.local_offer_outlined, size: 18, color: palette.accent),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _diagnosis?.name ?? l10n.storiesPickDiagnosis,
+                            style: AppTypography.subheadline.copyWith(
+                              color: _diagnosis != null ? palette.textPrimary : palette.textTertiary,
+                              fontWeight: _diagnosis != null ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.chevron_right_rounded, size: 20, color: palette.textTertiary),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -143,6 +191,117 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Single-select diagnosis picker. Same lazy-expand shape as
+/// `DiagnosesScreen`'s category list and for the same reason — the
+/// catalog is ~130 conditions, and building every row up front is what
+/// caused the jank that screen was rewritten to avoid.
+class _DiagnosisPickerSheet extends StatelessWidget {
+  final List<DisorderCategory> categories;
+  const _DiagnosisPickerSheet({required this.categories});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: palette.canvasBottom,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: palette.separator,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+                child: Text(
+                  l10n.storiesPickDiagnosis,
+                  style: AppTypography.headline.copyWith(color: palette.textPrimary),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  itemCount: categories.length,
+                  itemBuilder: (context, i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _PickerCategoryTile(category: categories[i], palette: palette),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PickerCategoryTile extends StatefulWidget {
+  final DisorderCategory category;
+  final AppPalette palette;
+  const _PickerCategoryTile({required this.category, required this.palette});
+
+  @override
+  State<_PickerCategoryTile> createState() => _PickerCategoryTileState();
+}
+
+class _PickerCategoryTileState extends State<_PickerCategoryTile> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = widget.palette;
+
+    return GlassSurface(
+      radius: 18,
+      padding: EdgeInsets.zero,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: const EdgeInsets.only(bottom: 6),
+          onExpansionChanged: (v) => setState(() => _expanded = v),
+          title: Text(
+            '${widget.category.emoji}  ${widget.category.name}',
+            style: AppTypography.subheadline.copyWith(color: palette.textPrimary),
+          ),
+          iconColor: palette.accent,
+          collapsedIconColor: palette.textTertiary,
+          children: _expanded
+              ? [
+                  for (final disorder in widget.category.disorders)
+                    ListTile(
+                      dense: true,
+                      title: Text(
+                        disorder.name,
+                        style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
+                      ),
+                      onTap: () => Navigator.of(context).pop(disorder),
+                    ),
+                ]
+              : const [],
         ),
       ),
     );

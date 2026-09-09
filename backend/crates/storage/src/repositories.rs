@@ -810,15 +810,16 @@ impl SqliteLifeStoryRepository {
     }
 }
 
-type StoryRow = (String, String, String, String, bool, DateTime<Utc>, Option<DateTime<Utc>>, DateTime<Utc>);
+type StoryRow = (String, String, String, String, String, bool, DateTime<Utc>, Option<DateTime<Utc>>, DateTime<Utc>);
 
 fn story_from_row(
-    (id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at): StoryRow,
+    (id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, reviewed_at, created_at): StoryRow,
 ) -> LifeStory {
     LifeStory {
         id: Uuid::parse_str(&id).unwrap_or_default(),
         user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
         body,
+        diagnosis_slug,
         status: StoryStatus::parse(&status),
         crisis_flag,
         consented_at,
@@ -831,12 +832,13 @@ fn story_from_row(
 impl LifeStoryRepository for SqliteLifeStoryRepository {
     async fn create(&self, story: &LifeStory) -> anyhow::Result<()> {
         sqlx::query(
-            "INSERT INTO life_stories (id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            "INSERT INTO life_stories (id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, reviewed_at, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
         )
         .bind(story.id.to_string())
         .bind(story.user_id.to_string())
         .bind(&story.body)
+        .bind(&story.diagnosis_slug)
         .bind(story.status.as_str())
         .bind(story.crisis_flag)
         .bind(story.consented_at)
@@ -850,7 +852,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
 
     async fn get(&self, id: Uuid) -> anyhow::Result<Option<LifeStory>> {
         let row = sqlx::query_as::<_, StoryRow>(
-            "SELECT id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at
+            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, reviewed_at, created_at
              FROM life_stories WHERE id = ?1",
         )
         .bind(id.to_string())
@@ -862,7 +864,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
 
     async fn list_approved(&self, limit: u32) -> anyhow::Result<Vec<LifeStory>> {
         let rows = sqlx::query_as::<_, StoryRow>(
-            "SELECT id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at
+            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, reviewed_at, created_at
              FROM life_stories WHERE status = 'approved' ORDER BY created_at DESC LIMIT ?1",
         )
         .bind(limit)
@@ -874,7 +876,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
 
     async fn list_for_user(&self, user_id: Uuid) -> anyhow::Result<Vec<LifeStory>> {
         let rows = sqlx::query_as::<_, StoryRow>(
-            "SELECT id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at
+            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, reviewed_at, created_at
              FROM life_stories WHERE user_id = ?1 ORDER BY created_at DESC",
         )
         .bind(user_id.to_string())
@@ -886,7 +888,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
 
     async fn list_pending(&self) -> anyhow::Result<Vec<LifeStory>> {
         let rows = sqlx::query_as::<_, StoryRow>(
-            "SELECT id, user_id, body, status, crisis_flag, consented_at, reviewed_at, created_at
+            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, reviewed_at, created_at
              FROM life_stories WHERE status = 'pending' ORDER BY created_at ASC",
         )
         .fetch_all(&self.pool)

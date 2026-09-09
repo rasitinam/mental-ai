@@ -28,10 +28,19 @@ class LifeStoriesApi {
         .toList();
   }
 
-  /// `consent` must be explicit — the backend rejects the submission
-  /// without it. See `StorySubmitScreen`'s checkbox.
-  Future<void> submit({required String body, required bool consent}) async {
-    await _dio.post('/stories', data: {'body': body, 'consent': consent});
+  /// `consent` must be explicit and `diagnosisSlug` non-empty — the
+  /// backend rejects the submission without either. See
+  /// `StorySubmitScreen`'s checkbox and diagnosis picker.
+  Future<void> submit({
+    required String body,
+    required String diagnosisSlug,
+    required bool consent,
+  }) async {
+    await _dio.post('/stories', data: {
+      'body': body,
+      'diagnosis_slug': diagnosisSlug,
+      'consent': consent,
+    });
   }
 
   Future<void> withdraw(String id) async {

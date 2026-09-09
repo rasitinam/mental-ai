@@ -440,6 +440,30 @@ abstract class AppLocalizations {
   /// **'Cihaz kimliği'**
   String get settingsDeviceId;
 
+  /// No description provided for @settingsAppearance.
+  ///
+  /// In tr, this message translates to:
+  /// **'Görünüm'**
+  String get settingsAppearance;
+
+  /// No description provided for @settingsThemeSystem.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sistem'**
+  String get settingsThemeSystem;
+
+  /// No description provided for @settingsThemeLight.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açık'**
+  String get settingsThemeLight;
+
+  /// No description provided for @settingsThemeDark.
+  ///
+  /// In tr, this message translates to:
+  /// **'Koyu'**
+  String get settingsThemeDark;
+
   /// No description provided for @settingsPrivacy.
   ///
   /// In tr, this message translates to:
@@ -866,11 +890,29 @@ abstract class AppLocalizations {
   /// **'Analiz oluştur'**
   String get lifeGenerate;
 
+  /// No description provided for @storiesEntryTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Topluluk Hikayeleri'**
+  String get storiesEntryTitle;
+
+  /// No description provided for @storiesEntryBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Aynı şeyi yaşayanların deneyimlerini oku ya da kendi hikayeni paylaş.'**
+  String get storiesEntryBody;
+
   /// No description provided for @storiesTitle.
   ///
   /// In tr, this message translates to:
   /// **'Hikayeler'**
   String get storiesTitle;
+
+  /// No description provided for @storiesSearchHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tanı veya kategori ara'**
+  String get storiesSearchHint;
 
   /// No description provided for @storiesTabFeed.
   ///
@@ -985,6 +1027,12 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Neler yaşadın, neyin işine yaradı, neyin yaramadı? Kendi cümlelerinle anlat...'**
   String get storiesSubmitHint;
+
+  /// No description provided for @storiesPickDiagnosis.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hangi tanı hakkında?'**
+  String get storiesPickDiagnosis;
 
   /// No description provided for @storiesCharCount.
   ///

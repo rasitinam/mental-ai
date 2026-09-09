@@ -193,6 +193,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsDeviceId => 'Cihaz kimliği';
 
   @override
+  String get settingsAppearance => 'Görünüm';
+
+  @override
+  String get settingsThemeSystem => 'Sistem';
+
+  @override
+  String get settingsThemeLight => 'Açık';
+
+  @override
+  String get settingsThemeDark => 'Koyu';
+
+  @override
   String get settingsPrivacy => 'Gizlilik ve Güvenlik';
 
   @override
@@ -425,7 +437,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get lifeGenerate => 'Analiz oluştur';
 
   @override
+  String get storiesEntryTitle => 'Topluluk Hikayeleri';
+
+  @override
+  String get storiesEntryBody =>
+      'Aynı şeyi yaşayanların deneyimlerini oku ya da kendi hikayeni paylaş.';
+
+  @override
   String get storiesTitle => 'Hikayeler';
+
+  @override
+  String get storiesSearchHint => 'Tanı veya kategori ara';
 
   @override
   String get storiesTabFeed => 'Hikayeler';
@@ -486,6 +508,9 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get storiesSubmitHint =>
       'Neler yaşadın, neyin işine yaradı, neyin yaramadı? Kendi cümlelerinle anlat...';
+
+  @override
+  String get storiesPickDiagnosis => 'Hangi tanı hakkında?';
 
   @override
   String storiesCharCount(int count) {

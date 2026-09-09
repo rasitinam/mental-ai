@@ -43,6 +43,10 @@ pub struct LifeStory {
     pub id: Uuid,
     pub user_id: Uuid,
     pub body: String,
+    /// The catalog condition this story is about — required at
+    /// submission, so the guide can filter the feed by diagnosis instead
+    /// of it being one undifferentiated wall of text.
+    pub diagnosis_slug: String,
     pub status: StoryStatus,
     /// Same keyword screen used for journal/chat, run at submission time
     /// so a crisis-flagged story gets extra scrutiny in the approval

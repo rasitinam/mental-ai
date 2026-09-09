@@ -6,6 +6,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use mental_analysis_engine::screen_for_crisis_language;
+use mental_domain::catalog;
 use mental_domain::repository::LifeStoryRepository;
 use mental_domain::{LifeStory, LifeStoryReport, StoryStatus};
 use serde::{Deserialize, Serialize};
@@ -30,6 +31,10 @@ pub fn router() -> Router<AppState> {
 #[derive(Debug, Deserialize)]
 struct SubmitRequest {
     body: String,
+    /// A catalog slug — required, so the guide can filter the feed by
+    /// condition. Validated against the catalog the same way
+    /// `/profile/diagnoses` validates a self-reported diagnosis.
+    diagnosis_slug: String,
     /// Must be explicitly true — this is a separate consent from account
     /// signup, since "shown to other users" is a materially different use
     /// of the text than a private journal entry.
@@ -43,12 +48,18 @@ struct SubmitRequest {
 struct PublicStory {
     id: String,
     body: String,
+    diagnosis_slug: String,
     created_at: DateTime<Utc>,
 }
 
 impl From<&LifeStory> for PublicStory {
     fn from(s: &LifeStory) -> Self {
-        Self { id: s.id.to_string(), body: s.body.clone(), created_at: s.created_at }
+        Self {
+            id: s.id.to_string(),
+            body: s.body.clone(),
+            diagnosis_slug: s.diagnosis_slug.clone(),
+            created_at: s.created_at,
+        }
     }
 }
 
@@ -61,6 +72,7 @@ struct AdminStoryView {
     user_id: String,
     display_name: String,
     body: String,
+    diagnosis_slug: String,
     status: StoryStatus,
     crisis_flag: bool,
     created_at: DateTime<Utc>,
@@ -75,6 +87,7 @@ async fn admin_view(state: &AppState, story: &LifeStory) -> AdminStoryView {
         user_id: story.user_id.to_string(),
         display_name,
         body: story.body.clone(),
+        diagnosis_slug: story.diagnosis_slug.clone(),
         status: story.status,
         crisis_flag: story.crisis_flag,
         created_at: story.created_at,
@@ -113,12 +126,17 @@ async fn submit(
         return Err((StatusCode::BAD_REQUEST, "story cannot be empty".to_string()));
     }
 
+    if catalog::disorder(&req.diagnosis_slug).is_none() {
+        return Err((StatusCode::BAD_REQUEST, format!("unknown diagnosis slug: {}", req.diagnosis_slug)));
+    }
+
     let now = Utc::now();
     let crisis = screen_for_crisis_language(&body);
     let story = LifeStory {
         id: Uuid::new_v4(),
         user_id: auth.user_id,
         body,
+        diagnosis_slug: req.diagnosis_slug,
         status: StoryStatus::Pending,
         crisis_flag: crisis.flagged,
         consented_at: now,

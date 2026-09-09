@@ -73,10 +73,16 @@ class StoriesController extends Notifier<StoriesState> {
     }
   }
 
-  Future<bool> submit({required String body, required bool consent}) async {
+  Future<bool> submit({
+    required String body,
+    required String diagnosisSlug,
+    required bool consent,
+  }) async {
     state = state.copyWith(submitting: true, submitted: false, error: null);
     try {
-      await ref.read(lifeStoriesApiProvider).submit(body: body, consent: consent);
+      await ref
+          .read(lifeStoriesApiProvider)
+          .submit(body: body, diagnosisSlug: diagnosisSlug, consent: consent);
       state = state.copyWith(submitting: false, submitted: true);
       await loadMine();
       return true;

@@ -7,8 +7,26 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../catalog/data/catalog_api.dart';
+import '../../catalog/domain/disorder_category.dart';
 import '../domain/life_story.dart';
 import 'stories_controller.dart';
+
+/// Where a story's `diagnosisSlug` actually lives in the catalog tree —
+/// resolved once per build against the already-fetched category list, so
+/// the feed can show "which condition" on each card and filter by it,
+/// the same way the guide filters by category.
+({DisorderCategory category, Disorder disorder})? _resolve(
+  List<DisorderCategory> categories,
+  String diagnosisSlug,
+) {
+  for (final category in categories) {
+    for (final disorder in category.disorders) {
+      if (disorder.slug == diagnosisSlug) return (category: category, disorder: disorder);
+    }
+  }
+  return null;
+}
 
 /// The public guide's story feed, plus the author's own submissions
 /// ("Hikayem") behind a second tab on the same screen. Two lists rather
@@ -25,6 +43,15 @@ class StoriesScreen extends ConsumerStatefulWidget {
 
 class _StoriesScreenState extends ConsumerState<StoriesScreen> {
   bool _showMine = false;
+  final _search = TextEditingController();
+  String _query = '';
+  String? _selectedCategory;
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -107,6 +134,26 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
     final palette = AppPalette.of(context);
     final state = ref.watch(storiesControllerProvider);
     final controller = ref.read(storiesControllerProvider.notifier);
+    final categories = ref.watch(categoriesProvider).valueOrNull ?? const <DisorderCategory>[];
+
+    // Only categories a story actually exists in — a filter strip full of
+    // dead chips isn't useful when most of the catalog has no stories yet.
+    final availableCategories = <DisorderCategory>[];
+    for (final story in state.feed) {
+      final resolved = _resolve(categories, story.diagnosisSlug);
+      if (resolved != null && !availableCategories.contains(resolved.category)) {
+        availableCategories.add(resolved.category);
+      }
+    }
+
+    final query = _query.trim().toLowerCase();
+    final visibleFeed = state.feed.where((story) {
+      final resolved = _resolve(categories, story.diagnosisSlug);
+      if (_selectedCategory != null && resolved?.category.slug != _selectedCategory) return false;
+      if (query.isEmpty) return true;
+      return (resolved?.disorder.name.toLowerCase().contains(query) ?? false) ||
+          (resolved?.category.name.toLowerCase().contains(query) ?? false);
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.storiesTitle)),
@@ -149,6 +196,32 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
               ],
             ),
           ),
+          if (!_showMine) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: _SearchField(
+                controller: _search,
+                palette: palette,
+                hint: l10n.storiesSearchHint,
+                onChanged: (v) => setState(() => _query = v),
+                onClear: () {
+                  _search.clear();
+                  setState(() => _query = '');
+                },
+              ),
+            ),
+            if (availableCategories.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _CategoryStrip(
+                  categories: availableCategories,
+                  selected: _selectedCategory,
+                  palette: palette,
+                  allLabel: l10n.guideCategoryAll,
+                  onSelect: (slug) => setState(() => _selectedCategory = slug),
+                ),
+              ),
+          ],
           Expanded(
             child: RefreshIndicator(
               color: palette.accent,
@@ -161,7 +234,9 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
                       onWithdraw: (id) => _confirmWithdraw(context, ref, id),
                     )
                   : _FeedList(
-                      state: state,
+                      stories: visibleFeed,
+                      loading: state.loadingFeed,
+                      categories: categories,
                       palette: palette,
                       l10n: l10n,
                       onReport: (id) => _report(context, ref, id),
@@ -212,14 +287,152 @@ class _SegmentButton extends StatelessWidget {
   }
 }
 
+class _SearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final AppPalette palette;
+  final String hint;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  const _SearchField({
+    required this.controller,
+    required this.palette,
+    required this.hint,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      radius: 100,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          Icon(Icons.search_rounded, size: 20, color: palette.textTertiary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              style: AppTypography.subheadline.copyWith(color: palette.textPrimary),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                hintText: hint,
+                hintStyle: AppTypography.subheadline.copyWith(color: palette.textTertiary),
+              ),
+            ),
+          ),
+          if (controller.text.isNotEmpty)
+            InkWell(
+              onTap: onClear,
+              customBorder: const CircleBorder(),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(Icons.close_rounded, size: 18, color: palette.textTertiary),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryStrip extends StatelessWidget {
+  final List<DisorderCategory> categories;
+  final String? selected;
+  final AppPalette palette;
+  final String allLabel;
+  final ValueChanged<String?> onSelect;
+
+  const _CategoryStrip({
+    required this.categories,
+    required this.selected,
+    required this.palette,
+    required this.allLabel,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: categories.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return _CategoryChip(
+              label: allLabel,
+              selected: selected == null,
+              palette: palette,
+              onTap: () => onSelect(null),
+            );
+          }
+
+          final category = categories[index - 1];
+          return _CategoryChip(
+            label: '${category.emoji} ${category.name}',
+            selected: selected == category.slug,
+            palette: palette,
+            onTap: () => onSelect(category.slug),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final AppPalette palette;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.label,
+    required this.selected,
+    required this.palette,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected ? palette.canvasBottom : palette.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: selected ? palette.accent : palette.glassFill,
+        shape: StadiumBorder(side: BorderSide(color: selected ? palette.accent : palette.glassBorder)),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            child: Text(label, style: AppTypography.footnote.copyWith(color: fg)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _FeedList extends StatelessWidget {
-  final StoriesState state;
+  final List<LifeStory> stories;
+  final bool loading;
+  final List<DisorderCategory> categories;
   final AppPalette palette;
   final AppLocalizations l10n;
   final ValueChanged<String> onReport;
 
   const _FeedList({
-    required this.state,
+    required this.stories,
+    required this.loading,
+    required this.categories,
     required this.palette,
     required this.l10n,
     required this.onReport,
@@ -227,10 +440,10 @@ class _FeedList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.loadingFeed) {
+    if (loading) {
       return Center(child: CircularProgressIndicator(color: palette.accent));
     }
-    if (state.feed.isEmpty) {
+    if (stories.isEmpty) {
       return ListView(
         padding: const EdgeInsets.fromLTRB(28, 60, 28, 0),
         children: [
@@ -253,9 +466,10 @@ class _FeedList extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
-      itemCount: state.feed.length,
+      itemCount: stories.length,
       itemBuilder: (context, i) {
-        final story = state.feed[i];
+        final story = stories[i];
+        final resolved = _resolve(categories, story.diagnosisSlug);
         return Padding(
           padding: const EdgeInsets.only(bottom: 14),
           child: GlassSurface(
@@ -263,6 +477,20 @@ class _FeedList extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (resolved != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: palette.accentSoft,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      '${resolved.category.emoji} ${resolved.disorder.name}',
+                      style: AppTypography.caption.copyWith(color: palette.accent),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 Text(story.body, style: AppTypography.body.copyWith(color: palette.textPrimary)),
                 const SizedBox(height: 12),
                 Row(

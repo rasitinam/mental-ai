@@ -51,6 +51,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
       body: Column(
         children: [
           Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+            child: _StoriesEntryCard(palette: palette, l10n: l10n),
+          ),
+          Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: _SearchField(
               controller: _search,
@@ -220,6 +224,64 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
         ),
       ),
     ];
+  }
+}
+
+/// A direct, hard-to-miss way into the story feed — previously reachable
+/// only through Settings → Topluluk, which nobody browsing the guide for
+/// research would ever think to check. Sits right under the app bar,
+/// above even the search field: the single most visible spot on the
+/// screen people already visit to read about their condition.
+class _StoriesEntryCard extends StatelessWidget {
+  final AppPalette palette;
+  final AppLocalizations l10n;
+  const _StoriesEntryCard({required this.palette, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: palette.accent,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.go('/settings/stories'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.auto_stories_outlined, size: 20, color: Colors.white),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.storiesEntryTitle,
+                      style: AppTypography.headline.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.storiesEntryBody,
+                      style: AppTypography.footnote.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, size: 20, color: Colors.white),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
