@@ -12,6 +12,7 @@
   "navReport": "Ana Ekran",
   "navMood": "Ruh Hali",
   "navJournal": "Günlük",
+  "navStories": "Hikayeler",
   "navChat": "Sohbet",
   "navGuide": "Rehber",
   "navLife": "Yaşam",
@@ -240,6 +241,7 @@
   "storiesModerationReporterNote": "Bildiren notu:",
 
   "settingsAssessment": "Öz-değerlendirme",
+  "settingsMyStories": "Hikayelerim",
 
   "assessmentOnboardTitle": "Seni biraz tanıyalım",
   "assessmentOnboardIntro": "Son iki haftaya dair 16 kısa soru. Sana nasıl yaklaşacağımızı bu belirler; istersen şimdi atlayıp sonra Ayarlar'dan yapabilirsin.",
@@ -289,5 +291,44 @@
   "gad7Q4": "Gevşeyip rahatlayamama",
   "gad7Q5": "Yerinde duramayacak kadar huzursuz olma",
   "gad7Q6": "Çabuk sinirlenme ya da huysuzlaşma",
-  "gad7Q7": "Kötü bir şey olacakmış gibi korku hissetme"
+  "gad7Q7": "Kötü bir şey olacakmış gibi korku hissetme",
+
+  "storiesAnonymousToggle": "Anonim paylaş",
+  "storiesAnonymousOnBody": "Adın ve fotoğrafın görünmeyecek.",
+  "storiesAnonymousOffBody": "Adın ve fotoğrafınla paylaşılacak.",
+
+  "profileStatStories": "Hikaye",
+  "profileStatFollowers": "Takipçi",
+  "profileStatFollowing": "Takip",
+  "profileFollow": "Takip et",
+  "profileUnfollow": "Takibi bırak",
+  "profileNobodyYet": "Henüz kimse yok",
+
+  "settingsDmPrivacy": "Mesaj gizliliği",
+  "settingsDmEveryone": "Herkesten mesaj kabul et",
+  "settingsDmFollowing": "Sadece takip ettiklerimden kabul et",
+  "settingsDmNoReceipts": "Mesajlarda okundu bilgisi yoktur.",
+
+  "dmTitle": "Mesajlar",
+  "dmTabInbox": "Sohbetler",
+  "dmTabRequests": "İstekler",
+  "dmNoThreads": "Henüz sohbet yok",
+  "dmNoRequests": "Bekleyen istek yok",
+  "dmMessage": "Mesaj gönder",
+  "dmFollowersOnly": "Sadece takip ettiklerinden mesaj alıyor",
+  "dmRequestTitle": "{name} kişisine yaz",
+  "@dmRequestTitle": { "placeholders": { "name": { "type": "String" } } },
+  "dmRequestBody": "İlk mesajın istek olarak gider. Kabul edilene kadar ikinci bir mesaj gönderemezsin.",
+  "dmRequestHint": "Bir şeyler yaz...",
+  "dmRequestSent": "İsteğin gönderildi.",
+  "dmSend": "Gönder",
+  "dmSendFailed": "Mesaj gönderilemedi.",
+  "dmComposerHint": "Bir şey yaz...",
+  "dmAccept": "Kabul et",
+  "dmDecline": "Reddet",
+  "dmAcceptPrompt": "Bu kişi seninle konuşmak istiyor. Cevap verirsen istek otomatik kabul edilir.",
+  "dmWaiting": "Bekliyor",
+  "dmNewRequest": "Yeni istek",
+  "dmWaitingBody": "İsteğin gönderildi. Kabul edilince yazabilirsin.",
+  "dmLeave": "Sohbetten çık"
 }

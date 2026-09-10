@@ -12,6 +12,11 @@ import '../../../l10n/app_localizations.dart';
 /// destinations is already past Apple's own five-tab guidance, so adding
 /// labels on top would force everything to shrink into unreadable text;
 /// each screen already states its own name in its app bar.
+///
+/// The story feed sits dead centre because it's the app's landing screen
+/// and the one destination people come back to without a task in mind.
+/// The journal is a branch too (see `app/router.dart`) but deliberately
+/// not a tab — it's reached from the home screen instead.
 class HomeShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -23,8 +28,8 @@ class HomeShell extends StatelessWidget {
       [
         (icon: Icons.event_note_outlined, activeIcon: Icons.event_note, tooltip: l10n.navReport),
         (icon: Icons.emoji_emotions_outlined, activeIcon: Icons.emoji_emotions, tooltip: l10n.navMood),
-        (icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book, tooltip: l10n.navJournal),
         (icon: Icons.forum_outlined, activeIcon: Icons.forum, tooltip: l10n.navChat),
+        (icon: Icons.auto_stories_outlined, activeIcon: Icons.auto_stories, tooltip: l10n.navStories),
         (icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, tooltip: l10n.navGuide),
         (icon: Icons.insights_outlined, activeIcon: Icons.insights, tooltip: l10n.navLife),
         (icon: Icons.tune_outlined, activeIcon: Icons.tune, tooltip: l10n.navSettings),

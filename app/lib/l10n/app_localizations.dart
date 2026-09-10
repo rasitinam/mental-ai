@@ -158,6 +158,12 @@ abstract class AppLocalizations {
   /// **'Günlük'**
   String get navJournal;
 
+  /// No description provided for @navStories.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayeler'**
+  String get navStories;
+
   /// No description provided for @navChat.
   ///
   /// In tr, this message translates to:
@@ -1358,6 +1364,12 @@ abstract class AppLocalizations {
   /// **'Öz-değerlendirme'**
   String get settingsAssessment;
 
+  /// No description provided for @settingsMyStories.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayelerim'**
+  String get settingsMyStories;
+
   /// No description provided for @assessmentOnboardTitle.
   ///
   /// In tr, this message translates to:
@@ -1627,6 +1639,210 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Kötü bir şey olacakmış gibi korku hissetme'**
   String get gad7Q7;
+
+  /// No description provided for @storiesAnonymousToggle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Anonim paylaş'**
+  String get storiesAnonymousToggle;
+
+  /// No description provided for @storiesAnonymousOnBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Adın ve fotoğrafın görünmeyecek.'**
+  String get storiesAnonymousOnBody;
+
+  /// No description provided for @storiesAnonymousOffBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Adın ve fotoğrafınla paylaşılacak.'**
+  String get storiesAnonymousOffBody;
+
+  /// No description provided for @profileStatStories.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikaye'**
+  String get profileStatStories;
+
+  /// No description provided for @profileStatFollowers.
+  ///
+  /// In tr, this message translates to:
+  /// **'Takipçi'**
+  String get profileStatFollowers;
+
+  /// No description provided for @profileStatFollowing.
+  ///
+  /// In tr, this message translates to:
+  /// **'Takip'**
+  String get profileStatFollowing;
+
+  /// No description provided for @profileFollow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Takip et'**
+  String get profileFollow;
+
+  /// No description provided for @profileUnfollow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Takibi bırak'**
+  String get profileUnfollow;
+
+  /// No description provided for @profileNobodyYet.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz kimse yok'**
+  String get profileNobodyYet;
+
+  /// No description provided for @settingsDmPrivacy.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mesaj gizliliği'**
+  String get settingsDmPrivacy;
+
+  /// No description provided for @settingsDmEveryone.
+  ///
+  /// In tr, this message translates to:
+  /// **'Herkesten mesaj kabul et'**
+  String get settingsDmEveryone;
+
+  /// No description provided for @settingsDmFollowing.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sadece takip ettiklerimden kabul et'**
+  String get settingsDmFollowing;
+
+  /// No description provided for @settingsDmNoReceipts.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mesajlarda okundu bilgisi yoktur.'**
+  String get settingsDmNoReceipts;
+
+  /// No description provided for @dmTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mesajlar'**
+  String get dmTitle;
+
+  /// No description provided for @dmTabInbox.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbetler'**
+  String get dmTabInbox;
+
+  /// No description provided for @dmTabRequests.
+  ///
+  /// In tr, this message translates to:
+  /// **'İstekler'**
+  String get dmTabRequests;
+
+  /// No description provided for @dmNoThreads.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz sohbet yok'**
+  String get dmNoThreads;
+
+  /// No description provided for @dmNoRequests.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bekleyen istek yok'**
+  String get dmNoRequests;
+
+  /// No description provided for @dmMessage.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mesaj gönder'**
+  String get dmMessage;
+
+  /// No description provided for @dmFollowersOnly.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sadece takip ettiklerinden mesaj alıyor'**
+  String get dmFollowersOnly;
+
+  /// No description provided for @dmRequestTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'{name} kişisine yaz'**
+  String dmRequestTitle(String name);
+
+  /// No description provided for @dmRequestBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'İlk mesajın istek olarak gider. Kabul edilene kadar ikinci bir mesaj gönderemezsin.'**
+  String get dmRequestBody;
+
+  /// No description provided for @dmRequestHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bir şeyler yaz...'**
+  String get dmRequestHint;
+
+  /// No description provided for @dmRequestSent.
+  ///
+  /// In tr, this message translates to:
+  /// **'İsteğin gönderildi.'**
+  String get dmRequestSent;
+
+  /// No description provided for @dmSend.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gönder'**
+  String get dmSend;
+
+  /// No description provided for @dmSendFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mesaj gönderilemedi.'**
+  String get dmSendFailed;
+
+  /// No description provided for @dmComposerHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bir şey yaz...'**
+  String get dmComposerHint;
+
+  /// No description provided for @dmAccept.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kabul et'**
+  String get dmAccept;
+
+  /// No description provided for @dmDecline.
+  ///
+  /// In tr, this message translates to:
+  /// **'Reddet'**
+  String get dmDecline;
+
+  /// No description provided for @dmAcceptPrompt.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu kişi seninle konuşmak istiyor. Cevap verirsen istek otomatik kabul edilir.'**
+  String get dmAcceptPrompt;
+
+  /// No description provided for @dmWaiting.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bekliyor'**
+  String get dmWaiting;
+
+  /// No description provided for @dmNewRequest.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeni istek'**
+  String get dmNewRequest;
+
+  /// No description provided for @dmWaitingBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'İsteğin gönderildi. Kabul edilince yazabilirsin.'**
+  String get dmWaitingBody;
+
+  /// No description provided for @dmLeave.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbetten çık'**
+  String get dmLeave;
 }
 
 class _AppLocalizationsDelegate

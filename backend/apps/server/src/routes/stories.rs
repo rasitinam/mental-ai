@@ -7,8 +7,8 @@ use axum::{
 use chrono::{DateTime, Utc};
 use mental_analysis_engine::screen_for_crisis_language;
 use mental_domain::catalog;
-use mental_domain::repository::LifeStoryRepository;
-use mental_domain::{LifeStory, LifeStoryReport, StoryStatus};
+use mental_domain::repository::{LifeStoryRepository, SocialRepository};
+use mental_domain::{LifeStory, LifeStoryReport, StoryFeedItem, StoryStatus};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -22,6 +22,7 @@ pub fn router() -> Router<AppState> {
         .route("/stories/mine", get(mine))
         .route("/stories/:id", axum::routing::delete(withdraw))
         .route("/stories/:id/report", post(report))
+        .route("/stories/:id/upvote", post(upvote).delete(remove_upvote))
         .route("/stories/pending", get(pending))
         .route("/stories/reports", get(reports))
         .route("/stories/:id/approve", post(approve))
@@ -39,26 +40,48 @@ struct SubmitRequest {
     /// signup, since "shown to other users" is a materially different use
     /// of the text than a private journal entry.
     consent: bool,
+    /// Defaults to anonymous. Sharing under a name has to be an explicit
+    /// choice, not something a client gets to leave out and have decided
+    /// the permissive way.
+    #[serde(default = "yes")]
+    anonymous: bool,
 }
 
-/// What a reader sees in the public feed — deliberately anonymous. No
-/// `user_id` or display name: someone sharing a mental-health history
-/// shouldn't have that tied back to their account just by being read.
+fn yes() -> bool {
+    true
+}
+
+/// What a reader sees in the feed. The author's name and avatar are on
+/// the row only when they chose to sign the story; for an anonymous one
+/// there is no id to click through to, not just no name displayed.
 #[derive(Debug, Serialize)]
 struct PublicStory {
     id: String,
     body: String,
     diagnosis_slug: String,
     created_at: DateTime<Utc>,
+    upvotes: u32,
+    viewer_upvoted: bool,
+    anonymous: bool,
+    author_user_id: Option<String>,
+    author_display_name: Option<String>,
+    author_has_avatar: bool,
 }
 
-impl From<&LifeStory> for PublicStory {
-    fn from(s: &LifeStory) -> Self {
+impl From<&StoryFeedItem> for PublicStory {
+    fn from(item: &StoryFeedItem) -> Self {
+        let signed = !item.story.anonymous;
         Self {
-            id: s.id.to_string(),
-            body: s.body.clone(),
-            diagnosis_slug: s.diagnosis_slug.clone(),
-            created_at: s.created_at,
+            id: item.story.id.to_string(),
+            body: item.story.body.clone(),
+            diagnosis_slug: item.story.diagnosis_slug.clone(),
+            created_at: item.story.created_at,
+            upvotes: item.upvotes,
+            viewer_upvoted: item.viewer_upvoted,
+            anonymous: item.story.anonymous,
+            author_user_id: signed.then(|| item.story.user_id.to_string()),
+            author_display_name: signed.then(|| item.author_display_name.clone()),
+            author_has_avatar: signed && item.author_has_avatar,
         }
     }
 }
@@ -140,6 +163,7 @@ async fn submit(
         status: StoryStatus::Pending,
         crisis_flag: crisis.flagged,
         consented_at: now,
+        anonymous: req.anonymous,
         reviewed_at: None,
         created_at: now,
     };
@@ -153,18 +177,64 @@ async fn submit(
     Ok(Json(story))
 }
 
-/// The public guide feed — approved stories only, identity stripped.
+/// The feed: approved stories, ordered so the conditions the reader
+/// actually lives with come first. Someone who told the app they have
+/// PTSD opening a wall of unrelated accounts is the failure mode this
+/// avoids — within each group it's still newest-first, so the ordering
+/// personalises without freezing older matching stories at the top
+/// forever.
 async fn public_feed(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
 ) -> Result<Json<Vec<PublicStory>>, (StatusCode, String)> {
-    let stories = state
+    let mut items = state
         .life_stories
-        .list_approved(200)
+        .feed_for(auth.user_id, FEED_LIMIT)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    Ok(Json(stories.iter().map(PublicStory::from).collect()))
+    let mine: Vec<String> = user_for(&state, auth.user_id)
+        .await
+        .map(|u| u.diagnoses)
+        .unwrap_or_default();
+
+    if !mine.is_empty() {
+        // Stable sort, so the newest-first order the query already
+        // produced survives inside each of the two groups.
+        items.sort_by_key(|item| !mine.contains(&item.story.diagnosis_slug));
+    }
+
+    Ok(Json(items.iter().map(PublicStory::from).collect()))
+}
+
+const FEED_LIMIT: u32 = 200;
+
+async fn upvote(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    state
+        .social
+        .upvote(id, auth.user_id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn remove_upvote(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    state
+        .social
+        .remove_upvote(id, auth.user_id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 /// The caller's own submissions, whatever their status — so someone can

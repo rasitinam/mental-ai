@@ -24,6 +24,10 @@ class StorySubmitScreen extends ConsumerStatefulWidget {
 class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
   final _controller = TextEditingController();
   bool _consent = false;
+  /// Defaults to anonymous: signing a mental-health account with your
+  /// name should be something you turn on, not something you forget to
+  /// turn off.
+  bool _anonymous = true;
   Disorder? _diagnosis;
 
   @override
@@ -52,6 +56,7 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
           body: _controller.text.trim(),
           diagnosisSlug: diagnosis.slug,
           consent: _consent,
+          anonymous: _anonymous,
         );
     if (!mounted) return;
     if (ok) {
@@ -161,6 +166,37 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
                     Text(
                       l10n.storiesCharCount(_controller.text.length),
                       style: AppTypography.caption.copyWith(color: palette.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              GlassSurface(
+                radius: 16,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(l10n.storiesAnonymousToggle,
+                              style: AppTypography.label.copyWith(color: palette.textPrimary)),
+                          const SizedBox(height: 3),
+                          Text(
+                            _anonymous
+                                ? l10n.storiesAnonymousOnBody
+                                : l10n.storiesAnonymousOffBody,
+                            style:
+                                AppTypography.footnote.copyWith(color: palette.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Switch(
+                      value: _anonymous,
+                      activeThumbColor: palette.accent,
+                      onChanged: (v) => setState(() => _anonymous = v),
                     ),
                   ],
                 ),

@@ -41,11 +41,17 @@ class ProfileApi {
   /// omitted fields keep their stored value, so changing the language
   /// doesn't require the screen to resend a birth year — or a name — the
   /// person didn't touch.
-  Future<UserProfile> setPreferences({String? displayName, String? language, int? birthYear}) async {
+  Future<UserProfile> setPreferences({
+    String? displayName,
+    String? language,
+    int? birthYear,
+    String? dmPolicy,
+  }) async {
     final response = await _dio.put('/profile/preferences', data: {
       'display_name': ?displayName,
       'language': ?language,
       'birth_year': ?birthYear,
+      'dm_policy': ?dmPolicy,
     });
     return UserProfile.fromJson(response.data as Map<String, dynamic>);
   }

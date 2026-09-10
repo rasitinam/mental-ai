@@ -57,8 +57,30 @@ pub struct LifeStory {
     /// other users" is a materially different use of the data than a
     /// private journal entry.
     pub consented_at: DateTime<Utc>,
+    /// Whether the feed hides who wrote this. Chosen per story rather
+    /// than per account: the same person can want their name on one
+    /// account of their life and not on another.
+    #[serde(default = "default_anonymous")]
+    pub anonymous: bool,
     pub reviewed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
+}
+
+fn default_anonymous() -> bool {
+    true
+}
+
+/// A feed row: the story plus everything the reader's copy of it needs —
+/// vote tally, whether *they* voted, and the author's identity when the
+/// story isn't anonymous. Assembled in one query rather than a lookup
+/// per story.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoryFeedItem {
+    pub story: LifeStory,
+    pub upvotes: u32,
+    pub viewer_upvoted: bool,
+    pub author_display_name: String,
+    pub author_has_avatar: bool,
 }
 
 /// A reader flagging an already-approved story back for re-review.

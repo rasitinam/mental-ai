@@ -35,12 +35,22 @@ class LifeStoriesApi {
     required String body,
     required String diagnosisSlug,
     required bool consent,
+    required bool anonymous,
   }) async {
     await _dio.post('/stories', data: {
       'body': body,
       'diagnosis_slug': diagnosisSlug,
       'consent': consent,
+      'anonymous': anonymous,
     });
+  }
+
+  Future<void> setUpvote(String id, {required bool upvoted}) async {
+    if (upvoted) {
+      await _dio.post('/stories/$id/upvote');
+    } else {
+      await _dio.delete('/stories/$id/upvote');
+    }
   }
 
   Future<void> withdraw(String id) async {

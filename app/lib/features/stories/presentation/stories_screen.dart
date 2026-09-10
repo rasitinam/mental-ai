@@ -28,10 +28,9 @@ import 'stories_controller.dart';
   return null;
 }
 
-/// The public story feed, plus the author's own submissions ("Hikayem")
-/// behind a second tab on the same screen. Two lists rather than two
-/// routes: switching between "what others shared" and "what I submitted"
-/// is something people do back and forth while writing their own.
+/// The public story feed — the app's landing screen. The author's own
+/// submissions live on their own route (`MyStoriesScreen`, reached from
+/// Settings) so this stays a single scrollable feed.
 class StoriesScreen extends ConsumerStatefulWidget {
   const StoriesScreen({super.key});
 
@@ -40,7 +39,6 @@ class StoriesScreen extends ConsumerStatefulWidget {
 }
 
 class _StoriesScreenState extends ConsumerState<StoriesScreen> {
-  bool _showMine = false;
   final _search = TextEditingController();
   String _query = '';
   String? _selectedCategory;
@@ -53,42 +51,13 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
     // the most common way back to this screen is "approve something in
     // moderation, then come check the feed", which needs fresher data
     // than whatever was loaded the first time this screen ever opened.
-    Future.microtask(() {
-      ref.read(storiesControllerProvider.notifier).loadFeed();
-      ref.read(storiesControllerProvider.notifier).loadMine();
-    });
+    Future.microtask(() => ref.read(storiesControllerProvider.notifier).loadFeed());
   }
 
   @override
   void dispose() {
     _search.dispose();
     super.dispose();
-  }
-
-  Future<void> _confirmWithdraw(BuildContext context, WidgetRef ref, String id) async {
-    final l10n = AppLocalizations.of(context)!;
-    final palette = AppPalette.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: palette.glassFill,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(l10n.storiesWithdrawTitle,
-            style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17)),
-        content: Text(l10n.storiesWithdrawBody,
-            style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.commonCancel)),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.storiesWithdraw, style: TextStyle(color: palette.warning)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await ref.read(storiesControllerProvider.notifier).withdraw(id);
-    }
   }
 
   Future<void> _report(BuildContext context, WidgetRef ref, String id) async {
@@ -164,15 +133,17 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
       // The floating bottom nav bar (see `HomeShell`) is painted above this
       // screen's own body, so the default FAB position would sit right
       // behind it — lifted by the same clearance every list here pads by.
+      // A plain "+" rather than an extended button: the feed is the
+      // landing screen, so this sits under the thumb permanently and an
+      // extended label would cover a story card's worth of feed.
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 86),
-        child: FloatingActionButton.extended(
-          onPressed: () => context.push('/settings/stories/new'),
+        child: FloatingActionButton(
+          onPressed: () => context.push('/stories/new'),
           backgroundColor: palette.accent,
           elevation: 3,
-          icon: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
-          label: Text(l10n.storiesWriteCta,
-              style: AppTypography.label.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
+          tooltip: l10n.storiesWriteCta,
+          child: const Icon(Icons.add_rounded, color: Colors.white, size: 26),
         ),
       ),
       body: SafeArea(
@@ -183,11 +154,6 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
               padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
               child: Row(
                 children: [
-                  SquareIconButton(
-                    icon: Icons.arrow_back_rounded,
-                    onPressed: () => context.go('/insights'),
-                  ),
-                  const SizedBox(width: 14),
                   Text(l10n.storiesTitle,
                       style: AppTypography.title2.copyWith(color: palette.textPrimary)),
                 ],
@@ -195,121 +161,44 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
-              child: _Segmented(
-                left: l10n.storiesTabFeed,
-                right: l10n.storiesTabMine,
-                rightSelected: _showMine,
+              child: SearchField(
+                controller: _search,
                 palette: palette,
-                onSelect: (mine) => setState(() => _showMine = mine),
+                hint: l10n.storiesSearchHint,
+                onChanged: (v) => setState(() => _query = v),
+                onClear: () {
+                  _search.clear();
+                  setState(() => _query = '');
+                },
               ),
             ),
-            if (!_showMine) ...[
+            if (availableCategories.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
-                child: SearchField(
-                  controller: _search,
+                padding: const EdgeInsets.only(bottom: 12),
+                child: CategoryStrip(
+                  categories: availableCategories,
+                  selected: _selectedCategory,
                   palette: palette,
-                  hint: l10n.storiesSearchHint,
-                  onChanged: (v) => setState(() => _query = v),
-                  onClear: () {
-                    _search.clear();
-                    setState(() => _query = '');
-                  },
+                  allLabel: l10n.guideCategoryAll,
+                  onSelect: (slug) => setState(() => _selectedCategory = slug),
                 ),
               ),
-              if (availableCategories.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: CategoryStrip(
-                    categories: availableCategories,
-                    selected: _selectedCategory,
-                    palette: palette,
-                    allLabel: l10n.guideCategoryAll,
-                    onSelect: (slug) => setState(() => _selectedCategory = slug),
-                  ),
-                ),
-            ],
             Expanded(
               child: RefreshIndicator(
                 color: palette.accent,
-                onRefresh: _showMine ? controller.loadMine : controller.loadFeed,
-                child: _showMine
-                    ? _MineList(
-                        state: state,
-                        palette: palette,
-                        l10n: l10n,
-                        onWithdraw: (id) => _confirmWithdraw(context, ref, id),
-                      )
-                    : _FeedList(
-                        stories: visibleFeed,
-                        loading: state.loadingFeed,
-                        categories: categories,
-                        palette: palette,
-                        l10n: l10n,
-                        onReport: (id) => _report(context, ref, id),
-                      ),
+                onRefresh: controller.loadFeed,
+                child: _FeedList(
+                  stories: visibleFeed,
+                  loading: state.loadingFeed,
+                  categories: categories,
+                  palette: palette,
+                  l10n: l10n,
+                  onReport: (id) => _report(context, ref, id),
+                  onUpvote: controller.toggleUpvote,
+                ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The two-way switch the design uses for feed/mine and for the
-/// moderation queue: one muted track, the active half lifted out of it.
-class _Segmented extends StatelessWidget {
-  final String left;
-  final String right;
-  final bool rightSelected;
-  final AppPalette palette;
-  final ValueChanged<bool> onSelect;
-
-  const _Segmented({
-    required this.left,
-    required this.right,
-    required this.rightSelected,
-    required this.palette,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: palette.surfaceMuted,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          _half(left, !rightSelected, () => onSelect(false)),
-          _half(right, rightSelected, () => onSelect(true)),
-        ],
-      ),
-    );
-  }
-
-  Widget _half(String label, bool selected, VoidCallback onTap) {
-    return Expanded(
-      child: Material(
-        color: selected ? palette.glassFill : Colors.transparent,
-        borderRadius: BorderRadius.circular(11),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Center(
-            child: Text(
-              label,
-              style: AppTypography.footnote.copyWith(
-                fontSize: 13.5,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                color: selected ? palette.textPrimary : palette.textSecondary,
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -323,6 +212,7 @@ class _FeedList extends StatelessWidget {
   final AppPalette palette;
   final AppLocalizations l10n;
   final ValueChanged<String> onReport;
+  final ValueChanged<String> onUpvote;
 
   const _FeedList({
     required this.stories,
@@ -331,6 +221,7 @@ class _FeedList extends StatelessWidget {
     required this.palette,
     required this.l10n,
     required this.onReport,
+    required this.onUpvote,
   });
 
   @override
@@ -389,14 +280,44 @@ class _FeedList extends StatelessWidget {
                 Text(story.body,
                     style: AppTypography.subheadline
                         .copyWith(color: palette.textPrimary, fontSize: 14.5, height: 1.65)),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '${DateFormat.MMMMd(Localizations.localeOf(context).languageCode).format(story.createdAt)}'
-                      ' · ${l10n.storiesAnonymous}',
-                      style: AppTypography.caption.copyWith(color: palette.textSecondary),
+                    _UpvoteButton(
+                      count: story.upvotes,
+                      voted: story.viewerUpvoted,
+                      palette: palette,
+                      onTap: () => onUpvote(story.id),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: story.authorUserId == null
+                          ? Text(
+                              '${DateFormat.MMMMd(Localizations.localeOf(context).languageCode).format(story.createdAt)}'
+                              ' · ${l10n.storiesAnonymous}',
+                              style: AppTypography.caption.copyWith(color: palette.textSecondary),
+                            )
+                          : InkWell(
+                              onTap: () => context.push('/users/${story.authorUserId}'),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    story.authorDisplayName ?? '',
+                                    style: AppTypography.caption.copyWith(
+                                      color: palette.accent,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    ' · ${DateFormat.MMMMd(Localizations.localeOf(context).languageCode).format(story.createdAt)}',
+                                    style:
+                                        AppTypography.caption.copyWith(color: palette.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
                     ),
                     InkWell(
                       onTap: () => onReport(story.id),
@@ -419,114 +340,57 @@ class _FeedList extends StatelessWidget {
   }
 }
 
-class _MineList extends StatelessWidget {
-  final StoriesState state;
+
+/// The Reddit-shaped affordance the feed uses: an arrow and a count, no
+/// paired downvote. Filled when the reader has voted, so the state is
+/// legible without reading the number.
+class _UpvoteButton extends StatelessWidget {
+  final int count;
+  final bool voted;
   final AppPalette palette;
-  final AppLocalizations l10n;
-  final ValueChanged<String> onWithdraw;
+  final VoidCallback onTap;
 
-  const _MineList({
-    required this.state,
+  const _UpvoteButton({
+    required this.count,
+    required this.voted,
     required this.palette,
-    required this.l10n,
-    required this.onWithdraw,
+    required this.onTap,
   });
-
-  String _statusLabel(StoryStatus status) => switch (status) {
-        StoryStatus.pending => l10n.storiesStatusPending,
-        StoryStatus.approved => l10n.storiesStatusApproved,
-        StoryStatus.rejected => l10n.storiesStatusRejected,
-      };
-
-  Color _statusColor(StoryStatus status) => switch (status) {
-        StoryStatus.pending => palette.textSecondary,
-        StoryStatus.approved => palette.accent,
-        StoryStatus.rejected => palette.textTertiary,
-      };
 
   @override
   Widget build(BuildContext context) {
-    if (state.loadingMine) {
-      return Center(child: CircularProgressIndicator(color: palette.accent));
-    }
-    if (state.mine.isEmpty) {
-      return ListView(
-        padding: const EdgeInsets.fromLTRB(28, 50, 28, 0),
-        children: [
-          Icon(Icons.edit_note_rounded, size: 28, color: palette.accent),
-          const SizedBox(height: 14),
-          Text(
-            l10n.storiesMineEmpty,
-            textAlign: TextAlign.center,
-            style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17),
+    return Material(
+      color: voted ? palette.accentSoft : Colors.transparent,
+      borderRadius: BorderRadius.circular(100),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(color: voted ? palette.accent : palette.separator),
           ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.storiesMineEmptyBody,
-            textAlign: TextAlign.center,
-            style: AppTypography.footnote.copyWith(color: palette.textSecondary),
-          ),
-        ],
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
-      itemCount: state.mine.length,
-      itemBuilder: (context, i) {
-        final story = state.mine[i];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: GlassSurface(
-            radius: 18,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: palette.surfaceMuted,
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      child: Text(
-                        _statusLabel(story.status).toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          height: 1.2,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.44,
-                          color: _statusColor(story.status),
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    InkWell(
-                      onTap: () => onWithdraw(story.id),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Icon(Icons.delete_outline_rounded,
-                            size: 18, color: palette.warning),
-                      ),
-                    ),
-                  ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                voted ? Icons.arrow_upward_rounded : Icons.arrow_upward_outlined,
+                size: 15,
+                color: voted ? palette.accent : palette.textSecondary,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                '$count',
+                style: AppTypography.caption.copyWith(
+                  color: voted ? palette.accent : palette.textSecondary,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 10),
-                Text(story.body,
-                    style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
-                const SizedBox(height: 8),
-                Text(
-                  DateFormat.MMMMd(Localizations.localeOf(context).languageCode)
-                      .format(story.createdAt),
-                  style: AppTypography.caption.copyWith(color: palette.textSecondary),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

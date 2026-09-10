@@ -8,6 +8,7 @@ use axum::{
 };
 use mental_domain::catalog;
 use mental_domain::repository::{AuthRepository, UserRepository};
+use mental_domain::DmPolicy;
 use serde::{Deserialize, Serialize};
 
 use crate::auth::AuthUser;
@@ -44,6 +45,7 @@ struct ProfileResponse {
     timezone: String,
     is_admin: bool,
     has_avatar: bool,
+    dm_policy: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -61,6 +63,9 @@ struct SetPreferencesRequest {
     language: Option<String>,
     #[serde(default)]
     birth_year: Option<i32>,
+    /// "everyone" | "following" — who may open a DM request.
+    #[serde(default)]
+    dm_policy: Option<String>,
 }
 
 async fn profile(
@@ -89,6 +94,7 @@ async fn profile(
         timezone: user.timezone.clone(),
         is_admin: user.is_admin,
         has_avatar: user.avatar_content_type.is_some(),
+        dm_policy: user.dm_policy.as_str().to_string(),
     }))
 }
 
@@ -151,9 +157,24 @@ async fn set_preferences(
         }
     }
 
+    let dm_policy = match req.dm_policy.as_deref() {
+        None => None,
+        Some("everyone") => Some(DmPolicy::Everyone),
+        Some("following") => Some(DmPolicy::Following),
+        Some(other) => {
+            return Err((StatusCode::BAD_REQUEST, format!("unsupported dm policy: {other}")))
+        }
+    };
+
     state
         .users
-        .set_preferences(auth.user_id, display_name, req.language.as_deref(), req.birth_year)
+        .set_preferences(
+            auth.user_id,
+            display_name,
+            req.language.as_deref(),
+            req.birth_year,
+            dm_policy,
+        )
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
@@ -223,6 +244,6 @@ async fn get_avatar(State(state): State<AppState>, auth: AuthUser) -> Result<Res
     Ok(([(header::CONTENT_TYPE, content_type)], bytes).into_response())
 }
 
-fn avatar_path(user_id: uuid::Uuid) -> std::path::PathBuf {
+pub(crate) fn avatar_path(user_id: uuid::Uuid) -> std::path::PathBuf {
     std::path::Path::new(AVATAR_DIR).join(user_id.to_string())
 }

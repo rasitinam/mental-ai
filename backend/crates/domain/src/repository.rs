@@ -10,9 +10,9 @@ use uuid::Uuid;
 
 use crate::report::LifeAnalysis;
 use crate::{
-    ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, Insight, JournalEntry,
-    LifeStory, LifeStoryReport, MoodEntry, ResearchArticle, Session, StoryStatus, User, UserState,
-    WellbeingAssessment,
+    ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, DmMessage, DmPolicy,
+    DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry,
+    ResearchArticle, Session, StoryFeedItem, StoryStatus, User, UserState, WellbeingAssessment,
 };
 
 #[async_trait]
@@ -23,15 +23,16 @@ pub trait UserRepository: Send + Sync {
     /// edits it as a set, so a partial update would just be a second way to
     /// get the same result wrong.
     async fn set_diagnoses(&self, user_id: Uuid, diagnoses: &[String]) -> anyhow::Result<()>;
-    /// Display name, language and birth year, each optional to change
-    /// independently: `None` leaves that field as it is rather than
-    /// clearing it.
+    /// Display name, language, birth year and DM policy, each optional to
+    /// change independently: `None` leaves that field as it is rather
+    /// than clearing it.
     async fn set_preferences(
         &self,
         user_id: Uuid,
         display_name: Option<&str>,
         language: Option<&str>,
         birth_year: Option<i32>,
+        dm_policy: Option<DmPolicy>,
     ) -> anyhow::Result<()>;
     /// Records which Content-Type the just-uploaded avatar file was saved
     /// with, or clears it (`None`) — the image bytes themselves are written
@@ -203,4 +204,51 @@ pub trait LifeStoryRepository: Send + Sync {
     /// Every open report, newest first — the admin queue for
     /// already-published stories a reader flagged.
     async fn list_reports(&self) -> anyhow::Result<Vec<LifeStoryReport>>;
+    /// The reader's own copy of the feed: approved stories with their
+    /// vote tally, whether `viewer` voted, and the author's name where
+    /// the story isn't anonymous — one query instead of three per row.
+    async fn feed_for(&self, viewer: Uuid, limit: u32) -> anyhow::Result<Vec<StoryFeedItem>>;
+    /// How many approved stories one author has in the public feed.
+    async fn approved_count_for(&self, user_id: Uuid) -> anyhow::Result<u32>;
+}
+
+/// Follows and upvotes: the two things that make the story feed social
+/// rather than a noticeboard. Kept apart from [`LifeStoryRepository`]
+/// because a follow isn't about a story at all.
+#[async_trait]
+pub trait SocialRepository: Send + Sync {
+    async fn follow(&self, follower: Uuid, followee: Uuid) -> anyhow::Result<()>;
+    async fn unfollow(&self, follower: Uuid, followee: Uuid) -> anyhow::Result<()>;
+    async fn is_following(&self, follower: Uuid, followee: Uuid) -> anyhow::Result<bool>;
+    async fn follower_count(&self, user_id: Uuid) -> anyhow::Result<u32>;
+    async fn following_count(&self, user_id: Uuid) -> anyhow::Result<u32>;
+    /// Accounts following `user_id`, newest follow first.
+    async fn followers(&self, user_id: Uuid) -> anyhow::Result<Vec<Uuid>>;
+    /// Accounts `user_id` follows, newest follow first.
+    async fn following(&self, user_id: Uuid) -> anyhow::Result<Vec<Uuid>>;
+    /// Idempotent: voting twice is the same as voting once, so a
+    /// double-tap can't inflate a tally.
+    async fn upvote(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()>;
+    async fn remove_upvote(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()>;
+}
+
+/// Direct messages, with the request gate built into the thread's own
+/// status rather than a separate "requests" table — a request *is* the
+/// thread, it just hasn't been accepted yet.
+#[async_trait]
+pub trait DmRepository: Send + Sync {
+    async fn thread_between(&self, a: Uuid, b: Uuid) -> anyhow::Result<Option<DmThread>>;
+    async fn get_thread(&self, id: Uuid) -> anyhow::Result<Option<DmThread>>;
+    async fn create_thread(&self, thread: &DmThread) -> anyhow::Result<()>;
+    async fn accept_thread(&self, id: Uuid) -> anyhow::Result<()>;
+    /// Declining removes the thread and its messages outright.
+    async fn delete_thread(&self, id: Uuid) -> anyhow::Result<()>;
+    /// Threads `user_id` is part of at the given status, most recently
+    /// active first.
+    async fn threads_for(&self, user_id: Uuid, status: DmStatus) -> anyhow::Result<Vec<DmThread>>;
+    async fn add_message(&self, message: &DmMessage, sent_at: DateTime<Utc>) -> anyhow::Result<()>;
+    /// A thread's messages, oldest first.
+    async fn messages(&self, thread_id: Uuid, limit: u32) -> anyhow::Result<Vec<DmMessage>>;
+    /// The most recent message in each of `thread_ids`, for list previews.
+    async fn latest_messages(&self, thread_ids: &[Uuid]) -> anyhow::Result<Vec<DmMessage>>;
 }

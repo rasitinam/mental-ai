@@ -227,7 +227,7 @@ class _StoriesEntryCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.go('/settings/stories'),
+        onTap: () => context.go('/stories'),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(

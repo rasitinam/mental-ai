@@ -13,6 +13,11 @@ class UserProfile {
   final bool isAdmin;
   final bool hasAvatar;
 
+  /// "everyone" | "following" — who may open a DM request. Kept as the
+  /// raw string the API uses: the only thing the app does with it is
+  /// show which of two rows is ticked and send the other one back.
+  final String dmPolicy;
+
   const UserProfile({
     required this.id,
     required this.displayName,
@@ -23,6 +28,7 @@ class UserProfile {
     required this.diagnoses,
     required this.isAdmin,
     required this.hasAvatar,
+    required this.dmPolicy,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -35,5 +41,6 @@ class UserProfile {
         diagnoses: (json['diagnoses'] as List<dynamic>? ?? []).cast<String>(),
         isAdmin: json['is_admin'] as bool? ?? false,
         hasAvatar: json['has_avatar'] as bool? ?? false,
+        dmPolicy: json['dm_policy'] as String? ?? 'everyone',
       );
 }

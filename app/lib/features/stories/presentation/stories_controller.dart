@@ -73,16 +73,46 @@ class StoriesController extends Notifier<StoriesState> {
     }
   }
 
+  /// Votes optimistically: the row flips on tap and only rolls back if
+  /// the request fails, because waiting on a round-trip to acknowledge a
+  /// vote is the kind of lag that makes a feed feel broken.
+  Future<void> toggleUpvote(String id) async {
+    final index = state.feed.indexWhere((s) => s.id == id);
+    if (index < 0) return;
+
+    final original = state.feed[index];
+    final target = !original.viewerUpvoted;
+
+    final optimistic = [...state.feed];
+    optimistic[index] = original.withVote(upvoted: target);
+    state = state.copyWith(feed: optimistic);
+
+    try {
+      await ref.read(lifeStoriesApiProvider).setUpvote(id, upvoted: target);
+    } catch (_) {
+      final rolledBack = [...state.feed];
+      final current = rolledBack.indexWhere((s) => s.id == id);
+      if (current >= 0) {
+        rolledBack[current] = original;
+        state = state.copyWith(feed: rolledBack);
+      }
+    }
+  }
+
   Future<bool> submit({
     required String body,
     required String diagnosisSlug,
     required bool consent,
+    required bool anonymous,
   }) async {
     state = state.copyWith(submitting: true, submitted: false, error: null);
     try {
-      await ref
-          .read(lifeStoriesApiProvider)
-          .submit(body: body, diagnosisSlug: diagnosisSlug, consent: consent);
+      await ref.read(lifeStoriesApiProvider).submit(
+            body: body,
+            diagnosisSlug: diagnosisSlug,
+            consent: consent,
+            anonymous: anonymous,
+          );
       state = state.copyWith(submitting: false, submitted: true);
       await loadMine();
       return true;

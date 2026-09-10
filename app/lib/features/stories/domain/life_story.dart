@@ -17,6 +17,15 @@ class LifeStory {
   final StoryStatus status;
   final bool crisisFlag;
   final DateTime createdAt;
+  final bool anonymous;
+  final int upvotes;
+  final bool viewerUpvoted;
+
+  /// Null for an anonymous story — the backend doesn't send an id to
+  /// click through to, not just no name to render.
+  final String? authorUserId;
+  final String? authorDisplayName;
+  final bool authorHasAvatar;
 
   const LifeStory({
     required this.id,
@@ -25,11 +34,17 @@ class LifeStory {
     required this.status,
     required this.crisisFlag,
     required this.createdAt,
+    this.anonymous = true,
+    this.upvotes = 0,
+    this.viewerUpvoted = false,
+    this.authorUserId,
+    this.authorDisplayName,
+    this.authorHasAvatar = false,
   });
 
-  /// `/stories` (the public feed) returns id/body/diagnosis/created_at
-  /// only — no status or crisis flag, since every entry there is already
-  /// approved.
+  /// `/stories` (the feed) adds the vote tally and, when the author
+  /// signed it, their identity. No status or crisis flag: every entry
+  /// there is already approved.
   factory LifeStory.fromPublicJson(Map<String, dynamic> json) => LifeStory(
         id: json['id'] as String,
         body: json['body'] as String,
@@ -37,6 +52,12 @@ class LifeStory {
         status: StoryStatus.approved,
         crisisFlag: false,
         createdAt: DateTime.parse(json['created_at'] as String),
+        anonymous: json['anonymous'] as bool? ?? true,
+        upvotes: json['upvotes'] as int? ?? 0,
+        viewerUpvoted: json['viewer_upvoted'] as bool? ?? false,
+        authorUserId: json['author_user_id'] as String?,
+        authorDisplayName: json['author_display_name'] as String?,
+        authorHasAvatar: json['author_has_avatar'] as bool? ?? false,
       );
 
   /// `/stories/mine` returns the full record, including status.
@@ -47,6 +68,24 @@ class LifeStory {
         status: _statusFromJson(json['status'] as String),
         crisisFlag: json['crisis_flag'] as bool? ?? false,
         createdAt: DateTime.parse(json['created_at'] as String),
+        anonymous: json['anonymous'] as bool? ?? true,
+      );
+
+  /// Local echo of a vote, so the row updates on tap instead of waiting
+  /// for the feed to be refetched.
+  LifeStory withVote({required bool upvoted}) => LifeStory(
+        id: id,
+        body: body,
+        diagnosisSlug: diagnosisSlug,
+        status: status,
+        crisisFlag: crisisFlag,
+        createdAt: createdAt,
+        anonymous: anonymous,
+        upvotes: upvotes + (upvoted ? 1 : -1),
+        viewerUpvoted: upvoted,
+        authorUserId: authorUserId,
+        authorDisplayName: authorDisplayName,
+        authorHasAvatar: authorHasAvatar,
       );
 }
 

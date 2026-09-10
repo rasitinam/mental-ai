@@ -2,13 +2,15 @@ mod assessment;
 mod auth;
 mod catalog;
 mod chat;
+mod dm;
 mod health;
 mod insights;
 mod journal;
 mod life_analysis;
 mod mood;
-mod profile;
+pub(crate) mod profile;
 mod reports;
+pub(crate) mod social;
 mod state;
 mod stories;
 mod streak;
@@ -37,6 +39,8 @@ pub fn build_router(app_state: AppState) -> Router {
         .merge(life_analysis::router())
         .merge(state::router())
         .merge(stories::router())
+        .merge(social::router())
+        .merge(dm::router())
         .merge(streak::router())
         .with_state(app_state)
 }

@@ -88,6 +88,7 @@ async fn register(
             birth_year: None,
             is_admin: false,
             avatar_content_type: None,
+            dm_policy: mental_domain::DmPolicy::Everyone,
             created_at: now,
         })
         .await

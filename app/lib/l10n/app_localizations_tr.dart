@@ -40,6 +40,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get navJournal => 'Günlük';
 
   @override
+  String get navStories => 'Hikayeler';
+
+  @override
   String get navChat => 'Sohbet';
 
   @override
@@ -692,6 +695,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsAssessment => 'Öz-değerlendirme';
 
   @override
+  String get settingsMyStories => 'Hikayelerim';
+
+  @override
   String get assessmentOnboardTitle => 'Seni biraz tanıyalım';
 
   @override
@@ -838,4 +844,111 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get gad7Q7 => 'Kötü bir şey olacakmış gibi korku hissetme';
+
+  @override
+  String get storiesAnonymousToggle => 'Anonim paylaş';
+
+  @override
+  String get storiesAnonymousOnBody => 'Adın ve fotoğrafın görünmeyecek.';
+
+  @override
+  String get storiesAnonymousOffBody => 'Adın ve fotoğrafınla paylaşılacak.';
+
+  @override
+  String get profileStatStories => 'Hikaye';
+
+  @override
+  String get profileStatFollowers => 'Takipçi';
+
+  @override
+  String get profileStatFollowing => 'Takip';
+
+  @override
+  String get profileFollow => 'Takip et';
+
+  @override
+  String get profileUnfollow => 'Takibi bırak';
+
+  @override
+  String get profileNobodyYet => 'Henüz kimse yok';
+
+  @override
+  String get settingsDmPrivacy => 'Mesaj gizliliği';
+
+  @override
+  String get settingsDmEveryone => 'Herkesten mesaj kabul et';
+
+  @override
+  String get settingsDmFollowing => 'Sadece takip ettiklerimden kabul et';
+
+  @override
+  String get settingsDmNoReceipts => 'Mesajlarda okundu bilgisi yoktur.';
+
+  @override
+  String get dmTitle => 'Mesajlar';
+
+  @override
+  String get dmTabInbox => 'Sohbetler';
+
+  @override
+  String get dmTabRequests => 'İstekler';
+
+  @override
+  String get dmNoThreads => 'Henüz sohbet yok';
+
+  @override
+  String get dmNoRequests => 'Bekleyen istek yok';
+
+  @override
+  String get dmMessage => 'Mesaj gönder';
+
+  @override
+  String get dmFollowersOnly => 'Sadece takip ettiklerinden mesaj alıyor';
+
+  @override
+  String dmRequestTitle(String name) {
+    return '$name kişisine yaz';
+  }
+
+  @override
+  String get dmRequestBody =>
+      'İlk mesajın istek olarak gider. Kabul edilene kadar ikinci bir mesaj gönderemezsin.';
+
+  @override
+  String get dmRequestHint => 'Bir şeyler yaz...';
+
+  @override
+  String get dmRequestSent => 'İsteğin gönderildi.';
+
+  @override
+  String get dmSend => 'Gönder';
+
+  @override
+  String get dmSendFailed => 'Mesaj gönderilemedi.';
+
+  @override
+  String get dmComposerHint => 'Bir şey yaz...';
+
+  @override
+  String get dmAccept => 'Kabul et';
+
+  @override
+  String get dmDecline => 'Reddet';
+
+  @override
+  String get dmAcceptPrompt =>
+      'Bu kişi seninle konuşmak istiyor. Cevap verirsen istek otomatik kabul edilir.';
+
+  @override
+  String get dmWaiting => 'Bekliyor';
+
+  @override
+  String get dmNewRequest => 'Yeni istek';
+
+  @override
+  String get dmWaitingBody =>
+      'İsteğin gönderildi. Kabul edilince yazabilirsin.';
+
+  @override
+  String get dmLeave => 'Sohbetten çık';
 }

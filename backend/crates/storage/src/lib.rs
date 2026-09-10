@@ -10,8 +10,8 @@ pub mod repositories;
 pub use pool::init_pool;
 pub use repositories::{
     SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteChatRepository,
-    SqliteExplainerRepository, SqliteInsightRepository,
+    SqliteDmRepository, SqliteExplainerRepository, SqliteInsightRepository,
     SqliteJournalRepository, SqliteLifeAnalysisRepository, SqliteLifeStoryRepository,
-    SqliteMoodRepository, SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
-    SqliteUserStateRepository,
+    SqliteMoodRepository, SqliteReportRepository, SqliteResearchRepository, SqliteSocialRepository,
+    SqliteUserRepository, SqliteUserStateRepository,
 };

@@ -99,7 +99,12 @@ class ProfileController extends Notifier<ProfileState> {
   /// Language switches locally first so the UI changes immediately, then is
   /// stored on the account — the backend needs it to generate reports and
   /// chat replies in the same language, not just to label them.
-  Future<void> savePreferences({String? displayName, String? language, int? birthYear}) async {
+  Future<void> savePreferences({
+    String? displayName,
+    String? language,
+    int? birthYear,
+    String? dmPolicy,
+  }) async {
     state = state.copyWith(saving: true, error: null);
 
     if (language != null) {
@@ -109,7 +114,12 @@ class ProfileController extends Notifier<ProfileState> {
     try {
       final profile = await ref
           .read(profileApiProvider)
-          .setPreferences(displayName: displayName, language: language, birthYear: birthYear);
+          .setPreferences(
+            displayName: displayName,
+            language: language,
+            birthYear: birthYear,
+            dmPolicy: dmPolicy,
+          );
       state = _fromProfile(profile).copyWith(saved: true);
     } catch (e) {
       state = state.copyWith(saving: false, error: e.toString());

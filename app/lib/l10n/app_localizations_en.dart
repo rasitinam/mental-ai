@@ -40,6 +40,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navJournal => 'Journal';
 
   @override
+  String get navStories => 'Stories';
+
+  @override
   String get navChat => 'Chat';
 
   @override
@@ -692,6 +695,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAssessment => 'Self-assessment';
 
   @override
+  String get settingsMyStories => 'My stories';
+
+  @override
   String get assessmentOnboardTitle => 'Let\'s get to know you a bit';
 
   @override
@@ -837,4 +843,111 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gad7Q7 => 'Feeling afraid as if something awful might happen';
+
+  @override
+  String get storiesAnonymousToggle => 'Share anonymously';
+
+  @override
+  String get storiesAnonymousOnBody => 'Your name and photo won\'t be shown.';
+
+  @override
+  String get storiesAnonymousOffBody => 'Shared with your name and photo.';
+
+  @override
+  String get profileStatStories => 'Stories';
+
+  @override
+  String get profileStatFollowers => 'Followers';
+
+  @override
+  String get profileStatFollowing => 'Following';
+
+  @override
+  String get profileFollow => 'Follow';
+
+  @override
+  String get profileUnfollow => 'Unfollow';
+
+  @override
+  String get profileNobodyYet => 'Nobody yet';
+
+  @override
+  String get settingsDmPrivacy => 'Message privacy';
+
+  @override
+  String get settingsDmEveryone => 'Accept messages from everyone';
+
+  @override
+  String get settingsDmFollowing => 'Only from people I follow';
+
+  @override
+  String get settingsDmNoReceipts => 'Messages have no read receipts.';
+
+  @override
+  String get dmTitle => 'Messages';
+
+  @override
+  String get dmTabInbox => 'Chats';
+
+  @override
+  String get dmTabRequests => 'Requests';
+
+  @override
+  String get dmNoThreads => 'No conversations yet';
+
+  @override
+  String get dmNoRequests => 'No pending requests';
+
+  @override
+  String get dmMessage => 'Send a message';
+
+  @override
+  String get dmFollowersOnly => 'Only accepts messages from people they follow';
+
+  @override
+  String dmRequestTitle(String name) {
+    return 'Write to $name';
+  }
+
+  @override
+  String get dmRequestBody =>
+      'Your first message goes as a request. You can\'t send a second one until it\'s accepted.';
+
+  @override
+  String get dmRequestHint => 'Say something...';
+
+  @override
+  String get dmRequestSent => 'Request sent.';
+
+  @override
+  String get dmSend => 'Send';
+
+  @override
+  String get dmSendFailed => 'Couldn\'t send the message.';
+
+  @override
+  String get dmComposerHint => 'Write something...';
+
+  @override
+  String get dmAccept => 'Accept';
+
+  @override
+  String get dmDecline => 'Decline';
+
+  @override
+  String get dmAcceptPrompt =>
+      'This person wants to talk. Replying accepts the request automatically.';
+
+  @override
+  String get dmWaiting => 'Waiting';
+
+  @override
+  String get dmNewRequest => 'New request';
+
+  @override
+  String get dmWaitingBody =>
+      'Request sent. You can write once it\'s accepted.';
+
+  @override
+  String get dmLeave => 'Leave conversation';
 }

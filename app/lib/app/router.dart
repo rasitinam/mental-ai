@@ -18,6 +18,11 @@ import '../features/mood_tracking/presentation/mood_screen.dart';
 import '../features/profile/presentation/diagnoses_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import '../features/social/presentation/dm_inbox_screen.dart';
+import '../features/social/presentation/dm_thread_screen.dart';
+import '../features/social/presentation/follow_list_screen.dart';
+import '../features/social/presentation/user_profile_screen.dart';
+import '../features/stories/presentation/my_stories_screen.dart';
 import '../features/stories/presentation/stories_screen.dart';
 import '../features/stories/presentation/story_moderation_screen.dart';
 import '../features/stories/presentation/story_submit_screen.dart';
@@ -50,7 +55,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final refresh = _SessionRefreshNotifier(ref);
 
   return GoRouter(
-    initialLocation: ref.read(sessionTokenProvider) != null ? '/report' : '/login',
+    initialLocation: ref.read(sessionTokenProvider) != null ? '/stories' : '/login',
     refreshListenable: refresh,
     redirect: (context, state) {
       final loggedIn = ref.read(sessionTokenProvider) != null;
@@ -59,7 +64,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final justRegistered = ref.read(justRegisteredProvider);
 
       if (!loggedIn && !onLoginPage) return '/login';
-      if (loggedIn && onLoginPage) return justRegistered ? '/onboarding' : '/report';
+      if (loggedIn && onLoginPage) return justRegistered ? '/onboarding' : '/stories';
       if (loggedIn && justRegistered && !onOnboarding) return '/onboarding';
       return null;
     },
@@ -74,12 +79,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           skippable: true,
           onDone: () {
             ref.read(justRegisteredProvider.notifier).state = false;
-            context.go('/report');
+            context.go('/stories');
           },
         ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => HomeShell(navigationShell: navigationShell),
+        // Branch order is tab order (see `HomeShell`), with the story feed
+        // deliberately in the middle. The journal branch sits past the last
+        // tab: it's still a route with its own preserved state, reachable
+        // from the home screen, just not a destination on the bar.
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/report', builder: (context, state) => const DailyReportScreen()),
@@ -88,10 +97,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             GoRoute(path: '/mood', builder: (context, state) => const MoodScreen()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: '/journal', builder: (context, state) => const JournalScreen()),
+            GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
+            GoRoute(
+              path: '/stories',
+              builder: (context, state) => const StoriesScreen(),
+              routes: [
+                GoRoute(path: 'new', builder: (context, state) => const StorySubmitScreen()),
+                GoRoute(
+                    path: 'moderation', builder: (context, state) => const StoryModerationScreen()),
+              ],
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
@@ -132,17 +149,47 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   ],
                 ),
                 GoRoute(
-                  path: 'stories',
-                  builder: (context, state) => const StoriesScreen(),
-                  routes: [
-                    GoRoute(path: 'new', builder: (context, state) => const StorySubmitScreen()),
-                    GoRoute(
-                        path: 'moderation', builder: (context, state) => const StoryModerationScreen()),
-                  ],
+                  path: 'my-stories',
+                  builder: (context, state) => const MyStoriesScreen(),
                 ),
               ],
             ),
           ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/journal', builder: (context, state) => const JournalScreen()),
+          ]),
+        ],
+      ),
+      // Social surfaces sit outside the shell: they're pushed over
+      // whatever tab you were on (from a story author, a DM row, or
+      // Settings) and carry their own back button, so the tab bar would
+      // only be a second, contradictory way out. A parameterized route
+      // also can't be a shell branch's default location.
+      GoRoute(
+        path: '/dm',
+        builder: (context, state) => const DmInboxScreen(),
+        routes: [
+          GoRoute(
+            path: ':threadId',
+            builder: (context, state) =>
+                DmThreadScreen(threadId: state.pathParameters['threadId']!),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/users/:id',
+        builder: (context, state) => UserProfileScreen(userId: state.pathParameters['id']!),
+        routes: [
+          GoRoute(
+            path: 'followers',
+            builder: (context, state) =>
+                FollowListScreen(userId: state.pathParameters['id']!, followers: true),
+          ),
+          GoRoute(
+            path: 'following',
+            builder: (context, state) =>
+                FollowListScreen(userId: state.pathParameters['id']!, followers: false),
+          ),
         ],
       ),
     ],

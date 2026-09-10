@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/theme/theme_mode_controller.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/profile_api.dart';
 import 'profile_controller.dart';
@@ -295,8 +296,110 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 16),
                     Text(state.error!, style: TextStyle(color: palette.warning)),
                   ],
+                  const SizedBox(height: 26),
+                  const _AppearanceGroup(),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+/// Light/dark/system, at the bottom of the profile rather than in
+/// Settings: it's a preference about how *your* app looks, next to the
+/// rest of what makes the account yours.
+class _AppearanceGroup extends ConsumerWidget {
+  const _AppearanceGroup();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+    final mode = ref.watch(themeModeControllerProvider);
+    final controller = ref.read(themeModeControllerProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionLabel(l10n.settingsAppearance),
+        const SizedBox(height: 8),
+        GlassSurface(
+          radius: 16,
+          padding: const EdgeInsets.all(6),
+          child: Row(
+            children: [
+              _ThemeOption(
+                icon: Icons.smartphone_rounded,
+                label: l10n.settingsThemeSystem,
+                selected: mode == ThemeMode.system,
+                palette: palette,
+                onTap: () => controller.setMode(ThemeMode.system),
+              ),
+              const SizedBox(width: 6),
+              _ThemeOption(
+                icon: Icons.light_mode_outlined,
+                label: l10n.settingsThemeLight,
+                selected: mode == ThemeMode.light,
+                palette: palette,
+                onTap: () => controller.setMode(ThemeMode.light),
+              ),
+              const SizedBox(width: 6),
+              _ThemeOption(
+                icon: Icons.dark_mode_outlined,
+                label: l10n.settingsThemeDark,
+                selected: mode == ThemeMode.dark,
+                palette: palette,
+                onTap: () => controller.setMode(ThemeMode.dark),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final AppPalette palette;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.palette,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: selected ? palette.accent : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              children: [
+                Icon(icon, size: 18, color: selected ? Colors.white : palette.textSecondary),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: AppTypography.caption.copyWith(
+                    color: selected ? Colors.white : palette.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

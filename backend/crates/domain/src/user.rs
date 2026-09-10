@@ -2,6 +2,8 @@ use chrono::{DateTime, Datelike, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::social::DmPolicy;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub id: Uuid,
@@ -33,7 +35,15 @@ pub struct User {
     /// there's a file to read and what Content-Type to serve it with.
     #[serde(default)]
     pub avatar_content_type: Option<String>,
+    /// Who may open a DM request with this account. Only gates the
+    /// request — see [`crate::social::DmPolicy`].
+    #[serde(default = "default_dm_policy")]
+    pub dm_policy: DmPolicy,
     pub created_at: DateTime<Utc>,
+}
+
+fn default_dm_policy() -> DmPolicy {
+    DmPolicy::Everyone
 }
 
 fn default_language() -> String {

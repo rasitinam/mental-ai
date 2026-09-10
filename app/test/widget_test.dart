@@ -54,7 +54,9 @@ void main() {
     expect(find.text('Tekrar hoş geldin'), findsOneWidget);
   });
 
-  testWidgets('shows the app shell when a session is already stored', (WidgetTester tester) async {
+  testWidgets('opens on the story feed when a session is already stored', (
+    WidgetTester tester,
+  ) async {
     SharedPreferences.setMockInitialValues({
       AppConstants.prefsUserIdKey: 'test-user-id',
       AppConstants.prefsSessionTokenKey: 'test-token',
@@ -78,17 +80,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // The home screen greets by time of day rather than carrying a title
-    // bar, so the greeting is what proves the shell rendered. Every network
-    // call fails in a test, which is fine — routing is what's under test.
-    expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is Text &&
-            const {'Günaydın', 'İyi günler', 'İyi akşamlar', 'İyi geceler'}.contains(widget.data),
-      ),
-      findsOneWidget,
-    );
+    // The feed is the landing screen for a signed-in account, so its
+    // title is what proves both the shell and the right initial branch.
+    // Every network call fails in a test, which is fine — routing is
+    // what's under test, not what the feed would have contained.
+    expect(find.text('Hikayeler'), findsWidgets);
   });
 
   testWidgets('renders in English when the stored language is English', (
