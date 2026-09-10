@@ -43,8 +43,14 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
   }
 
   DmThread? _thread() {
+    // `watch`, not `read`: this screen needs to rebuild the moment accept
+    // (or a fresh message) changes the thread's status, without a
+    // navigate-away-and-back to pick up the invalidated provider's new
+    // data. Accepting used to look like nothing happened — the request
+    // was accepted on the server, but this screen kept showing the
+    // accept/decline buttons until it was rebuilt some other way.
     for (final source in [dmThreadsProvider, dmRequestsProvider]) {
-      final list = ref.read(source).valueOrNull;
+      final list = ref.watch(source).valueOrNull;
       final match = list?.where((t) => t.id == widget.threadId);
       if (match != null && match.isNotEmpty) return match.first;
     }
