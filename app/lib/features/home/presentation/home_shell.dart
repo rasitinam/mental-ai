@@ -6,6 +6,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../social/data/dm_badge.dart';
+import '../../social/data/dm_entry.dart';
 
 /// Wraps every top-level tab in a floating glass tab bar instead of a
 /// full-width Material [NavigationBar] — closer to how iOS floats a
@@ -39,51 +40,81 @@ class HomeShell extends ConsumerWidget {
         (icon: Icons.tune_outlined, activeIcon: Icons.tune, tooltip: l10n.navSettings),
       ];
 
-  // Index into `_destinations` — must track the Messages entry's position
-  // in both this list and the `/dm` branch's position in `app/router.dart`.
+  // Indices into both `_destinations` and the branch list in
+  // `app/router.dart` — the two must stay in the same order.
+  static const _storiesIndex = 2;
   static const _messagesIndex = 3;
+  static const _settingsIndex = 6;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = AppPalette.of(context);
     final destinations = _destinations(AppLocalizations.of(context)!);
     final badgeVisible = ref.watch(dmBadgeProvider.select((s) => s.visible));
+    final onMessagesRoot = navigationShell.currentIndex == _messagesIndex;
 
-    return Scaffold(
-      extendBody: true,
-      body: navigationShell,
-      // The one surface in the app with real content moving underneath it,
-      // so the one that keeps a backdrop blur — and its own layer, so a
-      // scrolling list above doesn't repaint the bar every frame.
-      bottomNavigationBar: RepaintBoundary(
-        child: SafeArea(
-          minimum: const EdgeInsets.fromLTRB(14, 0, 14, 20),
-          child: SizedBox(
-            height: 60,
-            child: GlassSurface(
-              radius: 22,
-              blur: true,
-              bordered: true,
-              blurSigma: 16,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  for (var i = 0; i < destinations.length; i++)
-                    _TabIcon(
-                      data: destinations[i],
-                      selected: i == navigationShell.currentIndex,
-                      showBadge: i == _messagesIndex && badgeVisible,
-                      color: palette.accent,
-                      activeBackground: palette.accentSoft,
-                      inactiveColor: palette.textSecondary,
-                      badgeColor: palette.warning,
-                      onTap: () => navigationShell.goBranch(
-                        i,
-                        initialLocation: i == navigationShell.currentIndex,
+    return PopScope(
+      // Only the Messages tab gets custom handling; every other tab
+      // root keeps Android's normal "nothing left to pop, exit" back
+      // behavior, exactly as before. This only ever fires at a branch's
+      // *root* — a pushed page inside a branch (e.g. an open DM thread)
+      // pops itself first, the same as any nested Navigator.
+      canPop: !onMessagesRoot,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        // Reached from Settings' "Mesajlar" row → back goes back to
+        // Settings. Reached straight from this tab bar → back falls
+        // through to Stories, the app's landing tab, rather than
+        // exiting — Messages sits right next to Stories for exactly
+        // this reason.
+        final fromSettings = ref.read(dmEnteredFromSettingsProvider);
+        ref.read(dmEnteredFromSettingsProvider.notifier).state = false;
+        navigationShell.goBranch(fromSettings ? _settingsIndex : _storiesIndex);
+      },
+      child: Scaffold(
+        extendBody: true,
+        body: navigationShell,
+        // The one surface in the app with real content moving underneath it,
+        // so the one that keeps a backdrop blur — and its own layer, so a
+        // scrolling list above doesn't repaint the bar every frame.
+        bottomNavigationBar: RepaintBoundary(
+          child: SafeArea(
+            minimum: const EdgeInsets.fromLTRB(14, 0, 14, 20),
+            child: SizedBox(
+              height: 60,
+              child: GlassSurface(
+                radius: 22,
+                blur: true,
+                bordered: true,
+                blurSigma: 16,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    for (var i = 0; i < destinations.length; i++)
+                      _TabIcon(
+                        data: destinations[i],
+                        selected: i == navigationShell.currentIndex,
+                        showBadge: i == _messagesIndex && badgeVisible,
+                        color: palette.accent,
+                        activeBackground: palette.accentSoft,
+                        inactiveColor: palette.textSecondary,
+                        badgeColor: palette.warning,
+                        onTap: () {
+                          // Tapping the tab directly is "straight from
+                          // the bar", even if a stale flag was left set
+                          // by an earlier Settings-row visit.
+                          if (i == _messagesIndex) {
+                            ref.read(dmEnteredFromSettingsProvider.notifier).state = false;
+                          }
+                          navigationShell.goBranch(
+                            i,
+                            initialLocation: i == navigationShell.currentIndex,
+                          );
+                        },
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

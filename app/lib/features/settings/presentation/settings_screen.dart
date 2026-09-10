@@ -10,6 +10,7 @@ import '../../../core/storage/local_prefs.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/data/auth_api.dart';
 import '../../profile/data/profile_api.dart';
+import '../../social/data/dm_entry.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -48,7 +49,16 @@ class SettingsScreen extends ConsumerWidget {
                 _Row(label: l10n.settingsProfile, onTap: () => context.go('/settings/profile')),
                 _Row(label: l10n.settingsAssessment, onTap: () => context.go('/settings/assessment')),
                 _Row(label: l10n.settingsMyStories, onTap: () => context.go('/settings/my-stories')),
-                _Row(label: l10n.dmTitle, onTap: () => context.go('/dm')),
+                _Row(
+                  label: l10n.dmTitle,
+                  onTap: () {
+                    // Read by `HomeShell`'s back handling: entering
+                    // Messages from here means Android back should
+                    // return here too, not fall through to Stories.
+                    ref.read(dmEnteredFromSettingsProvider.notifier).state = true;
+                    context.go('/dm');
+                  },
+                ),
                 _Row(label: l10n.settingsPrivacyRow, onTap: () => context.go('/settings/privacy')),
               ],
             ),
