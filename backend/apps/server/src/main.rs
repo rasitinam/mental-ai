@@ -13,9 +13,9 @@ use mental_storage::{
     init_pool, SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository,
     SqliteChatRepository, SqliteDmRepository, SqliteExplainerRepository,
     SqliteInsightRepository, SqliteJournalRepository, SqliteLifeAnalysisRepository,
-    SqliteLifeStoryRepository, SqliteMoodRepository, SqliteReportRepository,
-    SqliteResearchRepository, SqliteSocialRepository, SqliteUserRepository,
-    SqliteUserStateRepository,
+    SqliteLifeStoryRepository, SqliteMoodRepository, SqlitePushTokenRepository,
+    SqliteReportRepository, SqliteResearchRepository, SqliteSocialRepository,
+    SqliteUserRepository, SqliteUserStateRepository,
 };
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
@@ -65,6 +65,13 @@ async fn main() -> anyhow::Result<()> {
         vector_store: Arc::new(SqliteVectorStore::new(pool.clone())),
         embedder: Arc::new(Embedder::new(llm.clone())),
         llm,
+        push_tokens: Arc::new(SqlitePushTokenRepository::new(pool.clone())),
+        // The path a `firebase-service-account.json` dropped in the
+        // backend's working directory ends up at — see `.gitignore`.
+        // Missing file means push notifications are silently disabled
+        // rather than the server failing to start over an optional
+        // feature.
+        push: mental_push::build_provider("firebase-service-account.json"),
     };
 
     if config.research_ingest.enabled {

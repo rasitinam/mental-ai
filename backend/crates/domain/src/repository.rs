@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::report::LifeAnalysis;
 use crate::{
     ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, DmMessage, DmPolicy,
-    DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry,
+    DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry, PushToken,
     ResearchArticle, Session, StoryFeedItem, StoryStatus, User, UserState, WellbeingAssessment,
 };
 
@@ -289,4 +289,18 @@ pub trait DmRepository: Send + Sync {
     async fn messages(&self, thread_id: Uuid, limit: u32) -> anyhow::Result<Vec<DmMessage>>;
     /// The most recent message in each of `thread_ids`, for list previews.
     async fn latest_messages(&self, thread_ids: &[Uuid]) -> anyhow::Result<Vec<DmMessage>>;
+}
+
+/// Devices registered to receive push notifications. `token` (not a
+/// generated id) is the natural key — see `PushToken` for why.
+#[async_trait]
+pub trait PushTokenRepository: Send + Sync {
+    async fn register(&self, token: &PushToken) -> anyhow::Result<()>;
+    /// No-op if the token was never registered — logging out a device that
+    /// never granted notification permission is not an error.
+    async fn unregister(&self, token: &str) -> anyhow::Result<()>;
+    /// Every device currently registered to `user_id`. A push goes to all
+    /// of them — someone signed in on two phones expects a message
+    /// request to notify both.
+    async fn tokens_for_user(&self, user_id: Uuid) -> anyhow::Result<Vec<String>>;
 }

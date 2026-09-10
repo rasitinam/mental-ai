@@ -3,14 +3,15 @@ use chrono::{DateTime, Utc};
 use mental_domain::repository::{
     ActivityRepository, AssessmentRepository, AuthRepository, ChatRepository, DmRepository,
     ExplainerRepository, InsightRepository, JournalRepository, LifeAnalysisRepository,
-    LifeStoryRepository, MoodRepository, ReportRepository, ResearchRepository, SocialRepository,
-    UserRepository, UserStateRepository,
+    LifeStoryRepository, MoodRepository, PushTokenRepository, ReportRepository,
+    ResearchRepository, SocialRepository, UserRepository, UserStateRepository,
 };
 use mental_domain::report::LifeAnalysis;
 use mental_domain::{
     ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, DmMessage,
     DmPolicy, DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry,
-    ResearchArticle, Session, StoryFeedItem, StoryStatus, User, UserState, WellbeingAssessment,
+    PushToken, ResearchArticle, Session, StoryFeedItem, StoryStatus, User, UserState,
+    WellbeingAssessment,
 };
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -1750,5 +1751,57 @@ impl ChatRepository for SqliteChatRepository {
                 created_at,
             })
             .collect())
+    }
+}
+
+pub struct SqlitePushTokenRepository {
+    pool: SqlitePool,
+}
+
+impl SqlitePushTokenRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl PushTokenRepository for SqlitePushTokenRepository {
+    async fn register(&self, token: &PushToken) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO device_push_tokens (token, user_id, platform, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(token) DO UPDATE SET
+                user_id = excluded.user_id,
+                platform = excluded.platform,
+                updated_at = excluded.updated_at",
+        )
+        .bind(&token.token)
+        .bind(token.user_id.to_string())
+        .bind(&token.platform)
+        .bind(token.created_at)
+        .bind(token.updated_at)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn unregister(&self, token: &str) -> anyhow::Result<()> {
+        sqlx::query("DELETE FROM device_push_tokens WHERE token = ?1")
+            .bind(token)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn tokens_for_user(&self, user_id: Uuid) -> anyhow::Result<Vec<String>> {
+        let rows: Vec<(String,)> =
+            sqlx::query_as("SELECT token FROM device_push_tokens WHERE user_id = ?1")
+                .bind(user_id.to_string())
+                .fetch_all(&self.pool)
+                .await?;
+
+        Ok(rows.into_iter().map(|(token,)| token).collect())
     }
 }

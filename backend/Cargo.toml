@@ -8,6 +8,7 @@ members = [
     "crates/knowledge-base",
     "crates/research-ingest",
     "crates/analysis-engine",
+    "crates/push",
     "apps/server",
 ]
 
@@ -31,6 +32,7 @@ chrono = { version = "0.4", features = ["serde"] }
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "migrate"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 config = "0.14"
+jsonwebtoken = "9"
 
 # workspace-internal crates
 mental-common = { path = "crates/common" }
@@ -40,6 +42,7 @@ mental-llm-connector = { path = "crates/llm-connector" }
 mental-knowledge-base = { path = "crates/knowledge-base" }
 mental-research-ingest = { path = "crates/research-ingest" }
 mental-analysis-engine = { path = "crates/analysis-engine" }
+mental-push = { path = "crates/push" }
 
 [profile.release]
 opt-level = 3

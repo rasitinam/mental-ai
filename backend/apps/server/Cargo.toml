@@ -17,6 +17,7 @@ mental-llm-connector.workspace = true
 mental-knowledge-base.workspace = true
 mental-research-ingest.workspace = true
 mental-analysis-engine.workspace = true
+mental-push.workspace = true
 
 tokio.workspace = true
 axum = { version = "0.7", features = ["multipart"] }

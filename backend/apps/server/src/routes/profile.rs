@@ -6,9 +6,10 @@ use axum::{
     routing::{get, put},
     Json, Router,
 };
+use chrono::Utc;
 use mental_domain::catalog;
-use mental_domain::repository::{AuthRepository, UserRepository};
-use mental_domain::DmPolicy;
+use mental_domain::repository::{AuthRepository, PushTokenRepository, UserRepository};
+use mental_domain::{DmPolicy, PushToken};
 use serde::{Deserialize, Serialize};
 
 use crate::auth::AuthUser;
@@ -28,6 +29,7 @@ pub fn router() -> Router<AppState> {
         .route("/profile/preferences", put(set_preferences))
         .route("/profile/avatar", put(upload_avatar).get(get_avatar))
         .layer(DefaultBodyLimit::max(MAX_AVATAR_BYTES + 1024))
+        .route("/profile/push-token", put(register_push_token).delete(unregister_push_token))
 }
 
 /// The account as the profile screen needs it. `email` lives in the
@@ -246,4 +248,58 @@ async fn get_avatar(State(state): State<AppState>, auth: AuthUser) -> Result<Res
 
 pub(crate) fn avatar_path(user_id: uuid::Uuid) -> std::path::PathBuf {
     std::path::Path::new(AVATAR_DIR).join(user_id.to_string())
+}
+
+#[derive(Debug, Deserialize)]
+struct PushTokenRequest {
+    token: String,
+    /// "android" or "ios" — informational; see `PushToken`.
+    platform: String,
+}
+
+/// Registers (or re-registers, on token refresh) this device for push
+/// notifications. Upserts by token, so calling it again with the same
+/// token from a different account reassigns the device rather than
+/// creating a duplicate row — the natural outcome of someone logging out
+/// of one account and into another on the same phone.
+async fn register_push_token(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(req): Json<PushTokenRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let now = Utc::now();
+    state
+        .push_tokens
+        .register(&PushToken {
+            token: req.token,
+            user_id: auth.user_id,
+            platform: req.platform,
+            created_at: now,
+            updated_at: now,
+        })
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Debug, Deserialize)]
+struct UnregisterPushTokenRequest {
+    token: String,
+}
+
+/// Called on logout: a device that's signed out shouldn't keep receiving
+/// notifications for the account it just left.
+async fn unregister_push_token(
+    State(state): State<AppState>,
+    _auth: AuthUser,
+    Json(req): Json<UnregisterPushTokenRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    state
+        .push_tokens
+        .unregister(&req.token)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

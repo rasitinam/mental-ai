@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/local_prefs.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/data/auth_api.dart';
+import '../../notifications/push_service.dart';
 import '../../profile/data/profile_api.dart';
 import '../../social/data/dm_entry.dart';
 
@@ -16,6 +18,12 @@ class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    // Before the session goes away — unregistering needs the auth token
+    // that's about to be cleared, and needs to happen at all, or this
+    // device keeps getting pushes for an account no longer signed in on it.
+    if (!kIsWeb) {
+      await ref.read(pushServiceProvider).unregister();
+    }
     try {
       await ref.read(authApiProvider).logout();
     } catch (_) {

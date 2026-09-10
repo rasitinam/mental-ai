@@ -1,10 +1,13 @@
+use std::collections::HashMap;
+
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use chrono::{DateTime, Utc};
-use mental_domain::repository::DmRepository;
+use mental_domain::repository::{DmRepository, PushTokenRepository};
 use mental_domain::{DmMessage, DmStatus, DmThread};
+use mental_push::PushRequest;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -212,7 +215,74 @@ async fn send_into(
     };
     state.dms.add_message(&message, now).await.map_err(internal)?;
 
+    // A message that leaves the thread `Pending` can only be the opener's
+    // first one — the guard above already refuses a second one from them
+    // — so that's exactly the "new request" case; anything else (a reply
+    // that just accepted it, or an ongoing conversation) is a regular
+    // message. Never blocks the response on delivery: a push failing
+    // (no token, FCM down, ...) is not a reason to fail the send itself.
+    let is_new_request = status == DmStatus::Pending;
+    notify_new_message(state, sender, &thread, is_new_request, &message.body).await;
+
     Ok(Json(OpenedThread { thread_id: thread.id.to_string(), status }))
+}
+
+/// Best-effort push notification to the other side of the thread. Silent
+/// no-op if they have no registered device, if the account lookup fails,
+/// or if sending itself fails — see `mental_push::NoopPushProvider` for
+/// what happens when push isn't configured at all.
+async fn notify_new_message(
+    state: &AppState,
+    sender: Uuid,
+    thread: &DmThread,
+    is_new_request: bool,
+    body: &str,
+) {
+    let recipient = thread.other(sender);
+    let tokens = state.push_tokens.tokens_for_user(recipient).await.unwrap_or_default();
+    if tokens.is_empty() {
+        return;
+    }
+
+    let Some(sender_user) = user_for(state, sender).await else { return };
+    let Some(recipient_user) = user_for(state, recipient).await else { return };
+
+    let preview = truncate_for_notification(body);
+    let (title, push_body) = if is_new_request {
+        (dm_request_title(&recipient_user.language), format!("{}: {preview}", sender_user.display_name))
+    } else {
+        (sender_user.display_name.clone(), preview)
+    };
+
+    let mut data = HashMap::new();
+    data.insert("type".to_string(), if is_new_request { "dm_request" } else { "dm_message" }.to_string());
+    data.insert("thread_id".to_string(), thread.id.to_string());
+
+    for token in tokens {
+        let request = PushRequest { token, title: title.clone(), body: push_body.clone(), data: data.clone() };
+        if let Err(err) = state.push.send(request).await {
+            tracing::warn!(error = %err, "failed to send DM push notification");
+        }
+    }
+}
+
+fn dm_request_title(language: &str) -> String {
+    match language {
+        "en" => "New message request".to_string(),
+        _ => "Yeni mesaj isteği".to_string(),
+    }
+}
+
+/// Notification bodies are short by nature (a phone's notification shade
+/// clips long text anyway), but this keeps a very long message from
+/// bloating the FCM payload.
+fn truncate_for_notification(body: &str) -> String {
+    const MAX_CHARS: usize = 140;
+    if body.chars().count() <= MAX_CHARS {
+        return body.to_string();
+    }
+    let truncated: String = body.chars().take(MAX_CHARS).collect();
+    format!("{}…", truncated.trim_end())
 }
 
 async fn send(

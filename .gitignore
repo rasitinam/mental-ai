@@ -37,6 +37,9 @@ Cargo.lock.bak
 /app/android/key.properties
 /ios_signing/
 /android_signing/
+/app/android/app/google-services.json
+/app/ios/Runner/GoogleService-Info.plist
+/backend/firebase-service-account.json
 
 # --- Editors / OS ---
 .vscode/

@@ -5,11 +5,33 @@
          main manifest, so without it a release APK has no network access
          at all. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Android 13+ requires this to be granted at runtime before any
+         notification (including FCM's) can show — requested explicitly
+         in push_service.dart rather than assumed, since the OS treats
+         it exactly like any other dangerous permission. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Lets a high-priority FCM message wake the device to show the
+         notification promptly instead of waiting for the next Doze
+         maintenance window — the difference between "message arrives
+         now" and "message arrives whenever the phone happens to wake up". -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <application
         android:label="mental_ai"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
+        <!-- The channel a background/terminated notification posts to when
+             the OS displays it without any app code running — must match
+             `channel_id` in the FCM payload (see
+             `backend/crates/push/src/lib.rs`) and the channel
+             push_service.dart creates on launch, or Android silently
+             drops the notification instead of showing it. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="mental_ai_messages" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -2,12 +2,14 @@ use std::sync::Arc;
 
 use mental_knowledge_base::{Embedder, SqliteVectorStore};
 use mental_llm_connector::LlmProvider;
+use mental_push::PushProvider;
 use mental_storage::{
     SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository,
     SqliteChatRepository, SqliteDmRepository, SqliteExplainerRepository, SqliteInsightRepository,
     SqliteJournalRepository, SqliteLifeAnalysisRepository, SqliteLifeStoryRepository,
-    SqliteMoodRepository, SqliteReportRepository, SqliteResearchRepository, SqliteSocialRepository,
-    SqliteUserRepository, SqliteUserStateRepository,
+    SqliteMoodRepository, SqlitePushTokenRepository, SqliteReportRepository,
+    SqliteResearchRepository, SqliteSocialRepository, SqliteUserRepository,
+    SqliteUserStateRepository,
 };
 
 /// Composition root: the one place that knows every concrete
@@ -36,4 +38,6 @@ pub struct AppState {
     pub vector_store: Arc<SqliteVectorStore>,
     pub llm: Arc<dyn LlmProvider>,
     pub embedder: Arc<Embedder>,
+    pub push_tokens: Arc<SqlitePushTokenRepository>,
+    pub push: Arc<dyn PushProvider>,
 }
