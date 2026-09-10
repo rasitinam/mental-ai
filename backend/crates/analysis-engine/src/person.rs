@@ -1,8 +1,8 @@
 use mental_domain::{User, WellbeingAssessment};
 
-/// The PHQ-9/GAD-7 half of [`PersonContext`], reduced to what a prompt
-/// actually needs — scores and bands, not the 16 raw item answers. Owned
-/// rather than borrowed so it can be built from a repository call
+/// The screening-battery half of [`PersonContext`], reduced to what a
+/// prompt actually needs — scores and bands, not the raw item answers.
+/// Owned rather than borrowed so it can be built from a repository call
 /// (`Option<WellbeingAssessment>`) independently of `User`, which doesn't
 /// carry it.
 #[derive(Debug, Clone, Copy)]
@@ -11,6 +11,16 @@ pub struct AssessmentSummary {
     pub depression_band: &'static str,
     pub gad7_score: u8,
     pub anxiety_band: &'static str,
+    pub who5_score: u8,
+    pub wellbeing_band: &'static str,
+    pub phq15_score: u8,
+    pub somatic_band: &'static str,
+    pub ptsd5_score: u8,
+    pub ptsd_band: &'static str,
+    pub auditc_score: u8,
+    pub alcohol_band: &'static str,
+    pub cageaid_score: u8,
+    pub substance_band: &'static str,
     pub days_ago: i64,
 }
 
@@ -21,6 +31,16 @@ impl AssessmentSummary {
             depression_band: a.depression_band(),
             gad7_score: a.gad7_score,
             anxiety_band: a.anxiety_band(),
+            who5_score: a.who5_score,
+            wellbeing_band: a.wellbeing_band(),
+            phq15_score: a.phq15_score,
+            somatic_band: a.somatic_band(),
+            ptsd5_score: a.ptsd5_score,
+            ptsd_band: a.ptsd_band(),
+            auditc_score: a.auditc_score,
+            alcohol_band: a.alcohol_band(),
+            cageaid_score: a.cageaid_score,
+            substance_band: a.substance_band(),
             days_ago: (chrono::Utc::now() - a.created_at).num_days(),
         }
     }
@@ -105,12 +125,39 @@ impl<'a> PersonContext<'a> {
             ));
         }
         if let Some(a) = self.assessment {
+            // PHQ-9/GAD-7 are the headline pair, always included. The rest
+            // of the battery (well-being, somatic, PTSD, alcohol,
+            // substance) only earns a line when it's outside its safest
+            // band — otherwise seven scores on every single prompt would
+            // bury the two that matter most under five that don't.
+            let mut extra = Vec::new();
+            if a.wellbeing_band != "good" {
+                extra.push(format!("WHO-5 well-being {}/25 ({})", a.who5_score, a.wellbeing_band));
+            }
+            if a.somatic_band != "minimal" {
+                extra.push(format!("PHQ-15 somatic symptoms {}/30 ({})", a.phq15_score, a.somatic_band));
+            }
+            if a.ptsd_band == "positive screen" {
+                extra.push(format!("PC-PTSD-5 {}/5 (positive screen)", a.ptsd5_score));
+            }
+            if a.alcohol_band != "minimal" {
+                extra.push(format!("AUDIT-C alcohol use {}/12 ({})", a.auditc_score, a.alcohol_band));
+            }
+            if a.substance_band == "positive screen" {
+                extra.push(format!("CAGE-AID {}/4 (positive screen)", a.cageaid_score));
+            }
+            let extra_line = if extra.is_empty() {
+                String::new()
+            } else {
+                format!(" Also notable: {}.", extra.join("; "))
+            };
+
             lines.push(format!(
                 "Self-report screening from {} day(s) ago — PHQ-9 (depression): {}/27 ({}); \
-                 GAD-7 (anxiety): {}/21 ({}). This is a screening signal, not a diagnosis: \
-                 read it the same way as their self-reported conditions, one more data point \
-                 about where they currently are, never something to name or quote back at them \
-                 like a lab result.",
+                 GAD-7 (anxiety): {}/21 ({}).{extra_line} This is a screening signal, not a \
+                 diagnosis: read it the same way as their self-reported conditions, one more \
+                 data point about where they currently are, never something to name or quote \
+                 back at them like a lab result.",
                 a.days_ago, a.phq9_score, a.depression_band, a.gad7_score, a.anxiety_band
             ));
         }

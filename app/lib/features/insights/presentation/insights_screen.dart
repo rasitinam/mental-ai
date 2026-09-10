@@ -65,10 +65,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
-              child: _StoriesEntryCard(palette: palette, l10n: l10n),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
               child: SearchField(
                 controller: _search,
                 palette: palette,
@@ -215,59 +211,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
 /// A direct, hard-to-miss way into the story feed — previously reachable
 /// only through Settings → Topluluk, which nobody browsing the guide for
 /// research would ever think to check.
-class _StoriesEntryCard extends StatelessWidget {
-  final AppPalette palette;
-  final AppLocalizations l10n;
-  const _StoriesEntryCard({required this.palette, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: palette.accent,
-      borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.go('/stories'),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(Icons.auto_stories_outlined, size: 18, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.storiesEntryTitle,
-                        style: AppTypography.label
-                            .copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 2),
-                    Text(
-                      l10n.storiesEntryBody,
-                      style: AppTypography.caption
-                          .copyWith(color: Colors.white.withValues(alpha: 0.85)),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, size: 20, color: Colors.white),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// The rounded search field the guide and the story feed both use.
 class SearchField extends StatelessWidget {
   final TextEditingController controller;

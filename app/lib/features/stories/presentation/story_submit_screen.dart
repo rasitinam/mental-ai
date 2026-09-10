@@ -79,7 +79,10 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 40),
+          // 140 rather than 40: this route lives inside the shell, so
+          // `HomeShell`'s floating nav bar sits on top of the last ~100px —
+          // without this the submit button was unreachable on Android.
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -70,6 +69,11 @@ void main() {
         apiClientProvider.overrideWithValue(_offlineDio()),
       ],
     );
+    // A manually-created container isn't torn down by the widget tree the
+    // way `ProviderScope`'s own container would be — without this, any
+    // provider holding a live resource (e.g. `dmBadgeProvider`'s poll
+    // timer) leaks past the end of the test.
+    addTearDown(container.dispose);
     // Mirrors what main.dart does before runApp: load whatever session is
     // already on disk into the in-memory provider the router reads.
     final existing = readStoredSession(prefs);
@@ -85,6 +89,12 @@ void main() {
     // Every network call fails in a test, which is fine — routing is
     // what's under test, not what the feed would have contained.
     expect(find.text('Hikayeler'), findsWidgets);
+
+    // `addTearDown` runs after the test body's own pending-timer check —
+    // too late to stop `dmBadgeProvider`'s poll timer from tripping it —
+    // so this container needs disposing here, synchronously, not just
+    // registered for later.
+    container.dispose();
   });
 
   testWidgets('renders in English when the stored language is English', (

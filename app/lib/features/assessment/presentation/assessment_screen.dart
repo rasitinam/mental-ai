@@ -7,14 +7,16 @@ import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
 import '../domain/assessment_result.dart';
+import '../domain/instruments.dart';
 import 'assessment_controller.dart';
 
-/// The 16-question PHQ-9 + GAD-7 flow, reused in two places: onboarding
-/// (`skippable: true`, right after registration) and Settings' "retake"
-/// entry (`skippable: false`, reached via a normal back-navigable route).
-/// The two only differ in the intro screen's chrome and in what happens
-/// once a result comes back — the questions, scoring and crisis handling
-/// are identical either way.
+/// The full screening-battery flow — seven public-domain instruments,
+/// [kAssessmentQuestionCount] questions in all — reused in two places:
+/// onboarding (`skippable: true`, right after registration) and Settings'
+/// "retake" entry (`skippable: false`, reached via a normal back-navigable
+/// route). The two only differ in the intro screen's chrome and in what
+/// happens once a result comes back — the questions, scoring and crisis
+/// handling are identical either way.
 class AssessmentScreen extends ConsumerStatefulWidget {
   final bool skippable;
   final VoidCallback onDone;
@@ -105,7 +107,8 @@ class _IntroView extends StatelessWidget {
         SizedBox(height: showBack ? 22 : 48),
         Text(l10n.assessmentOnboardTitle, style: AppTypography.largeTitle.copyWith(color: palette.textPrimary)),
         const SizedBox(height: 10),
-        Text(l10n.assessmentOnboardIntro, style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
+        Text(l10n.assessmentOnboardIntro(kAssessmentQuestionCount),
+            style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
         const Spacer(),
         AppPrimaryButton(label: l10n.assessmentStart, onPressed: onStart),
         if (onSkip != null) ...[
@@ -126,6 +129,27 @@ class _IntroView extends StatelessWidget {
   }
 }
 
+/// Locates which instrument (and which of its questions) a flat step
+/// index falls in — the flow is one long sequence of questions, but each
+/// screen still needs to know which section label and intro line to show.
+({AssessmentInstrument instrument, AssessmentQuestion question, int localIndex}) _questionAt(
+  List<AssessmentInstrument> instruments,
+  int step,
+) {
+  var offset = 0;
+  for (final instrument in instruments) {
+    if (step < offset + instrument.questions.length) {
+      return (
+        instrument: instrument,
+        question: instrument.questions[step - offset],
+        localIndex: step - offset,
+      );
+    }
+    offset += instrument.questions.length;
+  }
+  throw RangeError.index(step, instruments, 'step');
+}
+
 class _QuestionView extends StatelessWidget {
   final AssessmentState state;
   final AssessmentController controller;
@@ -140,23 +164,12 @@ class _QuestionView extends StatelessWidget {
     required this.l10n,
   });
 
-  List<String> _questions() => [
-        l10n.phq9Q1, l10n.phq9Q2, l10n.phq9Q3, l10n.phq9Q4, l10n.phq9Q5,
-        l10n.phq9Q6, l10n.phq9Q7, l10n.phq9Q8, l10n.phq9Q9,
-        l10n.gad7Q1, l10n.gad7Q2, l10n.gad7Q3, l10n.gad7Q4, l10n.gad7Q5, l10n.gad7Q6, l10n.gad7Q7,
-      ];
-
   @override
   Widget build(BuildContext context) {
-    final questions = _questions();
-    final isAnxietySection = state.step >= kPhq9QuestionCount;
+    final instruments = buildInstruments(l10n);
+    final located = _questionAt(instruments, state.step);
     final progress = (state.step + 1) / kAssessmentQuestionCount;
-    final answers = [
-      l10n.assessmentAnswer0,
-      l10n.assessmentAnswer1,
-      l10n.assessmentAnswer2,
-      l10n.assessmentAnswer3,
-    ];
+    final showIntro = located.localIndex == 0 && located.instrument.intro != null;
 
     return SingleChildScrollView(
       child: Column(
@@ -189,19 +202,23 @@ class _QuestionView extends StatelessWidget {
                 style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
           ),
           const SizedBox(height: 24),
-          SectionLabel(isAnxietySection ? l10n.assessmentSectionAnxiety : l10n.assessmentSectionMood,
-              color: palette.accent),
+          SectionLabel(located.instrument.sectionLabel, color: palette.accent),
+          if (showIntro) ...[
+            const SizedBox(height: 10),
+            Text(located.instrument.intro!,
+                style: AppTypography.footnote.copyWith(color: palette.textSecondary, height: 1.5)),
+          ],
           const SizedBox(height: 10),
-          Text(questions[state.step], style: AppTypography.title3.copyWith(color: palette.textPrimary)),
+          Text(located.question.text, style: AppTypography.title3.copyWith(color: palette.textPrimary)),
           const SizedBox(height: 28),
-          for (var i = 0; i < answers.length; i++) ...[
+          for (var i = 0; i < located.question.options.length; i++) ...[
             _AnswerOption(
-              label: answers[i],
+              label: located.question.options[i],
               selected: state.currentAnswer == i,
               palette: palette,
               onTap: state.submitting ? null : () => controller.selectAndAdvance(i),
             ),
-            if (i != answers.length - 1) const SizedBox(height: 10),
+            if (i != located.question.options.length - 1) const SizedBox(height: 10),
           ],
           if (state.error != null) ...[
             const SizedBox(height: 16),
@@ -284,13 +301,39 @@ class _ResultView extends StatelessWidget {
         return l10n.assessmentBandModerate;
       case 'moderately severe':
         return l10n.assessmentBandModeratelySevere;
-      default:
+      case 'severe':
         return l10n.assessmentBandSevere;
+      case 'very low':
+        return l10n.assessmentBandVeryLow;
+      case 'low':
+        return l10n.assessmentBandLow;
+      case 'medium':
+        return l10n.assessmentBandMedium;
+      case 'high':
+        return l10n.assessmentBandHigh;
+      case 'good':
+        return l10n.assessmentBandGood;
+      case 'caution':
+        return l10n.assessmentBandCaution;
+      case 'below threshold':
+        return l10n.assessmentBandBelowThreshold;
+      default:
+        return l10n.assessmentBandPositiveScreen;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final cards = [
+      (title: l10n.assessmentResultDepression, score: result.phq9Score, max: 27, band: result.depressionBand),
+      (title: l10n.assessmentResultAnxiety, score: result.gad7Score, max: 21, band: result.anxietyBand),
+      (title: l10n.assessmentResultWellbeing, score: result.who5Score, max: 25, band: result.wellbeingBand),
+      (title: l10n.assessmentResultSomatic, score: result.phq15Score, max: 30, band: result.somaticBand),
+      (title: l10n.assessmentResultPtsd, score: result.ptsd5Score, max: 5, band: result.ptsdBand),
+      (title: l10n.assessmentResultAlcohol, score: result.auditcScore, max: 12, band: result.alcoholBand),
+      (title: l10n.assessmentResultSubstance, score: result.cageaidScore, max: 4, band: result.substanceBand),
+    ];
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -300,27 +343,21 @@ class _ResultView extends StatelessWidget {
           const SizedBox(height: 8),
           Text(l10n.assessmentResultNote, style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
           const SizedBox(height: 24),
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              Expanded(
-                child: _ScoreCard(
-                  title: l10n.assessmentResultDepression,
-                  score: result.phq9Score,
-                  max: 27,
-                  band: _bandLabel(result.depressionBand),
-                  palette: palette,
+              for (final card in cards)
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 44 - 12) / 2,
+                  child: _ScoreCard(
+                    title: card.title,
+                    score: card.score,
+                    max: card.max,
+                    band: _bandLabel(card.band),
+                    palette: palette,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _ScoreCard(
-                  title: l10n.assessmentResultAnxiety,
-                  score: result.gad7Score,
-                  max: 21,
-                  band: _bandLabel(result.anxietyBand),
-                  palette: palette,
-                ),
-              ),
             ],
           ),
           if (result.crisisFlag) ...[

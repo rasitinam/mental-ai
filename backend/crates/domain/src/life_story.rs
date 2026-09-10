@@ -62,12 +62,58 @@ pub struct LifeStory {
     /// account of their life and not on another.
     #[serde(default = "default_anonymous")]
     pub anonymous: bool,
+    /// ISO-639-1-ish code detected from the body at submission time (see
+    /// [`detect_language`]). Drives the feed's auto-translate: a reader
+    /// whose own account language differs from this gets a translated
+    /// copy with a toggle back to the original — see
+    /// `routes::stories::translate`.
+    #[serde(default = "default_language")]
+    pub language: String,
     pub reviewed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
 
 fn default_anonymous() -> bool {
     true
+}
+
+fn default_language() -> String {
+    "tr".to_string()
+}
+
+/// A deliberately small heuristic, not a statistical language-id model:
+/// Turkish-specific letters (ç ğ ı ö ş ü, any case) are a strong enough
+/// signal on their own, and their absence from text of any real length
+/// is a strong enough signal the other way. Good enough to route
+/// "should this be offered a translation", not meant as a general-purpose
+/// classifier — a misdetected story just means one unnecessary (or one
+/// skipped) translate button, never a wrong score or a lost submission.
+/// Returns a free-form language code rather than an enum so adding a
+/// third app language later is a matter of teaching this function one
+/// more signal, not a schema change.
+pub fn detect_language(text: &str) -> String {
+    const TURKISH_CHARS: &[char] = &['ç', 'ğ', 'ı', 'ö', 'ş', 'ü', 'Ç', 'Ğ', 'İ', 'Ö', 'Ş', 'Ü'];
+    if text.chars().any(|c| TURKISH_CHARS.contains(&c)) {
+        return "tr".to_string();
+    }
+
+    // No Turkish-specific letters. Short text (a few words) is too little
+    // signal either way, so default to Turkish — the app's primary
+    // language — rather than guess. Longer plain-ASCII text with common
+    // English function words is treated as English.
+    let lower = text.to_lowercase();
+    let word_count = lower.split_whitespace().count();
+    let is_ascii_ish = text.chars().all(|c| c.is_ascii() || c.is_whitespace());
+    const ENGLISH_MARKERS: &[&str] =
+        &[" the ", " and ", " that ", " with ", " have ", " this ", " because ", " my "];
+    let padded = format!(" {lower} ");
+    let english_hits = ENGLISH_MARKERS.iter().filter(|m| padded.contains(*m)).count();
+
+    if word_count >= 6 && is_ascii_ish && english_hits >= 1 {
+        "en".to_string()
+    } else {
+        "tr".to_string()
+    }
 }
 
 /// A feed row: the story plus everything the reader's copy of it needs —

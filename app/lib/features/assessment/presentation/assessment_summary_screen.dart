@@ -8,6 +8,7 @@ import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/assessment_api.dart';
 import '../domain/assessment_result.dart';
+import '../domain/instruments.dart' show kAssessmentQuestionCount;
 
 /// The Settings-side entry point for the PHQ-9 + GAD-7 screening: shows
 /// the latest reading, if any, and a button that pushes the same
@@ -45,7 +46,7 @@ class AssessmentSummaryScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 18),
-              Text(l10n.assessmentRetakeIntro,
+              Text(l10n.assessmentRetakeIntro(kAssessmentQuestionCount),
                   style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
               const SizedBox(height: 22),
               latest.when(
@@ -88,15 +89,17 @@ class _LatestSummary extends StatelessWidget {
           Text(days <= 0 ? l10n.assessmentLastTakenToday : l10n.assessmentLastTaken(days),
               style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
             children: [
-              Expanded(
-                child: _MiniScore(label: l10n.assessmentResultDepression, score: result.phq9Score, palette: palette),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _MiniScore(label: l10n.assessmentResultAnxiety, score: result.gad7Score, palette: palette),
-              ),
+              _MiniScore(label: l10n.assessmentResultDepression, score: result.phq9Score, palette: palette),
+              _MiniScore(label: l10n.assessmentResultAnxiety, score: result.gad7Score, palette: palette),
+              _MiniScore(label: l10n.assessmentResultWellbeing, score: result.who5Score, palette: palette),
+              _MiniScore(label: l10n.assessmentResultSomatic, score: result.phq15Score, palette: palette),
+              _MiniScore(label: l10n.assessmentResultPtsd, score: result.ptsd5Score, palette: palette),
+              _MiniScore(label: l10n.assessmentResultAlcohol, score: result.auditcScore, palette: palette),
+              _MiniScore(label: l10n.assessmentResultSubstance, score: result.cageaidScore, palette: palette),
             ],
           ),
         ],

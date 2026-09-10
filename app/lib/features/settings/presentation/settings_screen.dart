@@ -10,7 +10,6 @@ import '../../../core/storage/local_prefs.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/data/auth_api.dart';
 import '../../profile/data/profile_api.dart';
-import '../../profile/presentation/profile_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -50,10 +49,10 @@ class SettingsScreen extends ConsumerWidget {
                 _Row(label: l10n.settingsAssessment, onTap: () => context.go('/settings/assessment')),
                 _Row(label: l10n.settingsMyStories, onTap: () => context.go('/settings/my-stories')),
                 _Row(label: l10n.dmTitle, onTap: () => context.go('/dm')),
+                _Row(label: l10n.settingsPrivacyRow, onTap: () => context.go('/settings/privacy')),
               ],
             ),
             const SizedBox(height: 20),
-            const _DmPolicyGroup(),
             // Moderation is the only thing left in this group now that the
             // feed is a tab of its own, so for everyone but an admin the
             // group would be an empty card with a heading.
@@ -234,89 +233,3 @@ class _Row extends StatelessWidget {
   }
 }
 
-/// Who may open a DM request. Reads the current value off the profile
-/// (the same `/profile` the rest of the account settings use) and writes
-/// it back through `savePreferences`, so there's no second source of
-/// truth for one account preference.
-class _DmPolicyGroup extends ConsumerWidget {
-  const _DmPolicyGroup();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final palette = AppPalette.of(context);
-    final policy = ref.watch(myProfileProvider).valueOrNull?.dmPolicy ?? 'everyone';
-    final saving = ref.watch(profileControllerProvider.select((s) => s.saving));
-
-    Future<void> set(String next) async {
-      if (next == policy || saving) return;
-      await ref.read(profileControllerProvider.notifier).savePreferences(dmPolicy: next);
-      ref.invalidate(myProfileProvider);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionLabel(l10n.settingsDmPrivacy),
-        const SizedBox(height: 8),
-        GlassSurface(
-          radius: 16,
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _PolicyRow(
-                label: l10n.settingsDmEveryone,
-                selected: policy == 'everyone',
-                palette: palette,
-                onTap: () => set('everyone'),
-              ),
-              Divider(height: 1, thickness: 1, color: palette.separator),
-              _PolicyRow(
-                label: l10n.settingsDmFollowing,
-                selected: policy == 'following',
-                palette: palette,
-                onTap: () => set('following'),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(l10n.settingsDmNoReceipts,
-            style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
-      ],
-    );
-  }
-}
-
-class _PolicyRow extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final AppPalette palette;
-  final VoidCallback onTap;
-
-  const _PolicyRow({
-    required this.label,
-    required this.selected,
-    required this.palette,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 56),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(label, style: AppTypography.label.copyWith(color: palette.textPrimary)),
-            ),
-            if (selected) Icon(Icons.check_rounded, size: 20, color: palette.accent),
-          ],
-        ),
-      ),
-    );
-  }
-}

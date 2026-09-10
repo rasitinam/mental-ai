@@ -46,6 +46,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navChat => 'Chat';
 
   @override
+  String get navMessages => 'Messages';
+
+  @override
   String get navGuide => 'Guide';
 
   @override
@@ -261,6 +264,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsProfile => 'My profile';
+
+  @override
+  String get settingsPrivacyRow => 'Privacy';
 
   @override
   String get settingsLogout => 'Log out';
@@ -572,6 +578,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storiesAnonymous => 'anonymous';
 
   @override
+  String get storiesTranslated => 'Translated';
+
+  @override
+  String get storiesShowOriginal => 'Show original';
+
+  @override
+  String get storiesShowTranslation => 'Show translation';
+
+  @override
   String get storiesTabFeed => 'Stories';
 
   @override
@@ -701,8 +716,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assessmentOnboardTitle => 'Let\'s get to know you a bit';
 
   @override
-  String get assessmentOnboardIntro =>
-      '16 short questions about the last two weeks. This shapes how we approach things with you — skip it now and do it later from Settings if you\'d rather.';
+  String assessmentOnboardIntro(int total) {
+    return 'There are a few short tests to complete — $total questions in all, about the last two weeks: your mood, your anxiety, your general well-being and more. This shapes how we approach things with you — skip it now and do it later from Settings if you\'d rather.';
+  }
 
   @override
   String get assessmentStart => 'Start';
@@ -722,6 +738,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assessmentSectionAnxiety => 'Over the last 2 weeks — your anxiety';
 
   @override
+  String get assessmentSectionWellbeing =>
+      'Over the last 2 weeks — your well-being';
+
+  @override
+  String get assessmentSectionSomatic =>
+      'Over the last 4 weeks — your physical symptoms';
+
+  @override
+  String get assessmentSectionPtsd => 'A traumatic event';
+
+  @override
+  String get assessmentSectionAlcohol =>
+      'Over the last year — your alcohol use';
+
+  @override
+  String get assessmentSectionSubstance =>
+      'Over the last year — your substance use';
+
+  @override
+  String get assessmentPtsd5Intro =>
+      'Sometimes people experience very stressful events — a serious accident, a natural disaster, physical or sexual assault, combat, being badly beaten, or witnessing someone\'s death. If something like this has happened to you, in the past month have you:';
+
+  @override
   String get assessmentAnswer0 => 'Not at all';
 
   @override
@@ -732,6 +771,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assessmentAnswer3 => 'Nearly every day';
+
+  @override
+  String get assessmentAnswerNo => 'No';
+
+  @override
+  String get assessmentAnswerYes => 'Yes';
+
+  @override
+  String get who5Answer0 => 'At no time';
+
+  @override
+  String get who5Answer1 => 'Some of the time';
+
+  @override
+  String get who5Answer2 => 'Less than half of the time';
+
+  @override
+  String get who5Answer3 => 'More than half of the time';
+
+  @override
+  String get who5Answer4 => 'Most of the time';
+
+  @override
+  String get who5Answer5 => 'All of the time';
+
+  @override
+  String get phq15Answer0 => 'Not bothered at all';
+
+  @override
+  String get phq15Answer1 => 'Bothered a little';
+
+  @override
+  String get phq15Answer2 => 'Bothered a lot';
 
   @override
   String get assessmentResultTitle => 'Thank you';
@@ -745,6 +817,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assessmentResultAnxiety => 'Anxiety screening';
+
+  @override
+  String get assessmentResultWellbeing => 'Well-being screening';
+
+  @override
+  String get assessmentResultSomatic => 'Physical symptom screening';
+
+  @override
+  String get assessmentResultPtsd => 'Post-traumatic stress screening';
+
+  @override
+  String get assessmentResultAlcohol => 'Alcohol use screening';
+
+  @override
+  String get assessmentResultSubstance => 'Substance use screening';
 
   @override
   String get assessmentBandMinimal => 'Minimal';
@@ -762,6 +849,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assessmentBandSevere => 'Severe';
 
   @override
+  String get assessmentBandVeryLow => 'Very low';
+
+  @override
+  String get assessmentBandLow => 'Low';
+
+  @override
+  String get assessmentBandMedium => 'Medium';
+
+  @override
+  String get assessmentBandHigh => 'High';
+
+  @override
+  String get assessmentBandGood => 'Good';
+
+  @override
+  String get assessmentBandCaution => 'Worth watching';
+
+  @override
+  String get assessmentBandBelowThreshold => 'Below threshold';
+
+  @override
+  String get assessmentBandPositiveScreen => 'Worth a closer look';
+
+  @override
   String get assessmentContinueCta => 'Continue';
 
   @override
@@ -771,8 +882,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assessmentRetakeTitle => 'Self-assessment';
 
   @override
-  String get assessmentRetakeIntro =>
-      'PHQ-9 and GAD-7 — 16 short questions about the last two weeks. Results are used in the background of your chats and suggestions.';
+  String assessmentRetakeIntro(int total) {
+    return 'There are tests to complete: seven short screens, $total questions in all — your mood, your anxiety, your general well-being and more. Results are used in the background of your chats and suggestions.';
+  }
 
   @override
   String get assessmentRetakeCta => 'Start the assessment';
@@ -843,6 +955,160 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gad7Q7 => 'Feeling afraid as if something awful might happen';
+
+  @override
+  String get who5Q1 => 'I have felt cheerful and in good spirits.';
+
+  @override
+  String get who5Q2 => 'I have felt calm and relaxed.';
+
+  @override
+  String get who5Q3 => 'I have felt active and vigorous.';
+
+  @override
+  String get who5Q4 => 'I woke up feeling fresh and rested.';
+
+  @override
+  String get who5Q5 =>
+      'My daily life has been filled with things that interest me.';
+
+  @override
+  String get phq15Q1 => 'Stomach pain';
+
+  @override
+  String get phq15Q2 => 'Back pain';
+
+  @override
+  String get phq15Q3 => 'Pain in your arms, legs, or joints';
+
+  @override
+  String get phq15Q4 =>
+      'Menstrual cramps or other problems with your periods (women only)';
+
+  @override
+  String get phq15Q5 => 'Headaches';
+
+  @override
+  String get phq15Q6 => 'Chest pain';
+
+  @override
+  String get phq15Q7 => 'Dizziness';
+
+  @override
+  String get phq15Q8 => 'Fainting spells';
+
+  @override
+  String get phq15Q9 => 'Feeling your heart pound or race';
+
+  @override
+  String get phq15Q10 => 'Shortness of breath';
+
+  @override
+  String get phq15Q11 => 'Pain or other problems during sexual intercourse';
+
+  @override
+  String get phq15Q12 => 'Constipation, loose bowels, or diarrhea';
+
+  @override
+  String get phq15Q13 => 'Nausea, gas, or indigestion';
+
+  @override
+  String get phq15Q14 => 'Feeling tired or having low energy';
+
+  @override
+  String get phq15Q15 => 'Trouble sleeping';
+
+  @override
+  String get ptsd5Q1 =>
+      'Had nightmares about the event(s) or thought about them when you didn\'t want to?';
+
+  @override
+  String get ptsd5Q2 =>
+      'Tried hard not to think about the event(s), or went out of your way to avoid situations that reminded you of them?';
+
+  @override
+  String get ptsd5Q3 =>
+      'Been constantly on guard, watchful, or easily startled?';
+
+  @override
+  String get ptsd5Q4 =>
+      'Felt numb or detached from people, activities, or your surroundings?';
+
+  @override
+  String get ptsd5Q5 =>
+      'Felt guilty, or unable to stop blaming yourself or others, for the event(s) or problems they caused?';
+
+  @override
+  String get auditcQ1 => 'How often did you have a drink containing alcohol?';
+
+  @override
+  String get auditcQ1Opt0 => 'Never';
+
+  @override
+  String get auditcQ1Opt1 => 'Monthly or less';
+
+  @override
+  String get auditcQ1Opt2 => '2-4 times a month';
+
+  @override
+  String get auditcQ1Opt3 => '2-3 times a week';
+
+  @override
+  String get auditcQ1Opt4 => '4 or more times a week';
+
+  @override
+  String get auditcQ2 =>
+      'How many drinks did you have on a typical day when drinking?';
+
+  @override
+  String get auditcQ2Opt0 => '1 or 2';
+
+  @override
+  String get auditcQ2Opt1 => '3 or 4';
+
+  @override
+  String get auditcQ2Opt2 => '5 or 6';
+
+  @override
+  String get auditcQ2Opt3 => '7 to 9';
+
+  @override
+  String get auditcQ2Opt4 => '10 or more';
+
+  @override
+  String get auditcQ3 =>
+      'How often did you have 6 or more drinks on one occasion?';
+
+  @override
+  String get auditcQ3Opt0 => 'Never';
+
+  @override
+  String get auditcQ3Opt1 => 'Less than monthly';
+
+  @override
+  String get auditcQ3Opt2 => 'Monthly';
+
+  @override
+  String get auditcQ3Opt3 => 'Weekly';
+
+  @override
+  String get auditcQ3Opt4 => 'Daily or almost daily';
+
+  @override
+  String get cageaidQ1 =>
+      'Have you felt you ought to cut down on your drinking or drug use?';
+
+  @override
+  String get cageaidQ2 =>
+      'Have people annoyed you by criticizing your drinking or drug use?';
+
+  @override
+  String get cageaidQ3 =>
+      'Have you felt bad or guilty about your drinking or drug use?';
+
+  @override
+  String get cageaidQ4 =>
+      'Have you used alcohol or drugs first thing in the morning to steady your nerves or feel better?';
 
   @override
   String get storiesAnonymousToggle => 'Share anonymously';

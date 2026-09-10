@@ -6,6 +6,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../data/dm_badge.dart';
 import '../data/social_api.dart';
 import '../domain/social_models.dart';
 import 'user_profile_screen.dart' show UserAvatar;
@@ -26,6 +27,13 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Opening the thread is what "read" means here — see `DmBadgeNotifier`.
+    Future.microtask(() => ref.read(dmBadgeProvider.notifier).markSeen(widget.threadId));
+  }
 
   @override
   void dispose() {
@@ -54,6 +62,7 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
       ref.invalidate(dmMessagesProvider(widget.threadId));
       ref.invalidate(dmThreadsProvider);
       ref.invalidate(dmRequestsProvider);
+      await ref.read(dmBadgeProvider.notifier).markSeen(widget.threadId);
     } catch (_) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
@@ -68,12 +77,14 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
     await ref.read(socialApiProvider).accept(widget.threadId);
     ref.invalidate(dmThreadsProvider);
     ref.invalidate(dmRequestsProvider);
+    await ref.read(dmBadgeProvider.notifier).refresh();
   }
 
   Future<void> _decline() async {
     await ref.read(socialApiProvider).discard(widget.threadId);
     ref.invalidate(dmThreadsProvider);
     ref.invalidate(dmRequestsProvider);
+    await ref.read(dmBadgeProvider.notifier).refresh();
     if (mounted) Navigator.of(context).maybePop();
   }
 

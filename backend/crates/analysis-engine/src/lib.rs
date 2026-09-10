@@ -13,6 +13,7 @@ pub mod life_analysis;
 pub mod person;
 pub mod retrieval;
 pub mod safety;
+pub mod translate;
 
 pub use chat_reply::generate_chat_reply;
 pub use current_state::{assess_current_state, StateInputs};
@@ -23,3 +24,4 @@ pub use insight_synthesis::synthesize_insights;
 pub use life_analysis::generate_life_analysis;
 pub use retrieval::retrieve_context;
 pub use safety::{screen_for_crisis_language, CrisisScreenResult};
+pub use translate::translate_text;

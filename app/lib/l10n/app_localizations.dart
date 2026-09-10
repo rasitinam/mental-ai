@@ -170,6 +170,12 @@ abstract class AppLocalizations {
   /// **'Sohbet'**
   String get navChat;
 
+  /// No description provided for @navMessages.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mesajlar'**
+  String get navMessages;
+
   /// No description provided for @navGuide.
   ///
   /// In tr, this message translates to:
@@ -571,6 +577,12 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Profilim'**
   String get settingsProfile;
+
+  /// No description provided for @settingsPrivacyRow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gizlilik'**
+  String get settingsPrivacyRow;
 
   /// No description provided for @settingsLogout.
   ///
@@ -1142,6 +1154,24 @@ abstract class AppLocalizations {
   /// **'isimsiz'**
   String get storiesAnonymous;
 
+  /// No description provided for @storiesTranslated.
+  ///
+  /// In tr, this message translates to:
+  /// **'Çevrildi'**
+  String get storiesTranslated;
+
+  /// No description provided for @storiesShowOriginal.
+  ///
+  /// In tr, this message translates to:
+  /// **'Orijinalini gör'**
+  String get storiesShowOriginal;
+
+  /// No description provided for @storiesShowTranslation.
+  ///
+  /// In tr, this message translates to:
+  /// **'Çeviriyi gör'**
+  String get storiesShowTranslation;
+
   /// No description provided for @storiesTabFeed.
   ///
   /// In tr, this message translates to:
@@ -1379,8 +1409,8 @@ abstract class AppLocalizations {
   /// No description provided for @assessmentOnboardIntro.
   ///
   /// In tr, this message translates to:
-  /// **'Son iki haftaya dair 16 kısa soru. Sana nasıl yaklaşacağımızı bu belirler; istersen şimdi atlayıp sonra Ayarlar\'dan yapabilirsin.'**
-  String get assessmentOnboardIntro;
+  /// **'Uygulamayı tamamlaman gereken, son iki haftana dair birkaç kısa test var — toplam {total} soru: ruh halin, kaygın, genel iyi oluşun ve daha fazlası. Sana nasıl yaklaşacağımızı bu belirler; istersen şimdi atlayıp sonra Ayarlar\'dan yapabilirsin.'**
+  String assessmentOnboardIntro(int total);
 
   /// No description provided for @assessmentStart.
   ///
@@ -1412,6 +1442,42 @@ abstract class AppLocalizations {
   /// **'Son iki hafta — kaygın'**
   String get assessmentSectionAnxiety;
 
+  /// No description provided for @assessmentSectionWellbeing.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son iki hafta — genel iyi oluşun'**
+  String get assessmentSectionWellbeing;
+
+  /// No description provided for @assessmentSectionSomatic.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son dört hafta — bedensel belirtilerin'**
+  String get assessmentSectionSomatic;
+
+  /// No description provided for @assessmentSectionPtsd.
+  ///
+  /// In tr, this message translates to:
+  /// **'Travmatik bir olay'**
+  String get assessmentSectionPtsd;
+
+  /// No description provided for @assessmentSectionAlcohol.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son bir yıl — alkol kullanımın'**
+  String get assessmentSectionAlcohol;
+
+  /// No description provided for @assessmentSectionSubstance.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son bir yıl — madde kullanımın'**
+  String get assessmentSectionSubstance;
+
+  /// No description provided for @assessmentPtsd5Intro.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bazen insanlar çok stresli olaylar yaşar — ciddi bir kaza, doğal afet, fiziksel ya da cinsel saldırı, savaş, ciddi şekilde dövülme ya da birinin ölümüne tanık olma gibi. Böyle bir şey yaşadıysan, geçen ay içinde şunları yaşadın mı?'**
+  String get assessmentPtsd5Intro;
+
   /// No description provided for @assessmentAnswer0.
   ///
   /// In tr, this message translates to:
@@ -1436,6 +1502,72 @@ abstract class AppLocalizations {
   /// **'Hemen hemen her gün'**
   String get assessmentAnswer3;
 
+  /// No description provided for @assessmentAnswerNo.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hayır'**
+  String get assessmentAnswerNo;
+
+  /// No description provided for @assessmentAnswerYes.
+  ///
+  /// In tr, this message translates to:
+  /// **'Evet'**
+  String get assessmentAnswerYes;
+
+  /// No description provided for @who5Answer0.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hiçbir zaman'**
+  String get who5Answer0;
+
+  /// No description provided for @who5Answer1.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ara sıra'**
+  String get who5Answer1;
+
+  /// No description provided for @who5Answer2.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yarıdan az bir sürede'**
+  String get who5Answer2;
+
+  /// No description provided for @who5Answer3.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yarıdan fazla bir sürede'**
+  String get who5Answer3;
+
+  /// No description provided for @who5Answer4.
+  ///
+  /// In tr, this message translates to:
+  /// **'Çoğu zaman'**
+  String get who5Answer4;
+
+  /// No description provided for @who5Answer5.
+  ///
+  /// In tr, this message translates to:
+  /// **'Her zaman'**
+  String get who5Answer5;
+
+  /// No description provided for @phq15Answer0.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hiç rahatsız etmedi'**
+  String get phq15Answer0;
+
+  /// No description provided for @phq15Answer1.
+  ///
+  /// In tr, this message translates to:
+  /// **'Biraz rahatsız etti'**
+  String get phq15Answer1;
+
+  /// No description provided for @phq15Answer2.
+  ///
+  /// In tr, this message translates to:
+  /// **'Çok rahatsız etti'**
+  String get phq15Answer2;
+
   /// No description provided for @assessmentResultTitle.
   ///
   /// In tr, this message translates to:
@@ -1459,6 +1591,36 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Kaygı taraması'**
   String get assessmentResultAnxiety;
+
+  /// No description provided for @assessmentResultWellbeing.
+  ///
+  /// In tr, this message translates to:
+  /// **'İyi oluş taraması'**
+  String get assessmentResultWellbeing;
+
+  /// No description provided for @assessmentResultSomatic.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bedensel belirti taraması'**
+  String get assessmentResultSomatic;
+
+  /// No description provided for @assessmentResultPtsd.
+  ///
+  /// In tr, this message translates to:
+  /// **'Travma sonrası stres taraması'**
+  String get assessmentResultPtsd;
+
+  /// No description provided for @assessmentResultAlcohol.
+  ///
+  /// In tr, this message translates to:
+  /// **'Alkol kullanım taraması'**
+  String get assessmentResultAlcohol;
+
+  /// No description provided for @assessmentResultSubstance.
+  ///
+  /// In tr, this message translates to:
+  /// **'Madde kullanım taraması'**
+  String get assessmentResultSubstance;
 
   /// No description provided for @assessmentBandMinimal.
   ///
@@ -1490,6 +1652,54 @@ abstract class AppLocalizations {
   /// **'Ağır'**
   String get assessmentBandSevere;
 
+  /// No description provided for @assessmentBandVeryLow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Çok düşük'**
+  String get assessmentBandVeryLow;
+
+  /// No description provided for @assessmentBandLow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Düşük'**
+  String get assessmentBandLow;
+
+  /// No description provided for @assessmentBandMedium.
+  ///
+  /// In tr, this message translates to:
+  /// **'Orta'**
+  String get assessmentBandMedium;
+
+  /// No description provided for @assessmentBandHigh.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yüksek'**
+  String get assessmentBandHigh;
+
+  /// No description provided for @assessmentBandGood.
+  ///
+  /// In tr, this message translates to:
+  /// **'İyi'**
+  String get assessmentBandGood;
+
+  /// No description provided for @assessmentBandCaution.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dikkat'**
+  String get assessmentBandCaution;
+
+  /// No description provided for @assessmentBandBelowThreshold.
+  ///
+  /// In tr, this message translates to:
+  /// **'Eşiğin altında'**
+  String get assessmentBandBelowThreshold;
+
+  /// No description provided for @assessmentBandPositiveScreen.
+  ///
+  /// In tr, this message translates to:
+  /// **'Daha yakından bakmaya değer'**
+  String get assessmentBandPositiveScreen;
+
   /// No description provided for @assessmentContinueCta.
   ///
   /// In tr, this message translates to:
@@ -1511,8 +1721,8 @@ abstract class AppLocalizations {
   /// No description provided for @assessmentRetakeIntro.
   ///
   /// In tr, this message translates to:
-  /// **'PHQ-9 ve GAD-7 — son iki haftana dair 16 kısa soru. Sonuçlar, sohbet ve önerilerinin arka planında kullanılır.'**
-  String get assessmentRetakeIntro;
+  /// **'Uygulamayı tamamlaman gereken testler var: yedi kısa test, toplam {total} soru — ruh halin, kaygın, genel iyi oluşun ve daha fazlası hakkında. Sonuçlar, sohbet ve önerilerinin arka planında kullanılır.'**
+  String assessmentRetakeIntro(int total);
 
   /// No description provided for @assessmentRetakeCta.
   ///
@@ -1639,6 +1849,288 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Kötü bir şey olacakmış gibi korku hissetme'**
   String get gad7Q7;
+
+  /// No description provided for @who5Q1.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kendimi neşeli ve keyifli hissettim.'**
+  String get who5Q1;
+
+  /// No description provided for @who5Q2.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kendimi sakin ve huzurlu hissettim.'**
+  String get who5Q2;
+
+  /// No description provided for @who5Q3.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kendimi enerjik ve aktif hissettim.'**
+  String get who5Q3;
+
+  /// No description provided for @who5Q4.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uyandığımda kendimi dinlenmiş ve zinde hissettim.'**
+  String get who5Q4;
+
+  /// No description provided for @who5Q5.
+  ///
+  /// In tr, this message translates to:
+  /// **'Günlük hayatım ilgimi çeken şeylerle doluydu.'**
+  String get who5Q5;
+
+  /// No description provided for @phq15Q1.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mide ağrısı'**
+  String get phq15Q1;
+
+  /// No description provided for @phq15Q2.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sırt ağrısı'**
+  String get phq15Q2;
+
+  /// No description provided for @phq15Q3.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kollarda, bacaklarda veya eklemlerde ağrı'**
+  String get phq15Q3;
+
+  /// No description provided for @phq15Q4.
+  ///
+  /// In tr, this message translates to:
+  /// **'Adet dönemiyle ilgili kramplar veya diğer sorunlar (kadınsan)'**
+  String get phq15Q4;
+
+  /// No description provided for @phq15Q5.
+  ///
+  /// In tr, this message translates to:
+  /// **'Baş ağrısı'**
+  String get phq15Q5;
+
+  /// No description provided for @phq15Q6.
+  ///
+  /// In tr, this message translates to:
+  /// **'Göğüs ağrısı'**
+  String get phq15Q6;
+
+  /// No description provided for @phq15Q7.
+  ///
+  /// In tr, this message translates to:
+  /// **'Baş dönmesi'**
+  String get phq15Q7;
+
+  /// No description provided for @phq15Q8.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bayılma nöbetleri'**
+  String get phq15Q8;
+
+  /// No description provided for @phq15Q9.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kalbinin çarpması veya hızlı atması'**
+  String get phq15Q9;
+
+  /// No description provided for @phq15Q10.
+  ///
+  /// In tr, this message translates to:
+  /// **'Nefes darlığı'**
+  String get phq15Q10;
+
+  /// No description provided for @phq15Q11.
+  ///
+  /// In tr, this message translates to:
+  /// **'Cinsel ilişki sırasında ağrı veya başka sorunlar'**
+  String get phq15Q11;
+
+  /// No description provided for @phq15Q12.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kabızlık, gevşek bağırsak veya ishal'**
+  String get phq15Q12;
+
+  /// No description provided for @phq15Q13.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mide bulantısı, gaz veya hazımsızlık'**
+  String get phq15Q13;
+
+  /// No description provided for @phq15Q14.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kendini yorgun hissetme veya enerjisiz olma'**
+  String get phq15Q14;
+
+  /// No description provided for @phq15Q15.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uyku sorunları'**
+  String get phq15Q15;
+
+  /// No description provided for @ptsd5Q1.
+  ///
+  /// In tr, this message translates to:
+  /// **'O olayla ilgili kabuslar gördün ya da istemeden aklına geldi mi?'**
+  String get ptsd5Q1;
+
+  /// No description provided for @ptsd5Q2.
+  ///
+  /// In tr, this message translates to:
+  /// **'Olayı düşünmemek için çok çaba gösterdin ya da seni ona dair hatırlatan durumlardan kaçındın mı?'**
+  String get ptsd5Q2;
+
+  /// No description provided for @ptsd5Q3.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sürekli tetikte, dikkatli ya da kolayca irkilir durumda mıydın?'**
+  String get ptsd5Q3;
+
+  /// No description provided for @ptsd5Q4.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kendini uyuşmuş ya da çevrenden, uğraşlarından ya da insanlardan kopmuş hissettin mi?'**
+  String get ptsd5Q4;
+
+  /// No description provided for @ptsd5Q5.
+  ///
+  /// In tr, this message translates to:
+  /// **'Olayla ilgili suçluluk hissettin ya da kendini ya da başkasını suçladın mı?'**
+  String get ptsd5Q5;
+
+  /// No description provided for @auditcQ1.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ne sıklıkla alkollü içecek içtin?'**
+  String get auditcQ1;
+
+  /// No description provided for @auditcQ1Opt0.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hiç'**
+  String get auditcQ1Opt0;
+
+  /// No description provided for @auditcQ1Opt1.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ayda bir veya daha az'**
+  String get auditcQ1Opt1;
+
+  /// No description provided for @auditcQ1Opt2.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ayda 2-4 kez'**
+  String get auditcQ1Opt2;
+
+  /// No description provided for @auditcQ1Opt3.
+  ///
+  /// In tr, this message translates to:
+  /// **'Haftada 2-3 kez'**
+  String get auditcQ1Opt3;
+
+  /// No description provided for @auditcQ1Opt4.
+  ///
+  /// In tr, this message translates to:
+  /// **'Haftada 4 veya daha fazla'**
+  String get auditcQ1Opt4;
+
+  /// No description provided for @auditcQ2.
+  ///
+  /// In tr, this message translates to:
+  /// **'Alkol içtiğin tipik bir günde kaç kadeh içtin?'**
+  String get auditcQ2;
+
+  /// No description provided for @auditcQ2Opt0.
+  ///
+  /// In tr, this message translates to:
+  /// **'1 veya 2'**
+  String get auditcQ2Opt0;
+
+  /// No description provided for @auditcQ2Opt1.
+  ///
+  /// In tr, this message translates to:
+  /// **'3 veya 4'**
+  String get auditcQ2Opt1;
+
+  /// No description provided for @auditcQ2Opt2.
+  ///
+  /// In tr, this message translates to:
+  /// **'5 veya 6'**
+  String get auditcQ2Opt2;
+
+  /// No description provided for @auditcQ2Opt3.
+  ///
+  /// In tr, this message translates to:
+  /// **'7 ile 9 arası'**
+  String get auditcQ2Opt3;
+
+  /// No description provided for @auditcQ2Opt4.
+  ///
+  /// In tr, this message translates to:
+  /// **'10 veya daha fazla'**
+  String get auditcQ2Opt4;
+
+  /// No description provided for @auditcQ3.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ne sıklıkla tek seferde 6 veya daha fazla kadeh içtin?'**
+  String get auditcQ3;
+
+  /// No description provided for @auditcQ3Opt0.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hiçbir zaman'**
+  String get auditcQ3Opt0;
+
+  /// No description provided for @auditcQ3Opt1.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ayda birden az'**
+  String get auditcQ3Opt1;
+
+  /// No description provided for @auditcQ3Opt2.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ayda bir kez'**
+  String get auditcQ3Opt2;
+
+  /// No description provided for @auditcQ3Opt3.
+  ///
+  /// In tr, this message translates to:
+  /// **'Haftada bir kez'**
+  String get auditcQ3Opt3;
+
+  /// No description provided for @auditcQ3Opt4.
+  ///
+  /// In tr, this message translates to:
+  /// **'Her gün ya da hemen her gün'**
+  String get auditcQ3Opt4;
+
+  /// No description provided for @cageaidQ1.
+  ///
+  /// In tr, this message translates to:
+  /// **'Alkol ya da madde kullanımını azaltman gerektiğini hiç hissettin mi?'**
+  String get cageaidQ1;
+
+  /// No description provided for @cageaidQ2.
+  ///
+  /// In tr, this message translates to:
+  /// **'İnsanlar alkol ya da madde kullanımını eleştirdiğinde rahatsız oldun mu?'**
+  String get cageaidQ2;
+
+  /// No description provided for @cageaidQ3.
+  ///
+  /// In tr, this message translates to:
+  /// **'Alkol ya da madde kullanımın yüzünden kendini suçlu hissettin mi?'**
+  String get cageaidQ3;
+
+  /// No description provided for @cageaidQ4.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sinirlerini yatıştırmak ya da kendini daha iyi hissetmek için sabah ilk iş olarak alkol ya da madde kullandığın oldu mu?'**
+  String get cageaidQ4;
 
   /// No description provided for @storiesAnonymousToggle.
   ///

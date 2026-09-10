@@ -6,6 +6,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../data/dm_badge.dart';
 import '../data/social_api.dart';
 import '../domain/social_models.dart';
 
@@ -78,7 +79,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     if (send != true || body.isEmpty || !mounted) return;
 
     try {
-      await ref.read(socialApiProvider).openThread(widget.userId, body);
+      final threadId = await ref.read(socialApiProvider).openThread(widget.userId, body);
+      await ref.read(dmBadgeProvider.notifier).markSeen(threadId);
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l10n.dmRequestSent)));

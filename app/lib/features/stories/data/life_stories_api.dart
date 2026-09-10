@@ -7,6 +7,15 @@ import '../domain/life_story.dart';
 final lifeStoriesApiProvider =
     Provider<LifeStoriesApi>((ref) => LifeStoriesApi(ref.watch(apiClientProvider)));
 
+/// A story's body translated into the caller's own account language.
+/// `autoDispose.family` — same shape as `userAvatarProvider` — so a
+/// translation is fetched once per story while its card is on screen and
+/// dropped once it scrolls away, rather than every story in a long feed
+/// being translated up front.
+final storyTranslationProvider = FutureProvider.autoDispose.family<String, String>(
+  (ref, storyId) => ref.watch(lifeStoriesApiProvider).translate(storyId),
+);
+
 class LifeStoriesApi {
   final Dio _dio;
   LifeStoriesApi(this._dio);
@@ -43,6 +52,16 @@ class LifeStoriesApi {
       'consent': consent,
       'anonymous': anonymous,
     });
+  }
+
+  /// Translates a story into the caller's own account language — the
+  /// backend decides the target from the signed-in user, never a
+  /// language the client passes, so this can't be repurposed as a
+  /// free-form translation proxy. Cached server-side per (story,
+  /// language); cheap to call again.
+  Future<String> translate(String id) async {
+    final response = await _dio.get('/stories/$id/translate');
+    return (response.data as Map<String, dynamic>)['body'] as String;
   }
 
   Future<void> setUpvote(String id, {required bool upvoted}) async {

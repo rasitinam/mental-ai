@@ -46,6 +46,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get navChat => 'Sohbet';
 
   @override
+  String get navMessages => 'Mesajlar';
+
+  @override
   String get navGuide => 'Rehber';
 
   @override
@@ -261,6 +264,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsProfile => 'Profilim';
+
+  @override
+  String get settingsPrivacyRow => 'Gizlilik';
 
   @override
   String get settingsLogout => 'Çıkış yap';
@@ -572,6 +578,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get storiesAnonymous => 'isimsiz';
 
   @override
+  String get storiesTranslated => 'Çevrildi';
+
+  @override
+  String get storiesShowOriginal => 'Orijinalini gör';
+
+  @override
+  String get storiesShowTranslation => 'Çeviriyi gör';
+
+  @override
   String get storiesTabFeed => 'Hikayeler';
 
   @override
@@ -701,8 +716,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get assessmentOnboardTitle => 'Seni biraz tanıyalım';
 
   @override
-  String get assessmentOnboardIntro =>
-      'Son iki haftaya dair 16 kısa soru. Sana nasıl yaklaşacağımızı bu belirler; istersen şimdi atlayıp sonra Ayarlar\'dan yapabilirsin.';
+  String assessmentOnboardIntro(int total) {
+    return 'Uygulamayı tamamlaman gereken, son iki haftana dair birkaç kısa test var — toplam $total soru: ruh halin, kaygın, genel iyi oluşun ve daha fazlası. Sana nasıl yaklaşacağımızı bu belirler; istersen şimdi atlayıp sonra Ayarlar\'dan yapabilirsin.';
+  }
 
   @override
   String get assessmentStart => 'Başla';
@@ -722,6 +738,26 @@ class AppLocalizationsTr extends AppLocalizations {
   String get assessmentSectionAnxiety => 'Son iki hafta — kaygın';
 
   @override
+  String get assessmentSectionWellbeing => 'Son iki hafta — genel iyi oluşun';
+
+  @override
+  String get assessmentSectionSomatic =>
+      'Son dört hafta — bedensel belirtilerin';
+
+  @override
+  String get assessmentSectionPtsd => 'Travmatik bir olay';
+
+  @override
+  String get assessmentSectionAlcohol => 'Son bir yıl — alkol kullanımın';
+
+  @override
+  String get assessmentSectionSubstance => 'Son bir yıl — madde kullanımın';
+
+  @override
+  String get assessmentPtsd5Intro =>
+      'Bazen insanlar çok stresli olaylar yaşar — ciddi bir kaza, doğal afet, fiziksel ya da cinsel saldırı, savaş, ciddi şekilde dövülme ya da birinin ölümüne tanık olma gibi. Böyle bir şey yaşadıysan, geçen ay içinde şunları yaşadın mı?';
+
+  @override
   String get assessmentAnswer0 => 'Hiçbir zaman';
 
   @override
@@ -732,6 +768,39 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get assessmentAnswer3 => 'Hemen hemen her gün';
+
+  @override
+  String get assessmentAnswerNo => 'Hayır';
+
+  @override
+  String get assessmentAnswerYes => 'Evet';
+
+  @override
+  String get who5Answer0 => 'Hiçbir zaman';
+
+  @override
+  String get who5Answer1 => 'Ara sıra';
+
+  @override
+  String get who5Answer2 => 'Yarıdan az bir sürede';
+
+  @override
+  String get who5Answer3 => 'Yarıdan fazla bir sürede';
+
+  @override
+  String get who5Answer4 => 'Çoğu zaman';
+
+  @override
+  String get who5Answer5 => 'Her zaman';
+
+  @override
+  String get phq15Answer0 => 'Hiç rahatsız etmedi';
+
+  @override
+  String get phq15Answer1 => 'Biraz rahatsız etti';
+
+  @override
+  String get phq15Answer2 => 'Çok rahatsız etti';
 
   @override
   String get assessmentResultTitle => 'Teşekkürler';
@@ -745,6 +814,21 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get assessmentResultAnxiety => 'Kaygı taraması';
+
+  @override
+  String get assessmentResultWellbeing => 'İyi oluş taraması';
+
+  @override
+  String get assessmentResultSomatic => 'Bedensel belirti taraması';
+
+  @override
+  String get assessmentResultPtsd => 'Travma sonrası stres taraması';
+
+  @override
+  String get assessmentResultAlcohol => 'Alkol kullanım taraması';
+
+  @override
+  String get assessmentResultSubstance => 'Madde kullanım taraması';
 
   @override
   String get assessmentBandMinimal => 'Minimal';
@@ -762,6 +846,30 @@ class AppLocalizationsTr extends AppLocalizations {
   String get assessmentBandSevere => 'Ağır';
 
   @override
+  String get assessmentBandVeryLow => 'Çok düşük';
+
+  @override
+  String get assessmentBandLow => 'Düşük';
+
+  @override
+  String get assessmentBandMedium => 'Orta';
+
+  @override
+  String get assessmentBandHigh => 'Yüksek';
+
+  @override
+  String get assessmentBandGood => 'İyi';
+
+  @override
+  String get assessmentBandCaution => 'Dikkat';
+
+  @override
+  String get assessmentBandBelowThreshold => 'Eşiğin altında';
+
+  @override
+  String get assessmentBandPositiveScreen => 'Daha yakından bakmaya değer';
+
+  @override
   String get assessmentContinueCta => 'Devam et';
 
   @override
@@ -771,8 +879,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get assessmentRetakeTitle => 'Öz-değerlendirme';
 
   @override
-  String get assessmentRetakeIntro =>
-      'PHQ-9 ve GAD-7 — son iki haftana dair 16 kısa soru. Sonuçlar, sohbet ve önerilerinin arka planında kullanılır.';
+  String assessmentRetakeIntro(int total) {
+    return 'Uygulamayı tamamlaman gereken testler var: yedi kısa test, toplam $total soru — ruh halin, kaygın, genel iyi oluşun ve daha fazlası hakkında. Sonuçlar, sohbet ve önerilerinin arka planında kullanılır.';
+  }
 
   @override
   String get assessmentRetakeCta => 'Değerlendirmeyi başlat';
@@ -844,6 +953,158 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get gad7Q7 => 'Kötü bir şey olacakmış gibi korku hissetme';
+
+  @override
+  String get who5Q1 => 'Kendimi neşeli ve keyifli hissettim.';
+
+  @override
+  String get who5Q2 => 'Kendimi sakin ve huzurlu hissettim.';
+
+  @override
+  String get who5Q3 => 'Kendimi enerjik ve aktif hissettim.';
+
+  @override
+  String get who5Q4 => 'Uyandığımda kendimi dinlenmiş ve zinde hissettim.';
+
+  @override
+  String get who5Q5 => 'Günlük hayatım ilgimi çeken şeylerle doluydu.';
+
+  @override
+  String get phq15Q1 => 'Mide ağrısı';
+
+  @override
+  String get phq15Q2 => 'Sırt ağrısı';
+
+  @override
+  String get phq15Q3 => 'Kollarda, bacaklarda veya eklemlerde ağrı';
+
+  @override
+  String get phq15Q4 =>
+      'Adet dönemiyle ilgili kramplar veya diğer sorunlar (kadınsan)';
+
+  @override
+  String get phq15Q5 => 'Baş ağrısı';
+
+  @override
+  String get phq15Q6 => 'Göğüs ağrısı';
+
+  @override
+  String get phq15Q7 => 'Baş dönmesi';
+
+  @override
+  String get phq15Q8 => 'Bayılma nöbetleri';
+
+  @override
+  String get phq15Q9 => 'Kalbinin çarpması veya hızlı atması';
+
+  @override
+  String get phq15Q10 => 'Nefes darlığı';
+
+  @override
+  String get phq15Q11 => 'Cinsel ilişki sırasında ağrı veya başka sorunlar';
+
+  @override
+  String get phq15Q12 => 'Kabızlık, gevşek bağırsak veya ishal';
+
+  @override
+  String get phq15Q13 => 'Mide bulantısı, gaz veya hazımsızlık';
+
+  @override
+  String get phq15Q14 => 'Kendini yorgun hissetme veya enerjisiz olma';
+
+  @override
+  String get phq15Q15 => 'Uyku sorunları';
+
+  @override
+  String get ptsd5Q1 =>
+      'O olayla ilgili kabuslar gördün ya da istemeden aklına geldi mi?';
+
+  @override
+  String get ptsd5Q2 =>
+      'Olayı düşünmemek için çok çaba gösterdin ya da seni ona dair hatırlatan durumlardan kaçındın mı?';
+
+  @override
+  String get ptsd5Q3 =>
+      'Sürekli tetikte, dikkatli ya da kolayca irkilir durumda mıydın?';
+
+  @override
+  String get ptsd5Q4 =>
+      'Kendini uyuşmuş ya da çevrenden, uğraşlarından ya da insanlardan kopmuş hissettin mi?';
+
+  @override
+  String get ptsd5Q5 =>
+      'Olayla ilgili suçluluk hissettin ya da kendini ya da başkasını suçladın mı?';
+
+  @override
+  String get auditcQ1 => 'Ne sıklıkla alkollü içecek içtin?';
+
+  @override
+  String get auditcQ1Opt0 => 'Hiç';
+
+  @override
+  String get auditcQ1Opt1 => 'Ayda bir veya daha az';
+
+  @override
+  String get auditcQ1Opt2 => 'Ayda 2-4 kez';
+
+  @override
+  String get auditcQ1Opt3 => 'Haftada 2-3 kez';
+
+  @override
+  String get auditcQ1Opt4 => 'Haftada 4 veya daha fazla';
+
+  @override
+  String get auditcQ2 => 'Alkol içtiğin tipik bir günde kaç kadeh içtin?';
+
+  @override
+  String get auditcQ2Opt0 => '1 veya 2';
+
+  @override
+  String get auditcQ2Opt1 => '3 veya 4';
+
+  @override
+  String get auditcQ2Opt2 => '5 veya 6';
+
+  @override
+  String get auditcQ2Opt3 => '7 ile 9 arası';
+
+  @override
+  String get auditcQ2Opt4 => '10 veya daha fazla';
+
+  @override
+  String get auditcQ3 =>
+      'Ne sıklıkla tek seferde 6 veya daha fazla kadeh içtin?';
+
+  @override
+  String get auditcQ3Opt0 => 'Hiçbir zaman';
+
+  @override
+  String get auditcQ3Opt1 => 'Ayda birden az';
+
+  @override
+  String get auditcQ3Opt2 => 'Ayda bir kez';
+
+  @override
+  String get auditcQ3Opt3 => 'Haftada bir kez';
+
+  @override
+  String get auditcQ3Opt4 => 'Her gün ya da hemen her gün';
+
+  @override
+  String get cageaidQ1 =>
+      'Alkol ya da madde kullanımını azaltman gerektiğini hiç hissettin mi?';
+
+  @override
+  String get cageaidQ2 =>
+      'İnsanlar alkol ya da madde kullanımını eleştirdiğinde rahatsız oldun mu?';
+
+  @override
+  String get cageaidQ3 =>
+      'Alkol ya da madde kullanımın yüzünden kendini suçlu hissettin mi?';
+
+  @override
+  String get cageaidQ4 =>
+      'Sinirlerini yatıştırmak ya da kendini daha iyi hissetmek için sabah ilk iş olarak alkol ya da madde kullandığın oldu mu?';
 
   @override
   String get storiesAnonymousToggle => 'Anonim paylaş';

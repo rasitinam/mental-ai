@@ -877,8 +877,11 @@ impl AssessmentRepository for SqliteAssessmentRepository {
     async fn save(&self, assessment: &WellbeingAssessment) -> anyhow::Result<()> {
         sqlx::query(
             "INSERT INTO wellbeing_assessments
-             (id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score, crisis_flag, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+             (id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score,
+              who5_answers, who5_score, phq15_answers, phq15_score,
+              ptsd5_answers, ptsd5_score, auditc_answers, auditc_score,
+              cageaid_answers, cageaid_score, crisis_flag, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
         )
         .bind(assessment.id.to_string())
         .bind(assessment.user_id.to_string())
@@ -886,6 +889,16 @@ impl AssessmentRepository for SqliteAssessmentRepository {
         .bind(assessment.phq9_score as i32)
         .bind(serde_json::to_string(&assessment.gad7_answers).unwrap_or_default())
         .bind(assessment.gad7_score as i32)
+        .bind(serde_json::to_string(&assessment.who5_answers).unwrap_or_default())
+        .bind(assessment.who5_score as i32)
+        .bind(serde_json::to_string(&assessment.phq15_answers).unwrap_or_default())
+        .bind(assessment.phq15_score as i32)
+        .bind(serde_json::to_string(&assessment.ptsd5_answers).unwrap_or_default())
+        .bind(assessment.ptsd5_score as i32)
+        .bind(serde_json::to_string(&assessment.auditc_answers).unwrap_or_default())
+        .bind(assessment.auditc_score as i32)
+        .bind(serde_json::to_string(&assessment.cageaid_answers).unwrap_or_default())
+        .bind(assessment.cageaid_score as i32)
         .bind(assessment.crisis_flag)
         .bind(assessment.created_at)
         .execute(&self.pool)
@@ -895,28 +908,63 @@ impl AssessmentRepository for SqliteAssessmentRepository {
     }
 
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<WellbeingAssessment>> {
-        let row = sqlx::query_as::<_, (String, String, String, i32, String, i32, bool, DateTime<Utc>)>(
-            "SELECT id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score, crisis_flag, created_at
+        // A derive-based row rather than a raw tuple: eighteen columns is
+        // past where hand-matching positional tuple fields stays safe to
+        // read, and sqlx's tuple `FromRow` impls don't reach this arity
+        // anyway.
+        #[derive(sqlx::FromRow)]
+        struct Row {
+            id: String,
+            user_id: String,
+            phq9_answers: String,
+            phq9_score: i32,
+            gad7_answers: String,
+            gad7_score: i32,
+            who5_answers: String,
+            who5_score: i32,
+            phq15_answers: String,
+            phq15_score: i32,
+            ptsd5_answers: String,
+            ptsd5_score: i32,
+            auditc_answers: String,
+            auditc_score: i32,
+            cageaid_answers: String,
+            cageaid_score: i32,
+            crisis_flag: bool,
+            created_at: DateTime<Utc>,
+        }
+
+        let row = sqlx::query_as::<_, Row>(
+            "SELECT id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score,
+                    who5_answers, who5_score, phq15_answers, phq15_score,
+                    ptsd5_answers, ptsd5_score, auditc_answers, auditc_score,
+                    cageaid_answers, cageaid_score, crisis_flag, created_at
              FROM wellbeing_assessments WHERE user_id = ?1 ORDER BY created_at DESC LIMIT 1",
         )
         .bind(user_id.to_string())
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(
-            |(id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score, crisis_flag, created_at)| {
-                WellbeingAssessment {
-                    id: Uuid::parse_str(&id).unwrap_or_default(),
-                    user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
-                    phq9_answers: serde_json::from_str(&phq9_answers).unwrap_or_default(),
-                    phq9_score: phq9_score as u8,
-                    gad7_answers: serde_json::from_str(&gad7_answers).unwrap_or_default(),
-                    gad7_score: gad7_score as u8,
-                    crisis_flag,
-                    created_at,
-                }
-            },
-        ))
+        Ok(row.map(|r| WellbeingAssessment {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            user_id: Uuid::parse_str(&r.user_id).unwrap_or_default(),
+            phq9_answers: serde_json::from_str(&r.phq9_answers).unwrap_or_default(),
+            phq9_score: r.phq9_score as u8,
+            gad7_answers: serde_json::from_str(&r.gad7_answers).unwrap_or_default(),
+            gad7_score: r.gad7_score as u8,
+            who5_answers: serde_json::from_str(&r.who5_answers).unwrap_or_default(),
+            who5_score: r.who5_score as u8,
+            phq15_answers: serde_json::from_str(&r.phq15_answers).unwrap_or_default(),
+            phq15_score: r.phq15_score as u8,
+            ptsd5_answers: serde_json::from_str(&r.ptsd5_answers).unwrap_or_default(),
+            ptsd5_score: r.ptsd5_score as u8,
+            auditc_answers: serde_json::from_str(&r.auditc_answers).unwrap_or_default(),
+            auditc_score: r.auditc_score as u8,
+            cageaid_answers: serde_json::from_str(&r.cageaid_answers).unwrap_or_default(),
+            cageaid_score: r.cageaid_score as u8,
+            crisis_flag: r.crisis_flag,
+            created_at: r.created_at,
+        }))
     }
 }
 
@@ -930,10 +978,10 @@ impl SqliteLifeStoryRepository {
     }
 }
 
-type StoryRow = (String, String, String, String, String, bool, DateTime<Utc>, bool, Option<DateTime<Utc>>, DateTime<Utc>);
+type StoryRow = (String, String, String, String, String, bool, DateTime<Utc>, bool, Option<DateTime<Utc>>, DateTime<Utc>, String);
 
 fn story_from_row(
-    (id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at): StoryRow,
+    (id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at, language): StoryRow,
 ) -> LifeStory {
     LifeStory {
         id: Uuid::parse_str(&id).unwrap_or_default(),
@@ -944,6 +992,7 @@ fn story_from_row(
         crisis_flag,
         consented_at,
         anonymous,
+        language,
         reviewed_at,
         created_at,
     }
@@ -953,8 +1002,8 @@ fn story_from_row(
 impl LifeStoryRepository for SqliteLifeStoryRepository {
     async fn create(&self, story: &LifeStory) -> anyhow::Result<()> {
         sqlx::query(
-            "INSERT INTO life_stories (id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            "INSERT INTO life_stories (id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at, language)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
         )
         .bind(story.id.to_string())
         .bind(story.user_id.to_string())
@@ -966,6 +1015,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
         .bind(story.anonymous)
         .bind(story.reviewed_at)
         .bind(story.created_at)
+        .bind(&story.language)
         .execute(&self.pool)
         .await?;
 
@@ -974,7 +1024,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
 
     async fn get(&self, id: Uuid) -> anyhow::Result<Option<LifeStory>> {
         let row = sqlx::query_as::<_, StoryRow>(
-            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at
+            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at, language
              FROM life_stories WHERE id = ?1",
         )
         .bind(id.to_string())
@@ -986,7 +1036,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
 
     async fn list_approved(&self, limit: u32) -> anyhow::Result<Vec<LifeStory>> {
         let rows = sqlx::query_as::<_, StoryRow>(
-            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at
+            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at, language
              FROM life_stories WHERE status = 'approved' ORDER BY created_at DESC LIMIT ?1",
         )
         .bind(limit)
@@ -998,7 +1048,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
 
     async fn list_for_user(&self, user_id: Uuid) -> anyhow::Result<Vec<LifeStory>> {
         let rows = sqlx::query_as::<_, StoryRow>(
-            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at
+            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at, language
              FROM life_stories WHERE user_id = ?1 ORDER BY created_at DESC",
         )
         .bind(user_id.to_string())
@@ -1010,7 +1060,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
 
     async fn list_pending(&self) -> anyhow::Result<Vec<LifeStory>> {
         let rows = sqlx::query_as::<_, StoryRow>(
-            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at
+            "SELECT id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at, language
              FROM life_stories WHERE status = 'pending' ORDER BY created_at ASC",
         )
         .fetch_all(&self.pool)
@@ -1036,12 +1086,33 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
     }
 
     async fn delete(&self, id: Uuid, user_id: Uuid) -> anyhow::Result<()> {
+        // None of `story_upvotes`, `life_story_reports` or
+        // `story_translations` cascade on delete (SQLite foreign keys
+        // don't unless declared `ON DELETE CASCADE`, and these weren't),
+        // so a story with any of the three attached would otherwise fail
+        // to delete with a foreign-key-constraint error. One transaction
+        // so a withdrawal is still all-or-nothing.
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("DELETE FROM story_upvotes WHERE story_id = ?1")
+            .bind(id.to_string())
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM life_story_reports WHERE story_id = ?1")
+            .bind(id.to_string())
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM story_translations WHERE story_id = ?1")
+            .bind(id.to_string())
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("DELETE FROM life_stories WHERE id = ?1 AND user_id = ?2")
             .bind(id.to_string())
             .bind(user_id.to_string())
-            .execute(&self.pool)
+            .execute(&mut *tx)
             .await?;
 
+        tx.commit().await?;
         Ok(())
     }
 
@@ -1090,11 +1161,11 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
             _,
             (
                 String, String, String, String, String, bool, DateTime<Utc>, bool,
-                Option<DateTime<Utc>>, DateTime<Utc>, i64, i64, String, Option<String>,
+                Option<DateTime<Utc>>, DateTime<Utc>, String, i64, i64, String, Option<String>,
             ),
         >(
             "SELECT s.id, s.user_id, s.body, s.diagnosis_slug, s.status, s.crisis_flag,
-                    s.consented_at, s.anonymous, s.reviewed_at, s.created_at,
+                    s.consented_at, s.anonymous, s.reviewed_at, s.created_at, s.language,
                     (SELECT COUNT(*) FROM story_upvotes v WHERE v.story_id = s.id) AS upvotes,
                     (SELECT COUNT(*) FROM story_upvotes v WHERE v.story_id = s.id AND v.user_id = ?1) AS mine,
                     u.display_name, u.avatar_content_type
@@ -1110,11 +1181,11 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
         Ok(rows
             .into_iter()
             .map(|(id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at,
-                   anonymous, reviewed_at, created_at, upvotes, mine, display_name, avatar)| {
+                   anonymous, reviewed_at, created_at, language, upvotes, mine, display_name, avatar)| {
                 StoryFeedItem {
                     story: story_from_row((
                         id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at,
-                        anonymous, reviewed_at, created_at,
+                        anonymous, reviewed_at, created_at, language,
                     )),
                     upvotes: upvotes.max(0) as u32,
                     viewer_upvoted: mine > 0,
@@ -1134,6 +1205,43 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
         .await?;
 
         Ok(count.max(0) as u32)
+    }
+
+    async fn get_translation(
+        &self,
+        story_id: Uuid,
+        target_language: &str,
+    ) -> anyhow::Result<Option<String>> {
+        let row: Option<(String,)> = sqlx::query_as(
+            "SELECT body FROM story_translations WHERE story_id = ?1 AND target_language = ?2",
+        )
+        .bind(story_id.to_string())
+        .bind(target_language)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|(body,)| body))
+    }
+
+    async fn save_translation(
+        &self,
+        story_id: Uuid,
+        target_language: &str,
+        body: &str,
+    ) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO story_translations (story_id, target_language, body, created_at)
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT (story_id, target_language) DO UPDATE SET body = excluded.body, created_at = excluded.created_at",
+        )
+        .bind(story_id.to_string())
+        .bind(target_language)
+        .bind(body)
+        .bind(Utc::now())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
     }
 }
 

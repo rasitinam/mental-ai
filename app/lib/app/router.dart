@@ -17,6 +17,7 @@ import '../features/life_analysis/presentation/life_analysis_screen.dart';
 import '../features/mood_tracking/presentation/mood_screen.dart';
 import '../features/profile/presentation/diagnoses_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/settings/presentation/privacy_settings_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/social/presentation/dm_inbox_screen.dart';
 import '../features/social/presentation/dm_thread_screen.dart';
@@ -85,16 +86,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => HomeShell(navigationShell: navigationShell),
-        // Branch order is tab order (see `HomeShell`), with the story feed
-        // deliberately in the middle. The journal branch sits past the last
-        // tab: it's still a route with its own preserved state, reachable
-        // from the home screen, just not a destination on the bar.
+        // Branch order is tab order (see `HomeShell._destinations`), with
+        // the story feed deliberately in the middle and Messages right
+        // beside it. Mood and the journal branches sit past the last tab:
+        // both still are routes with their own preserved state, reachable
+        // from the home screen's quick actions, just not a destination on
+        // the bar. `/dm`'s own root isn't parameterized (only its
+        // `:threadId` child is), so — unlike `/users/:id` — it's free to be
+        // a branch; that also fixes Android back exiting the app straight
+        // from the inbox, since a shell branch keeps its own back stack
+        // instead of replacing the route history the way `context.go` did.
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/report', builder: (context, state) => const DailyReportScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: '/mood', builder: (context, state) => const MoodScreen()),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
@@ -107,6 +111,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 GoRoute(path: 'new', builder: (context, state) => const StorySubmitScreen()),
                 GoRoute(
                     path: 'moderation', builder: (context, state) => const StoryModerationScreen()),
+              ],
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/dm',
+              builder: (context, state) => const DmInboxScreen(),
+              routes: [
+                GoRoute(
+                  path: ':threadId',
+                  builder: (context, state) =>
+                      DmThreadScreen(threadId: state.pathParameters['threadId']!),
+                ),
               ],
             ),
           ]),
@@ -152,8 +169,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   path: 'my-stories',
                   builder: (context, state) => const MyStoriesScreen(),
                 ),
+                GoRoute(
+                  path: 'privacy',
+                  builder: (context, state) => const PrivacySettingsScreen(),
+                ),
               ],
             ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/mood', builder: (context, state) => const MoodScreen()),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(path: '/journal', builder: (context, state) => const JournalScreen()),
@@ -161,21 +185,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       // Social surfaces sit outside the shell: they're pushed over
-      // whatever tab you were on (from a story author, a DM row, or
-      // Settings) and carry their own back button, so the tab bar would
-      // only be a second, contradictory way out. A parameterized route
-      // also can't be a shell branch's default location.
-      GoRoute(
-        path: '/dm',
-        builder: (context, state) => const DmInboxScreen(),
-        routes: [
-          GoRoute(
-            path: ':threadId',
-            builder: (context, state) =>
-                DmThreadScreen(threadId: state.pathParameters['threadId']!),
-          ),
-        ],
-      ),
+      // whatever tab you were on (from a story author or a DM row) and
+      // carry their own back button, so the tab bar would only be a
+      // second, contradictory way out. A parameterized route also can't be
+      // a shell branch's default location, which is why `/users/:id`
+      // itself (unlike `/dm`, whose root is unparameterized) stays here.
       GoRoute(
         path: '/users/:id',
         builder: (context, state) => UserProfileScreen(userId: state.pathParameters['id']!),

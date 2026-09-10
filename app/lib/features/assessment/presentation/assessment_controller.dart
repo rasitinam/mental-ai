@@ -2,10 +2,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/assessment_api.dart';
 import '../domain/assessment_result.dart';
+import '../domain/instruments.dart';
 
-const int kPhq9QuestionCount = 9;
-const int kGad7QuestionCount = 7;
-const int kAssessmentQuestionCount = kPhq9QuestionCount + kGad7QuestionCount;
+export '../domain/instruments.dart'
+    show
+        kPhq9QuestionCount,
+        kGad7QuestionCount,
+        kWho5QuestionCount,
+        kPhq15QuestionCount,
+        kPtsd5QuestionCount,
+        kAuditcQuestionCount,
+        kCageaidQuestionCount,
+        kAssessmentQuestionCount;
 
 class AssessmentState {
   final List<int?> answers;
@@ -49,12 +57,13 @@ class AssessmentState {
 final assessmentControllerProvider =
     NotifierProvider.autoDispose<AssessmentController, AssessmentState>(AssessmentController.new);
 
-/// Drives the 16-question PHQ-9 + GAD-7 flow: one question on screen at a
-/// time, answers held locally until the last one is picked, then submitted
-/// as a single call — there's no partial-progress save, since re-entering
-/// the flow from the top costs at most sixteen taps. `autoDispose` so
-/// leaving the flow (skip, back button, completing it) always starts the
-/// next visit fresh rather than resuming a half-answered attempt.
+/// Drives the full screening-battery flow — seven instruments, one
+/// question on screen at a time, answers held locally until the last one
+/// is picked, then submitted as a single call. There's no partial-progress
+/// save, since re-entering the flow from the top costs at most
+/// [kAssessmentQuestionCount] taps. `autoDispose` so leaving the flow
+/// (skip, back button, completing it) always starts the next visit fresh
+/// rather than resuming a half-answered attempt.
 class AssessmentController extends AutoDisposeNotifier<AssessmentState> {
   @override
   AssessmentState build() => AssessmentState.initial();
@@ -86,9 +95,21 @@ class AssessmentController extends AutoDisposeNotifier<AssessmentState> {
 
     state = state.copyWith(submitting: true, clearError: true);
     try {
+      var offset = 0;
+      List<int> slice(int count) {
+        final s = answers.sublist(offset, offset + count).cast<int>();
+        offset += count;
+        return s;
+      }
+
       final result = await ref.read(assessmentApiProvider).submit(
-            phq9Answers: answers.sublist(0, kPhq9QuestionCount).cast<int>(),
-            gad7Answers: answers.sublist(kPhq9QuestionCount).cast<int>(),
+            phq9Answers: slice(kPhq9QuestionCount),
+            gad7Answers: slice(kGad7QuestionCount),
+            who5Answers: slice(kWho5QuestionCount),
+            phq15Answers: slice(kPhq15QuestionCount),
+            ptsd5Answers: slice(kPtsd5QuestionCount),
+            auditcAnswers: slice(kAuditcQuestionCount),
+            cageaidAnswers: slice(kCageaidQuestionCount),
           );
       state = state.copyWith(submitting: false, result: result);
       ref.invalidate(latestAssessmentProvider);

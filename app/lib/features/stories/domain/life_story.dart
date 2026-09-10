@@ -13,6 +13,10 @@ StoryStatus _statusFromJson(String raw) => switch (raw) {
 class LifeStory {
   final String id;
   final String body;
+  /// ISO-639-1-ish code the backend detected at submission — compared
+  /// against the viewer's own app language to decide whether the feed
+  /// offers a translated copy. See `StoriesController.translationFor`.
+  final String language;
   final String diagnosisSlug;
   final StoryStatus status;
   final bool crisisFlag;
@@ -30,6 +34,7 @@ class LifeStory {
   const LifeStory({
     required this.id,
     required this.body,
+    this.language = 'tr',
     required this.diagnosisSlug,
     required this.status,
     required this.crisisFlag,
@@ -48,6 +53,7 @@ class LifeStory {
   factory LifeStory.fromPublicJson(Map<String, dynamic> json) => LifeStory(
         id: json['id'] as String,
         body: json['body'] as String,
+        language: json['language'] as String? ?? 'tr',
         diagnosisSlug: json['diagnosis_slug'] as String? ?? '',
         status: StoryStatus.approved,
         crisisFlag: false,
@@ -76,6 +82,7 @@ class LifeStory {
   LifeStory withVote({required bool upvoted}) => LifeStory(
         id: id,
         body: body,
+        language: language,
         diagnosisSlug: diagnosisSlug,
         status: status,
         crisisFlag: crisisFlag,

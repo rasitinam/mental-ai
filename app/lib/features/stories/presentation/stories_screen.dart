@@ -6,10 +6,12 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/storage/local_prefs.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
 import '../../insights/presentation/insights_screen.dart' show SearchField, CategoryStrip;
+import '../data/life_stories_api.dart' show storyTranslationProvider;
 import '../domain/life_story.dart';
 import 'stories_controller.dart';
 
@@ -109,6 +111,7 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
     final state = ref.watch(storiesControllerProvider);
     final controller = ref.read(storiesControllerProvider.notifier);
     final categories = ref.watch(categoriesProvider).valueOrNull ?? const <DisorderCategory>[];
+    final myUserId = ref.watch(currentUserIdProvider);
 
     // Only categories a story actually exists in — a filter strip full of
     // dead chips isn't useful when most of the catalog has no stories yet.
@@ -193,6 +196,7 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
                   categories: categories,
                   palette: palette,
                   l10n: l10n,
+                  myUserId: myUserId,
                   onReport: (id) => _report(context, ref, id),
                   onUpvote: controller.toggleUpvote,
                 ),
@@ -211,6 +215,7 @@ class _FeedList extends StatelessWidget {
   final List<DisorderCategory> categories;
   final AppPalette palette;
   final AppLocalizations l10n;
+  final String? myUserId;
   final ValueChanged<String> onReport;
   final ValueChanged<String> onUpvote;
 
@@ -220,6 +225,7 @@ class _FeedList extends StatelessWidget {
     required this.categories,
     required this.palette,
     required this.l10n,
+    required this.myUserId,
     required this.onReport,
     required this.onUpvote,
   });
@@ -258,84 +264,173 @@ class _FeedList extends StatelessWidget {
         final resolved = _resolve(categories, story.diagnosisSlug);
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: GlassSurface(
-            radius: 18,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (resolved != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: palette.accentSoft,
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Text(
-                      '${resolved.category.emoji} ${resolved.disorder.name}',
-                      style: AppTypography.caption.copyWith(color: palette.accent),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-                Text(story.body,
-                    style: AppTypography.subheadline
-                        .copyWith(color: palette.textPrimary, fontSize: 14.5, height: 1.65)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _UpvoteButton(
-                      count: story.upvotes,
-                      voted: story.viewerUpvoted,
-                      palette: palette,
-                      onTap: () => onUpvote(story.id),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: story.authorUserId == null
-                          ? Text(
-                              '${DateFormat.MMMMd(Localizations.localeOf(context).languageCode).format(story.createdAt)}'
-                              ' · ${l10n.storiesAnonymous}',
-                              style: AppTypography.caption.copyWith(color: palette.textSecondary),
-                            )
-                          : InkWell(
-                              onTap: () => context.push('/users/${story.authorUserId}'),
-                              borderRadius: BorderRadius.circular(8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    story.authorDisplayName ?? '',
-                                    style: AppTypography.caption.copyWith(
-                                      color: palette.accent,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    ' · ${DateFormat.MMMMd(Localizations.localeOf(context).languageCode).format(story.createdAt)}',
-                                    style:
-                                        AppTypography.caption.copyWith(color: palette.textSecondary),
-                                  ),
-                                ],
-                              ),
-                            ),
-                    ),
-                    InkWell(
-                      onTap: () => onReport(story.id),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        child: Text(l10n.storiesReport,
-                            style: AppTypography.caption
-                                .copyWith(color: palette.textSecondary, fontSize: 12)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          child: _StoryCard(
+            story: story,
+            resolved: resolved,
+            myUserId: myUserId,
+            palette: palette,
+            l10n: l10n,
+            onReport: onReport,
+            onUpvote: onUpvote,
           ),
         );
       },
+    );
+  }
+}
+
+/// One card in the feed. A `ConsumerStatefulWidget` of its own — rather
+/// than inline in `_FeedList`'s `itemBuilder` — because it needs its own
+/// "show original" toggle state and, only when the story's detected
+/// language differs from the viewer's app language, its own translation
+/// fetch (`storyTranslationProvider`, `autoDispose.family` so a long feed
+/// doesn't translate every card up front).
+class _StoryCard extends ConsumerStatefulWidget {
+  final LifeStory story;
+  final ({DisorderCategory category, Disorder disorder})? resolved;
+  final String? myUserId;
+  final AppPalette palette;
+  final AppLocalizations l10n;
+  final ValueChanged<String> onReport;
+  final ValueChanged<String> onUpvote;
+
+  const _StoryCard({
+    required this.story,
+    required this.resolved,
+    required this.myUserId,
+    required this.palette,
+    required this.l10n,
+    required this.onReport,
+    required this.onUpvote,
+  });
+
+  @override
+  ConsumerState<_StoryCard> createState() => _StoryCardState();
+}
+
+class _StoryCardState extends ConsumerState<_StoryCard> {
+  bool _showOriginal = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final story = widget.story;
+    final resolved = widget.resolved;
+    final palette = widget.palette;
+    final l10n = widget.l10n;
+    final appLanguage = Localizations.localeOf(context).languageCode;
+    final needsTranslation = story.language != appLanguage;
+
+    final translation =
+        needsTranslation ? ref.watch(storyTranslationProvider(story.id)) : null;
+    final translatedBody = translation?.valueOrNull;
+    final showingOriginal = !needsTranslation || _showOriginal || translatedBody == null;
+    final bodyToShow = showingOriginal ? story.body : translatedBody;
+
+    return GlassSurface(
+      radius: 18,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (resolved != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: palette.accentSoft,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Text(
+                '${resolved.category.emoji} ${resolved.disorder.name}',
+                style: AppTypography.caption.copyWith(color: palette.accent),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          if (needsTranslation && translatedBody != null) ...[
+            InkWell(
+              onTap: () => setState(() => _showOriginal = !_showOriginal),
+              borderRadius: BorderRadius.circular(6),
+              child: Text(
+                showingOriginal ? l10n.storiesShowTranslation : l10n.storiesTranslated,
+                style: AppTypography.caption.copyWith(
+                  color: palette.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          Text(bodyToShow,
+              style: AppTypography.subheadline
+                  .copyWith(color: palette.textPrimary, fontSize: 14.5, height: 1.65)),
+          if (needsTranslation && translatedBody != null && !showingOriginal) ...[
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: () => setState(() => _showOriginal = true),
+              borderRadius: BorderRadius.circular(6),
+              child: Text(
+                l10n.storiesShowOriginal,
+                style: AppTypography.caption.copyWith(color: palette.accent),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _UpvoteButton(
+                count: story.upvotes,
+                voted: story.viewerUpvoted,
+                palette: palette,
+                onTap: () => widget.onUpvote(story.id),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: story.authorUserId == null
+                    ? Text(
+                        '${DateFormat.MMMMd(appLanguage).format(story.createdAt)}'
+                        ' · ${l10n.storiesAnonymous}',
+                        style: AppTypography.caption.copyWith(color: palette.textSecondary),
+                      )
+                    : InkWell(
+                        // A signed story you wrote yourself: the profile
+                        // route always shows "someone else's account"
+                        // chrome (follow button included), which reads as
+                        // broken pointed at your own name — send it to
+                        // the real profile screen instead.
+                        onTap: () => story.authorUserId == widget.myUserId
+                            ? context.push('/settings/profile')
+                            : context.push('/users/${story.authorUserId}'),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              story.authorDisplayName ?? '',
+                              style: AppTypography.caption.copyWith(
+                                color: palette.accent,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              ' · ${DateFormat.MMMMd(appLanguage).format(story.createdAt)}',
+                              style: AppTypography.caption.copyWith(color: palette.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+              InkWell(
+                onTap: () => widget.onReport(story.id),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Text(l10n.storiesReport,
+                      style: AppTypography.caption.copyWith(color: palette.textSecondary, fontSize: 12)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

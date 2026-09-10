@@ -5,8 +5,9 @@ use axum::{
     Json, Router,
 };
 use chrono::{DateTime, Utc};
-use mental_analysis_engine::screen_for_crisis_language;
+use mental_analysis_engine::{screen_for_crisis_language, translate_text};
 use mental_domain::catalog;
+use mental_domain::life_story::detect_language;
 use mental_domain::repository::{LifeStoryRepository, SocialRepository};
 use mental_domain::{LifeStory, LifeStoryReport, StoryFeedItem, StoryStatus};
 use serde::{Deserialize, Serialize};
@@ -23,6 +24,7 @@ pub fn router() -> Router<AppState> {
         .route("/stories/:id", axum::routing::delete(withdraw))
         .route("/stories/:id/report", post(report))
         .route("/stories/:id/upvote", post(upvote).delete(remove_upvote))
+        .route("/stories/:id/translate", get(translate))
         .route("/stories/pending", get(pending))
         .route("/stories/reports", get(reports))
         .route("/stories/:id/approve", post(approve))
@@ -58,6 +60,9 @@ fn yes() -> bool {
 struct PublicStory {
     id: String,
     body: String,
+    /// What the client compares against its own app language to decide
+    /// whether to offer a translated copy — see `translate` below.
+    language: String,
     diagnosis_slug: String,
     created_at: DateTime<Utc>,
     upvotes: u32,
@@ -74,6 +79,7 @@ impl From<&StoryFeedItem> for PublicStory {
         Self {
             id: item.story.id.to_string(),
             body: item.story.body.clone(),
+            language: item.story.language.clone(),
             diagnosis_slug: item.story.diagnosis_slug.clone(),
             created_at: item.story.created_at,
             upvotes: item.upvotes,
@@ -155,6 +161,7 @@ async fn submit(
 
     let now = Utc::now();
     let crisis = screen_for_crisis_language(&body);
+    let language = detect_language(&body);
     let story = LifeStory {
         id: Uuid::new_v4(),
         user_id: auth.user_id,
@@ -164,6 +171,7 @@ async fn submit(
         crisis_flag: crisis.flagged,
         consented_at: now,
         anonymous: req.anonymous,
+        language,
         reviewed_at: None,
         created_at: now,
     };
@@ -235,6 +243,61 @@ async fn remove_upvote(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Debug, Serialize)]
+struct TranslationResponse {
+    body: String,
+    source_language: String,
+}
+
+/// Translates a story into the caller's own account language — never a
+/// language passed by the client, so this can't be used as a free-form
+/// translation proxy for arbitrary text. Results are cached per (story,
+/// language) in `story_translations`; a story already read by five people
+/// in English costs one LLM call, not five.
+async fn translate(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<Json<TranslationResponse>, (StatusCode, String)> {
+    let story = state
+        .life_stories
+        .get(id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "story not found".to_string()))?;
+
+    let reader_language =
+        user_for(&state, auth.user_id).await.map(|u| u.language).unwrap_or_else(|| "tr".to_string());
+
+    if story.language == reader_language {
+        return Ok(Json(TranslationResponse {
+            body: story.body,
+            source_language: story.language,
+        }));
+    }
+
+    if let Some(cached) = state
+        .life_stories
+        .get_translation(id, &reader_language)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+    {
+        return Ok(Json(TranslationResponse { body: cached, source_language: story.language }));
+    }
+
+    let translated = translate_text(&story.body, &reader_language, state.llm.as_ref())
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    state
+        .life_stories
+        .save_translation(id, &reader_language, &translated)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(TranslationResponse { body: translated, source_language: story.language }))
 }
 
 /// The caller's own submissions, whatever their status — so someone can

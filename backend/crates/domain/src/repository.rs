@@ -210,6 +210,21 @@ pub trait LifeStoryRepository: Send + Sync {
     async fn feed_for(&self, viewer: Uuid, limit: u32) -> anyhow::Result<Vec<StoryFeedItem>>;
     /// How many approved stories one author has in the public feed.
     async fn approved_count_for(&self, user_id: Uuid) -> anyhow::Result<u32>;
+    /// A cached translation, if this story has already been translated
+    /// into `target_language` for a previous reader.
+    async fn get_translation(
+        &self,
+        story_id: Uuid,
+        target_language: &str,
+    ) -> anyhow::Result<Option<String>>;
+    /// Caches a translation so the LLM is called at most once per
+    /// (story, language) pair rather than once per reader.
+    async fn save_translation(
+        &self,
+        story_id: Uuid,
+        target_language: &str,
+        body: &str,
+    ) -> anyhow::Result<()>;
 }
 
 /// Follows and upvotes: the two things that make the story feed social
