@@ -1,15 +1,15 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mental_domain::repository::{
-    ActivityRepository, AuthRepository, ChatRepository, ExplainerRepository, InsightRepository,
-    JournalRepository, LifeAnalysisRepository, LifeStoryRepository, MoodRepository,
-    ReportRepository, ResearchRepository, UserRepository, UserStateRepository,
+    ActivityRepository, AssessmentRepository, AuthRepository, ChatRepository, ExplainerRepository,
+    InsightRepository, JournalRepository, LifeAnalysisRepository, LifeStoryRepository,
+    MoodRepository, ReportRepository, ResearchRepository, UserRepository, UserStateRepository,
 };
 use mental_domain::report::LifeAnalysis;
 use mental_domain::{
     ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, Insight,
     JournalEntry, LifeStory, LifeStoryReport, MoodEntry, ResearchArticle, Session, StoryStatus,
-    User, UserState,
+    User, UserState, WellbeingAssessment,
 };
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -35,8 +35,8 @@ impl SqliteUserRepository {
 #[async_trait]
 impl UserRepository for SqliteUserRepository {
     async fn get(&self, id: Uuid) -> anyhow::Result<Option<User>> {
-        let row = sqlx::query_as::<_, (String, String, String, String, String, Option<i32>, bool, DateTime<Utc>)>(
-            "SELECT id, display_name, timezone, diagnoses, language, birth_year, is_admin, created_at
+        let row = sqlx::query_as::<_, (String, String, String, String, String, Option<i32>, bool, Option<String>, DateTime<Utc>)>(
+            "SELECT id, display_name, timezone, diagnoses, language, birth_year, is_admin, avatar_content_type, created_at
              FROM users WHERE id = ?1",
         )
         .bind(id.to_string())
@@ -44,7 +44,7 @@ impl UserRepository for SqliteUserRepository {
         .await?;
 
         Ok(row.map(
-            |(id, display_name, timezone, diagnoses, language, birth_year, is_admin, created_at)| User {
+            |(id, display_name, timezone, diagnoses, language, birth_year, is_admin, avatar_content_type, created_at)| User {
                 id: Uuid::parse_str(&id).unwrap_or_default(),
                 display_name,
                 timezone,
@@ -52,6 +52,7 @@ impl UserRepository for SqliteUserRepository {
                 language,
                 birth_year,
                 is_admin,
+                avatar_content_type,
                 created_at,
             },
         ))
@@ -76,6 +77,16 @@ impl UserRepository for SqliteUserRepository {
         Ok(())
     }
 
+    async fn set_avatar(&self, user_id: Uuid, content_type: Option<&str>) -> anyhow::Result<()> {
+        sqlx::query("UPDATE users SET avatar_content_type = ?1 WHERE id = ?2")
+            .bind(content_type)
+            .bind(user_id.to_string())
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
     async fn set_diagnoses(&self, user_id: Uuid, diagnoses: &[String]) -> anyhow::Result<()> {
         sqlx::query("UPDATE users SET diagnoses = ?1 WHERE id = ?2")
             .bind(tags_to_json(diagnoses))
@@ -89,16 +100,19 @@ impl UserRepository for SqliteUserRepository {
     async fn set_preferences(
         &self,
         user_id: Uuid,
+        display_name: Option<&str>,
         language: Option<&str>,
         birth_year: Option<i32>,
     ) -> anyhow::Result<()> {
         // COALESCE so an omitted field keeps its stored value: the profile
         // screen can save just the language without also having to resend a
-        // birth year the person never gave.
+        // birth year — or a name — the person didn't touch.
         sqlx::query(
-            "UPDATE users SET language = COALESCE(?1, language), birth_year = COALESCE(?2, birth_year)
-             WHERE id = ?3",
+            "UPDATE users SET display_name = COALESCE(?1, display_name),
+             language = COALESCE(?2, language), birth_year = COALESCE(?3, birth_year)
+             WHERE id = ?4",
         )
+        .bind(display_name)
         .bind(language)
         .bind(birth_year)
         .bind(user_id.to_string())
@@ -840,6 +854,64 @@ impl ActivityRepository for SqliteActivityRepository {
         .await?;
 
         Ok(rows.into_iter().map(|(day, total)| (day, total.max(0) as u32)).collect())
+    }
+}
+
+pub struct SqliteAssessmentRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteAssessmentRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl AssessmentRepository for SqliteAssessmentRepository {
+    async fn save(&self, assessment: &WellbeingAssessment) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO wellbeing_assessments
+             (id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score, crisis_flag, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        )
+        .bind(assessment.id.to_string())
+        .bind(assessment.user_id.to_string())
+        .bind(serde_json::to_string(&assessment.phq9_answers).unwrap_or_default())
+        .bind(assessment.phq9_score as i32)
+        .bind(serde_json::to_string(&assessment.gad7_answers).unwrap_or_default())
+        .bind(assessment.gad7_score as i32)
+        .bind(assessment.crisis_flag)
+        .bind(assessment.created_at)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<WellbeingAssessment>> {
+        let row = sqlx::query_as::<_, (String, String, String, i32, String, i32, bool, DateTime<Utc>)>(
+            "SELECT id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score, crisis_flag, created_at
+             FROM wellbeing_assessments WHERE user_id = ?1 ORDER BY created_at DESC LIMIT 1",
+        )
+        .bind(user_id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(
+            |(id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score, crisis_flag, created_at)| {
+                WellbeingAssessment {
+                    id: Uuid::parse_str(&id).unwrap_or_default(),
+                    user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+                    phq9_answers: serde_json::from_str(&phq9_answers).unwrap_or_default(),
+                    phq9_score: phq9_score as u8,
+                    gad7_answers: serde_json::from_str(&gad7_answers).unwrap_or_default(),
+                    gad7_score: gad7_score as u8,
+                    crisis_flag,
+                    created_at,
+                }
+            },
+        ))
     }
 }
 

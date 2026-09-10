@@ -379,6 +379,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSwitchToRegister => 'No account yet? Sign up';
 
   @override
+  String get authDisplayNameLabel => 'Your name';
+
+  @override
+  String get authDisplayNameHint => 'What should we call you?';
+
+  @override
   String get moodDoneToday => 'Today\'s check-in is in';
 
   @override
@@ -681,4 +687,154 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storiesModerationReporterNote => 'Reporter\'s note:';
+
+  @override
+  String get settingsAssessment => 'Self-assessment';
+
+  @override
+  String get assessmentOnboardTitle => 'Let\'s get to know you a bit';
+
+  @override
+  String get assessmentOnboardIntro =>
+      '16 short questions about the last two weeks. This shapes how we approach things with you — skip it now and do it later from Settings if you\'d rather.';
+
+  @override
+  String get assessmentStart => 'Start';
+
+  @override
+  String get assessmentSkip => 'Not now';
+
+  @override
+  String assessmentProgress(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
+  String get assessmentSectionMood => 'Over the last 2 weeks — your mood';
+
+  @override
+  String get assessmentSectionAnxiety => 'Over the last 2 weeks — your anxiety';
+
+  @override
+  String get assessmentAnswer0 => 'Not at all';
+
+  @override
+  String get assessmentAnswer1 => 'Several days';
+
+  @override
+  String get assessmentAnswer2 => 'More than half the days';
+
+  @override
+  String get assessmentAnswer3 => 'Nearly every day';
+
+  @override
+  String get assessmentResultTitle => 'Thank you';
+
+  @override
+  String get assessmentResultNote =>
+      'This isn\'t a diagnosis — it\'s a screening signal that helps us tailor how we approach things with you.';
+
+  @override
+  String get assessmentResultDepression => 'Mood screening';
+
+  @override
+  String get assessmentResultAnxiety => 'Anxiety screening';
+
+  @override
+  String get assessmentBandMinimal => 'Minimal';
+
+  @override
+  String get assessmentBandMild => 'Mild';
+
+  @override
+  String get assessmentBandModerate => 'Moderate';
+
+  @override
+  String get assessmentBandModeratelySevere => 'Moderately severe';
+
+  @override
+  String get assessmentBandSevere => 'Severe';
+
+  @override
+  String get assessmentContinueCta => 'Continue';
+
+  @override
+  String get assessmentSubmitError => 'Couldn\'t submit — try again?';
+
+  @override
+  String get assessmentRetakeTitle => 'Self-assessment';
+
+  @override
+  String get assessmentRetakeIntro =>
+      'PHQ-9 and GAD-7 — 16 short questions about the last two weeks. Results are used in the background of your chats and suggestions.';
+
+  @override
+  String get assessmentRetakeCta => 'Start the assessment';
+
+  @override
+  String get assessmentRetakeAgain => 'Retake';
+
+  @override
+  String get assessmentLastTakenToday => 'Taken today';
+
+  @override
+  String assessmentLastTaken(int days) {
+    return 'Taken $days days ago';
+  }
+
+  @override
+  String get assessmentNeverTaken => 'Not taken yet';
+
+  @override
+  String get phq9Q1 => 'Little interest or pleasure in doing things';
+
+  @override
+  String get phq9Q2 => 'Feeling down, depressed, or hopeless';
+
+  @override
+  String get phq9Q3 =>
+      'Trouble falling or staying asleep, or sleeping too much';
+
+  @override
+  String get phq9Q4 => 'Feeling tired or having little energy';
+
+  @override
+  String get phq9Q5 => 'Poor appetite or overeating';
+
+  @override
+  String get phq9Q6 =>
+      'Feeling bad about yourself — or that you are a failure or have let yourself or your family down';
+
+  @override
+  String get phq9Q7 =>
+      'Trouble concentrating on things, such as reading or watching television';
+
+  @override
+  String get phq9Q8 =>
+      'Moving or speaking so slowly that other people could have noticed — or the opposite, being so fidgety or restless that you\'ve been moving around a lot more than usual';
+
+  @override
+  String get phq9Q9 =>
+      'Thoughts that you would be better off dead, or of hurting yourself in some way';
+
+  @override
+  String get gad7Q1 => 'Feeling nervous, anxious, or on edge';
+
+  @override
+  String get gad7Q2 => 'Not being able to stop or control worrying';
+
+  @override
+  String get gad7Q3 => 'Worrying too much about different things';
+
+  @override
+  String get gad7Q4 => 'Trouble relaxing';
+
+  @override
+  String get gad7Q5 => 'Being so restless that it\'s hard to sit still';
+
+  @override
+  String get gad7Q6 => 'Becoming easily annoyed or irritable';
+
+  @override
+  String get gad7Q7 => 'Feeling afraid as if something awful might happen';
 }

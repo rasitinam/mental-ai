@@ -19,7 +19,7 @@ mental-research-ingest.workspace = true
 mental-analysis-engine.workspace = true
 
 tokio.workspace = true
-axum = "0.7"
+axum = { version = "0.7", features = ["multipart"] }
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 serde.workspace = true
 serde_json.workspace = true

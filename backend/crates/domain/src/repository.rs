@@ -12,6 +12,7 @@ use crate::report::LifeAnalysis;
 use crate::{
     ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, Insight, JournalEntry,
     LifeStory, LifeStoryReport, MoodEntry, ResearchArticle, Session, StoryStatus, User, UserState,
+    WellbeingAssessment,
 };
 
 #[async_trait]
@@ -22,14 +23,20 @@ pub trait UserRepository: Send + Sync {
     /// edits it as a set, so a partial update would just be a second way to
     /// get the same result wrong.
     async fn set_diagnoses(&self, user_id: Uuid, diagnoses: &[String]) -> anyhow::Result<()>;
-    /// Language and birth year, both optional to change independently:
-    /// `None` leaves that field as it is rather than clearing it.
+    /// Display name, language and birth year, each optional to change
+    /// independently: `None` leaves that field as it is rather than
+    /// clearing it.
     async fn set_preferences(
         &self,
         user_id: Uuid,
+        display_name: Option<&str>,
         language: Option<&str>,
         birth_year: Option<i32>,
     ) -> anyhow::Result<()>;
+    /// Records which Content-Type the just-uploaded avatar file was saved
+    /// with, or clears it (`None`) — the image bytes themselves are written
+    /// straight to disk by the route handler, not through this trait.
+    async fn set_avatar(&self, user_id: Uuid, content_type: Option<&str>) -> anyhow::Result<()>;
 }
 
 #[async_trait]
@@ -147,6 +154,14 @@ pub trait UserStateRepository: Send + Sync {
 pub trait LifeAnalysisRepository: Send + Sync {
     async fn save(&self, analysis: &LifeAnalysis) -> anyhow::Result<()>;
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<LifeAnalysis>>;
+}
+
+#[async_trait]
+pub trait AssessmentRepository: Send + Sync {
+    async fn save(&self, assessment: &WellbeingAssessment) -> anyhow::Result<()>;
+    /// Most recent screening on file, for both showing "you last checked
+    /// in N days ago" and for feeding `PersonContext`.
+    async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<WellbeingAssessment>>;
 }
 
 #[async_trait]

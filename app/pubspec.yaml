@@ -54,6 +54,8 @@ dependencies:
   uuid: ^4.5.1
   # dials 112 directly from the chat crisis banner
   url_launcher: ^6.3.1
+  image_picker: ^1.2.3
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:

@@ -53,7 +53,8 @@ async fn refresh_state(
     let person = user
         .as_ref()
         .map(PersonContext::from_user)
-        .unwrap_or_else(PersonContext::unknown);
+        .unwrap_or_else(PersonContext::unknown)
+        .with_assessment(crate::routes::assessment_for(&state, auth.user_id).await);
 
     let chat = state
         .chats

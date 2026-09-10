@@ -25,11 +25,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _showPassword = false;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _displayNameController = TextEditingController();
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _displayNameController.dispose();
     super.dispose();
   }
 
@@ -37,7 +39,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     if (_isRegister) {
-      ref.read(authControllerProvider.notifier).register(email: email, password: password);
+      final name = _displayNameController.text.trim();
+      ref.read(authControllerProvider.notifier).register(
+            email: email,
+            password: password,
+            displayName: name.isEmpty ? null : name,
+          );
     } else {
       ref.read(authControllerProvider.notifier).login(email: email, password: password);
     }
@@ -92,6 +99,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
                   ),
                   const SizedBox(height: 26),
+                  if (_isRegister) ...[
+                    _FieldLabel(text: l10n.authDisplayNameLabel, palette: palette),
+                    const SizedBox(height: 6),
+                    _AuthField(
+                      controller: _displayNameController,
+                      palette: palette,
+                      hint: l10n.authDisplayNameHint,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   _FieldLabel(text: l10n.profileEmail, palette: palette),
                   const SizedBox(height: 6),
                   _AuthField(

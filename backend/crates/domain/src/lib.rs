@@ -3,6 +3,7 @@
 //! layer, background jobs, and tests without pulling in I/O concerns.
 //! Concrete implementations of the repository traits live in `mental-storage`.
 
+pub mod assessment;
 pub mod auth;
 pub mod catalog;
 pub mod chat;
@@ -18,6 +19,7 @@ pub mod state;
 pub mod streak;
 pub mod user;
 
+pub use assessment::WellbeingAssessment;
 pub use auth::{Credentials, Session};
 pub use catalog::{Disorder, DisorderCategory};
 pub use chat::{ChatMessageRecord, ChatRole};

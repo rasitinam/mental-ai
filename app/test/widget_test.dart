@@ -110,4 +110,33 @@ void main() {
 
     expect(find.text('Welcome back'), findsOneWidget);
   });
+
+  testWidgets('switching to register shows the display name field', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({AppConstants.prefsLanguageKey: 'tr'});
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          apiClientProvider.overrideWithValue(_offlineDio()),
+        ],
+        child: const MentalAiApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The name field only makes sense once someone is actually creating an
+    // account — it shouldn't be visible on the login form.
+    expect(find.text('Adın'), findsNothing);
+
+    // The toggle is a Text.rich ("Hesabın yok mu? " + "Hesap oluştur"
+    // spans), so it has to be matched by contained text rather than an
+    // exact `Text`.
+    await tester.tap(find.textContaining('Hesap oluştur'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hesabını oluştur'), findsOneWidget);
+    expect(find.text('Adın'), findsOneWidget);
+  });
 }

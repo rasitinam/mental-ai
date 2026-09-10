@@ -17,23 +17,35 @@ class AuthState {
 
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(AuthController.new);
 
+/// True for the one moment between a successful registration and the
+/// onboarding flow it routes into (see `app/router.dart`) — cleared the
+/// instant that flow finishes or is skipped. `login()` resets it up front
+/// so a stale `true` from an earlier registration attempt can never leak
+/// into a plain sign-in.
+final justRegisteredProvider = StateProvider<bool>((ref) => false);
+
 class AuthController extends Notifier<AuthState> {
   @override
   AuthState build() => const AuthState();
 
   void clearError() => state = state.copyWith(error: null);
 
-  Future<void> register({required String email, required String password}) async {
+  Future<void> register({required String email, required String password, String? displayName}) async {
     if (!_validate(email, password)) return;
     await _submit(() => ref.read(authApiProvider).register(
           email: email,
           password: password,
+          displayName: displayName,
           language: ref.read(localeControllerProvider).languageCode,
         ));
+    if (state.error == null) {
+      ref.read(justRegisteredProvider.notifier).state = true;
+    }
   }
 
   Future<void> login({required String email, required String password}) async {
     if (!_validate(email, password)) return;
+    ref.read(justRegisteredProvider.notifier).state = false;
     await _submit(() => ref.read(authApiProvider).login(email: email, password: password));
   }
 

@@ -11,7 +11,7 @@ use mental_domain::repository::{
 use mental_domain::DailyMentalReport;
 
 use crate::auth::AuthUser;
-use crate::routes::user_for;
+use crate::routes::{assessment_for, user_for};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -100,7 +100,8 @@ async fn generate_report(
     let person = user
         .as_ref()
         .map(PersonContext::from_user)
-        .unwrap_or_else(PersonContext::unknown);
+        .unwrap_or_else(PersonContext::unknown)
+        .with_assessment(assessment_for(&state, auth.user_id).await);
 
     let report = generate_daily_report(
         auth.user_id,

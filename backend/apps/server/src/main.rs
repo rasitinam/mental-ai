@@ -10,8 +10,8 @@ use mental_knowledge_base::{Embedder, SqliteVectorStore};
 use mental_llm_connector::openai_compatible::OpenAiCompatibleProvider;
 use mental_llm_connector::LlmProvider;
 use mental_storage::{
-    init_pool, SqliteActivityRepository, SqliteAuthRepository, SqliteChatRepository,
-    SqliteExplainerRepository,
+    init_pool, SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository,
+    SqliteChatRepository, SqliteExplainerRepository,
     SqliteInsightRepository, SqliteJournalRepository, SqliteLifeAnalysisRepository,
     SqliteLifeStoryRepository, SqliteMoodRepository, SqliteReportRepository,
     SqliteResearchRepository, SqliteUserRepository, SqliteUserStateRepository,
@@ -58,6 +58,7 @@ async fn main() -> anyhow::Result<()> {
         user_states: Arc::new(SqliteUserStateRepository::new(pool.clone())),
         life_stories: Arc::new(SqliteLifeStoryRepository::new(pool.clone())),
         activity: Arc::new(SqliteActivityRepository::new(pool.clone())),
+        assessments: Arc::new(SqliteAssessmentRepository::new(pool.clone())),
         vector_store: Arc::new(SqliteVectorStore::new(pool.clone())),
         embedder: Arc::new(Embedder::new(llm.clone())),
         llm,

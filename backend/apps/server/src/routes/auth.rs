@@ -87,6 +87,7 @@ async fn register(
             language: req.language.unwrap_or_else(|| "tr".to_string()),
             birth_year: None,
             is_admin: false,
+            avatar_content_type: None,
             created_at: now,
         })
         .await

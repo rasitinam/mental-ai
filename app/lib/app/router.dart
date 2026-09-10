@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/storage/local_prefs.dart';
+import '../features/assessment/presentation/assessment_screen.dart';
+import '../features/assessment/presentation/assessment_summary_screen.dart';
+import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/auth_screen.dart';
 import '../features/catalog/presentation/disorder_detail_screen.dart';
 import '../features/chat/presentation/chat_screen.dart';
@@ -28,11 +31,18 @@ class _SessionRefreshNotifier extends ChangeNotifier {
     ref.listen(sessionTokenProvider, (previous, next) {
       if (previous != next) notifyListeners();
     });
+    ref.listen(justRegisteredProvider, (previous, next) {
+      if (previous != next) notifyListeners();
+    });
   }
 }
 
 /// Classic session gate: no valid token → every route redirects to
-/// `/login`; a valid token → `/login` itself redirects into the app.
+/// `/login`; a valid token → `/login` itself redirects into the app — or,
+/// for someone who just registered, into `/onboarding` first (the PHQ-9 +
+/// GAD-7 screening flow) rather than straight to `/report`. That flow
+/// clears `justRegisteredProvider` itself before navigating on, whether
+/// finished or skipped, so this only ever fires once per registration.
 /// Every top-level destination past the gate lives on the shell's
 /// `StatefulShellRoute` so the bottom nav bar preserves each tab's state
 /// (scroll position, in-progress journal draft, ...) when switching tabs.
@@ -45,15 +55,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final loggedIn = ref.read(sessionTokenProvider) != null;
       final onLoginPage = state.matchedLocation == '/login';
+      final onOnboarding = state.matchedLocation == '/onboarding';
+      final justRegistered = ref.read(justRegisteredProvider);
 
       if (!loggedIn && !onLoginPage) return '/login';
-      if (loggedIn && onLoginPage) return '/report';
+      if (loggedIn && onLoginPage) return justRegistered ? '/onboarding' : '/report';
+      if (loggedIn && justRegistered && !onOnboarding) return '/onboarding';
       return null;
     },
     routes: [
       GoRoute(
         path: '/login',
         builder: (context, state) => const AuthScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => AssessmentScreen(
+          skippable: true,
+          onDone: () {
+            ref.read(justRegisteredProvider.notifier).state = false;
+            context.go('/report');
+          },
+        ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => HomeShell(navigationShell: navigationShell),
@@ -95,6 +118,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               routes: [
                 GoRoute(path: 'profile', builder: (context, state) => const ProfileScreen()),
                 GoRoute(path: 'diagnoses', builder: (context, state) => const DiagnosesScreen()),
+                GoRoute(
+                  path: 'assessment',
+                  builder: (context, state) => const AssessmentSummaryScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'take',
+                      builder: (context, state) => AssessmentScreen(
+                        skippable: false,
+                        onDone: () => context.go('/settings/assessment'),
+                      ),
+                    ),
+                  ],
+                ),
                 GoRoute(
                   path: 'stories',
                   builder: (context, state) => const StoriesScreen(),

@@ -44,20 +44,15 @@ class SettingsScreen extends ConsumerWidget {
                 style: AppTypography.title2.copyWith(color: palette.textPrimary)),
             const SizedBox(height: 20),
             _Group(
-              title: l10n.settingsConnection,
+              title: l10n.settingsAccount,
               children: [
-                _Row(label: l10n.settingsServer, value: AppConstants.apiBaseUrl),
-                _Row(label: l10n.settingsDeviceId, value: userId),
-              ],
-            ),
-            const SizedBox(height: 20),
-            const _AppearanceGroup(),
-            const SizedBox(height: 20),
-            _Group(
-              title: l10n.settingsPrivacy,
-              children: [
-                _Row(label: l10n.settingsDataLocation, description: l10n.settingsDataLocationBody),
-                _Row(label: l10n.settingsLegal, description: l10n.settingsLegalBody),
+                _Row(label: l10n.settingsProfile, onTap: () => context.go('/settings/profile')),
+                _Row(label: l10n.settingsAssessment, onTap: () => context.go('/settings/assessment')),
+                _Row(
+                  label: l10n.settingsLogout,
+                  labelColor: palette.warning,
+                  onTap: () => _logout(context, ref),
+                ),
               ],
             ),
             const SizedBox(height: 20),
@@ -77,15 +72,21 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 20),
+            const _AppearanceGroup(),
+            const SizedBox(height: 20),
             _Group(
-              title: l10n.settingsAccount,
+              title: l10n.settingsPrivacy,
               children: [
-                _Row(label: l10n.settingsProfile, onTap: () => context.go('/settings/profile')),
-                _Row(
-                  label: l10n.settingsLogout,
-                  labelColor: palette.warning,
-                  onTap: () => _logout(context, ref),
-                ),
+                _Row(label: l10n.settingsDataLocation, description: l10n.settingsDataLocationBody),
+                _Row(label: l10n.settingsLegal, description: l10n.settingsLegalBody),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _Group(
+              title: l10n.settingsConnection,
+              children: [
+                _Row(label: l10n.settingsServer, value: AppConstants.apiBaseUrl),
+                _Row(label: l10n.settingsDeviceId, value: userId),
               ],
             ),
           ],

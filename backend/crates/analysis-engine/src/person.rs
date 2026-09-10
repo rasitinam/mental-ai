@@ -1,4 +1,30 @@
-use mental_domain::User;
+use mental_domain::{User, WellbeingAssessment};
+
+/// The PHQ-9/GAD-7 half of [`PersonContext`], reduced to what a prompt
+/// actually needs — scores and bands, not the 16 raw item answers. Owned
+/// rather than borrowed so it can be built from a repository call
+/// (`Option<WellbeingAssessment>`) independently of `User`, which doesn't
+/// carry it.
+#[derive(Debug, Clone, Copy)]
+pub struct AssessmentSummary {
+    pub phq9_score: u8,
+    pub depression_band: &'static str,
+    pub gad7_score: u8,
+    pub anxiety_band: &'static str,
+    pub days_ago: i64,
+}
+
+impl AssessmentSummary {
+    pub fn from_assessment(a: &WellbeingAssessment) -> Self {
+        Self {
+            phq9_score: a.phq9_score,
+            depression_band: a.depression_band(),
+            gad7_score: a.gad7_score,
+            anxiety_band: a.anxiety_band(),
+            days_ago: (chrono::Utc::now() - a.created_at).num_days(),
+        }
+    }
+}
 
 /// The "who am I writing for" half of every prompt in this crate.
 ///
@@ -8,20 +34,29 @@ use mental_domain::User;
 /// signature. Age matters more than it looks: the same diagnosis label
 /// describes a very different life at 16 than at 45, and without it the
 /// model defaults to generic adult advice.
+/// The registration default (`routes/auth.rs`) for an account that never
+/// gave a name — treated as "no name", not as a name to address anyone by.
+const UNNAMED_PLACEHOLDER: &str = "Kullanıcı";
+
 #[derive(Debug, Clone, Copy)]
 pub struct PersonContext<'a> {
+    pub display_name: Option<&'a str>,
     pub diagnoses: &'a [String],
     pub age: Option<i32>,
     /// ISO-639-1 code the generated text must come back in.
     pub language: &'a str,
+    pub assessment: Option<AssessmentSummary>,
 }
 
 impl<'a> PersonContext<'a> {
     pub fn from_user(user: &'a User) -> Self {
         Self {
+            display_name: (user.display_name != UNNAMED_PLACEHOLDER)
+                .then_some(user.display_name.as_str()),
             diagnoses: &user.diagnoses,
             age: user.age(),
             language: &user.language,
+            assessment: None,
         }
     }
 
@@ -29,10 +64,20 @@ impl<'a> PersonContext<'a> {
     /// a less tailored answer than a failed request.
     pub fn unknown() -> Self {
         Self {
+            display_name: None,
             diagnoses: &[],
             age: None,
             language: "tr",
+            assessment: None,
         }
+    }
+
+    /// Attaches the latest PHQ-9/GAD-7 reading, if there is one. A
+    /// separate step rather than a `from_user` parameter because the
+    /// assessment comes from its own repository call, not from `User`.
+    pub fn with_assessment(mut self, assessment: Option<AssessmentSummary>) -> Self {
+        self.assessment = assessment;
+        self
     }
 
     /// A short block prepended to the user-role context message. Returns an
@@ -41,6 +86,12 @@ impl<'a> PersonContext<'a> {
     pub fn prompt_block(&self) -> String {
         let mut lines = Vec::new();
 
+        if let Some(name) = self.display_name {
+            lines.push(format!(
+                "Their name: {name}. Use it naturally when it fits — a greeting, a moment that \
+                 calls for it — not forced into every reply."
+            ));
+        }
         if !self.diagnoses.is_empty() {
             lines.push(format!(
                 "Self-reported conditions (their own words, not established fact): {}",
@@ -51,6 +102,16 @@ impl<'a> PersonContext<'a> {
             lines.push(format!(
                 "Age: {age}. Frame everything for this life stage — the pressures, \
                  relationships and options of someone this age, not a generic adult."
+            ));
+        }
+        if let Some(a) = self.assessment {
+            lines.push(format!(
+                "Self-report screening from {} day(s) ago — PHQ-9 (depression): {}/27 ({}); \
+                 GAD-7 (anxiety): {}/21 ({}). This is a screening signal, not a diagnosis: \
+                 read it the same way as their self-reported conditions, one more data point \
+                 about where they currently are, never something to name or quote back at them \
+                 like a lab result.",
+                a.days_ago, a.phq9_score, a.depression_band, a.gad7_score, a.anxiety_band
             ));
         }
 

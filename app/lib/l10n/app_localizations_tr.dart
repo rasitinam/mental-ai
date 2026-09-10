@@ -379,6 +379,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authSwitchToRegister => 'Hesabın yok mu? Kayıt ol';
 
   @override
+  String get authDisplayNameLabel => 'Adın';
+
+  @override
+  String get authDisplayNameHint => 'Sana nasıl seslenelim?';
+
+  @override
   String get moodDoneToday => 'Bugünkü kaydın alındı';
 
   @override
@@ -681,4 +687,155 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get storiesModerationReporterNote => 'Bildiren notu:';
+
+  @override
+  String get settingsAssessment => 'Öz-değerlendirme';
+
+  @override
+  String get assessmentOnboardTitle => 'Seni biraz tanıyalım';
+
+  @override
+  String get assessmentOnboardIntro =>
+      'Son iki haftaya dair 16 kısa soru. Sana nasıl yaklaşacağımızı bu belirler; istersen şimdi atlayıp sonra Ayarlar\'dan yapabilirsin.';
+
+  @override
+  String get assessmentStart => 'Başla';
+
+  @override
+  String get assessmentSkip => 'Şimdi değil';
+
+  @override
+  String assessmentProgress(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
+  String get assessmentSectionMood => 'Son iki hafta — ruh halin';
+
+  @override
+  String get assessmentSectionAnxiety => 'Son iki hafta — kaygın';
+
+  @override
+  String get assessmentAnswer0 => 'Hiçbir zaman';
+
+  @override
+  String get assessmentAnswer1 => 'Bazı günler';
+
+  @override
+  String get assessmentAnswer2 => 'Günlerin yarıdan fazlasında';
+
+  @override
+  String get assessmentAnswer3 => 'Hemen hemen her gün';
+
+  @override
+  String get assessmentResultTitle => 'Teşekkürler';
+
+  @override
+  String get assessmentResultNote =>
+      'Bu bir tanı değil, sana nasıl yaklaşacağımızı ayarlamamıza yardımcı olan bir tarama sinyali.';
+
+  @override
+  String get assessmentResultDepression => 'Ruh hali taraması';
+
+  @override
+  String get assessmentResultAnxiety => 'Kaygı taraması';
+
+  @override
+  String get assessmentBandMinimal => 'Minimal';
+
+  @override
+  String get assessmentBandMild => 'Hafif';
+
+  @override
+  String get assessmentBandModerate => 'Orta';
+
+  @override
+  String get assessmentBandModeratelySevere => 'Orta-ağır';
+
+  @override
+  String get assessmentBandSevere => 'Ağır';
+
+  @override
+  String get assessmentContinueCta => 'Devam et';
+
+  @override
+  String get assessmentSubmitError => 'Gönderilemedi, tekrar dener misin?';
+
+  @override
+  String get assessmentRetakeTitle => 'Öz-değerlendirme';
+
+  @override
+  String get assessmentRetakeIntro =>
+      'PHQ-9 ve GAD-7 — son iki haftana dair 16 kısa soru. Sonuçlar, sohbet ve önerilerinin arka planında kullanılır.';
+
+  @override
+  String get assessmentRetakeCta => 'Değerlendirmeyi başlat';
+
+  @override
+  String get assessmentRetakeAgain => 'Yeniden değerlendir';
+
+  @override
+  String get assessmentLastTakenToday => 'Bugün yapıldı';
+
+  @override
+  String assessmentLastTaken(int days) {
+    return '$days gün önce yapıldı';
+  }
+
+  @override
+  String get assessmentNeverTaken => 'Henüz yapılmadı';
+
+  @override
+  String get phq9Q1 =>
+      'Yaptığınız işlere karşı ilgi azlığı ya da yaptığınız işlerden zevk almama';
+
+  @override
+  String get phq9Q2 => 'Kendini çökkün, depresif ya da ümitsiz hissetme';
+
+  @override
+  String get phq9Q3 =>
+      'Uykuya dalmakta güçlük çekme, uykuyu sürdürmekte güçlük çekme ya da fazla uyuma';
+
+  @override
+  String get phq9Q4 => 'Kendini yorgun hissetme ya da enerjinin az olması';
+
+  @override
+  String get phq9Q5 => 'İştah azlığı ya da aşırı yeme';
+
+  @override
+  String get phq9Q6 =>
+      'Kendini kötü hissetme; kendini ya da ailesini hayal kırıklığına uğrattığını düşünme';
+
+  @override
+  String get phq9Q7 =>
+      'Gazete okumak ya da televizyon izlemek gibi işlere yoğunlaşmakta güçlük çekme';
+
+  @override
+  String get phq9Q8 =>
+      'Başkalarının fark edebileceği kadar yavaş hareket etme ya da konuşma; ya da tam tersi, her zamankinden daha hareketli ve huzursuz olma';
+
+  @override
+  String get phq9Q9 =>
+      'Ölü olsan daha iyi olur diye düşünme ya da bir şekilde kendine zarar verme';
+
+  @override
+  String get gad7Q1 => 'Sinirli, kaygılı ya da gergin hissetme';
+
+  @override
+  String get gad7Q2 => 'Endişelerini kontrol edememe ya da durduramama';
+
+  @override
+  String get gad7Q3 => 'Farklı konularda çok fazla endişelenme';
+
+  @override
+  String get gad7Q4 => 'Gevşeyip rahatlayamama';
+
+  @override
+  String get gad7Q5 => 'Yerinde duramayacak kadar huzursuz olma';
+
+  @override
+  String get gad7Q6 => 'Çabuk sinirlenme ya da huysuzlaşma';
+
+  @override
+  String get gad7Q7 => 'Kötü bir şey olacakmış gibi korku hissetme';
 }

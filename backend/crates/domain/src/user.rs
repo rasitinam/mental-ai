@@ -27,6 +27,12 @@ pub struct User {
     /// against the database — see `migrations/0007_life_stories.sql`.
     #[serde(default)]
     pub is_admin: bool,
+    /// MIME type of the uploaded profile photo, if any — the image bytes
+    /// live on disk (`data/avatars/<user_id>`), keyed by this record's
+    /// `id`; this field alone is what tells `GET /profile/avatar` whether
+    /// there's a file to read and what Content-Type to serve it with.
+    #[serde(default)]
+    pub avatar_content_type: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 

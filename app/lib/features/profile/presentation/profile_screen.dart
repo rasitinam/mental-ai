@@ -7,6 +7,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../data/profile_api.dart';
 import 'profile_controller.dart';
 
 /// Account details that shape what the app generates: the address it signs
@@ -21,13 +22,22 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  final _displayName = TextEditingController();
   final _birthYear = TextEditingController();
   bool _prefilled = false;
 
   @override
   void dispose() {
+    _displayName.dispose();
     _birthYear.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveDisplayName() async {
+    final raw = _displayName.text.trim();
+    if (raw.isEmpty) return;
+
+    await ref.read(profileControllerProvider.notifier).savePreferences(displayName: raw);
   }
 
   Future<void> _saveBirthYear(AppLocalizations l10n) async {
@@ -55,8 +65,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     // Prefilled once, not on every rebuild, so it doesn't fight the cursor
     // while someone is typing.
-    if (!_prefilled && state.birthYear != null) {
-      _birthYear.text = state.birthYear.toString();
+    if (!_prefilled && state.displayName.isNotEmpty) {
+      _displayName.text = state.displayName;
+      if (state.birthYear != null) _birthYear.text = state.birthYear.toString();
       _prefilled = true;
     }
 
@@ -87,7 +98,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           style: AppTypography.title3.copyWith(color: palette.textPrimary)),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 22),
+                  _AvatarPicker(palette: palette, saving: state.saving),
+                  const SizedBox(height: 22),
+                  SectionLabel(l10n.authDisplayNameLabel),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 54,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          alignment: Alignment.centerLeft,
+                          decoration: BoxDecoration(
+                            color: palette.glassFill,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: palette.accent, width: 2),
+                          ),
+                          child: TextField(
+                            controller: _displayName,
+                            style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17),
+                            cursorColor: palette.accent,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                              hintText: l10n.authDisplayNameHint,
+                              hintStyle: AppTypography.label
+                                  .copyWith(color: palette.textTertiary, fontWeight: FontWeight.w400),
+                            ),
+                            onSubmitted: (_) => _saveDisplayName(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Material(
+                        color: palette.accentSoft,
+                        borderRadius: BorderRadius.circular(16),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: state.saving ? null : _saveDisplayName,
+                          child: Container(
+                            height: 54,
+                            width: 54,
+                            alignment: Alignment.center,
+                            child: Icon(Icons.check_rounded, size: 18, color: palette.accent),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
                   GlassSurface(
                     radius: 16,
                     child: Column(
@@ -236,6 +297,61 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                 ],
               ),
+      ),
+    );
+  }
+}
+
+/// The circular photo at the top of the profile form, with a small
+/// camera-badge button that opens the gallery picker. `saving` disables the
+/// badge mid-upload rather than hiding it, so the circle doesn't jump.
+class _AvatarPicker extends ConsumerWidget {
+  final AppPalette palette;
+  final bool saving;
+
+  const _AvatarPicker({required this.palette, required this.saving});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final avatar = ref.watch(avatarBytesProvider);
+    final controller = ref.read(profileControllerProvider.notifier);
+
+    return Center(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 88,
+            height: 88,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: palette.surfaceMuted),
+            child: avatar.when(
+              data: (bytes) => bytes != null
+                  ? Image.memory(bytes, fit: BoxFit.cover, width: 88, height: 88)
+                  : Icon(Icons.person_rounded, size: 44, color: palette.textTertiary),
+              loading: () =>
+                  Center(child: CircularProgressIndicator(strokeWidth: 2, color: palette.accent)),
+              error: (_, _) => Icon(Icons.person_rounded, size: 44, color: palette.textTertiary),
+            ),
+          ),
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Material(
+              color: palette.accent,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: saving ? null : controller.pickAndUploadAvatar,
+                child: const SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: Icon(Icons.camera_alt_rounded, size: 15, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

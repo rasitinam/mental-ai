@@ -3,8 +3,8 @@ use std::sync::Arc;
 use mental_knowledge_base::{Embedder, SqliteVectorStore};
 use mental_llm_connector::LlmProvider;
 use mental_storage::{
-    SqliteActivityRepository, SqliteAuthRepository, SqliteChatRepository,
-    SqliteExplainerRepository, SqliteInsightRepository,
+    SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository,
+    SqliteChatRepository, SqliteExplainerRepository, SqliteInsightRepository,
     SqliteJournalRepository, SqliteLifeAnalysisRepository, SqliteLifeStoryRepository,
     SqliteMoodRepository, SqliteReportRepository, SqliteResearchRepository, SqliteUserRepository,
     SqliteUserStateRepository,
@@ -30,6 +30,7 @@ pub struct AppState {
     pub user_states: Arc<SqliteUserStateRepository>,
     pub life_stories: Arc<SqliteLifeStoryRepository>,
     pub activity: Arc<SqliteActivityRepository>,
+    pub assessments: Arc<SqliteAssessmentRepository>,
     pub vector_store: Arc<SqliteVectorStore>,
     pub llm: Arc<dyn LlmProvider>,
     pub embedder: Arc<Embedder>,

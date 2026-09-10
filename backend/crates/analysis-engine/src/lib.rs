@@ -17,7 +17,7 @@ pub mod safety;
 pub use chat_reply::generate_chat_reply;
 pub use current_state::{assess_current_state, StateInputs};
 pub use daily_report::generate_daily_report;
-pub use person::PersonContext;
+pub use person::{AssessmentSummary, PersonContext};
 pub use explainer::generate_disorder_explainer;
 pub use insight_synthesis::synthesize_insights;
 pub use life_analysis::generate_life_analysis;

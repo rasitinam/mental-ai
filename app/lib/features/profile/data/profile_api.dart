@@ -1,10 +1,20 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/network/api_client.dart';
 import '../domain/user_profile.dart';
 
 final profileApiProvider = Provider<ProfileApi>((ref) => ProfileApi(ref.watch(apiClientProvider)));
+
+/// The signed-in user's avatar bytes, or `null` when they haven't uploaded
+/// one. A `FutureProvider` rather than a field on [ProfileState] — the
+/// image is fetched once and displayed with `Image.memory`, entirely
+/// separate from the rest of the profile form's load/save cycle.
+final avatarBytesProvider = FutureProvider<Uint8List?>((ref) => ref.watch(profileApiProvider).fetchAvatar());
 
 /// One-shot fetch used to decide whether to show admin-only entry points
 /// (the story moderation queue) — a full [ProfileController] would be
@@ -27,14 +37,56 @@ class ProfileApi {
     return UserProfile.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// Language and birth year. Both are optional and omitted fields keep
-  /// their stored value, so changing the language doesn't require the screen
-  /// to resend a birth year the person never gave.
-  Future<UserProfile> setPreferences({String? language, int? birthYear}) async {
+  /// Display name, language and birth year. All three are optional and
+  /// omitted fields keep their stored value, so changing the language
+  /// doesn't require the screen to resend a birth year — or a name — the
+  /// person didn't touch.
+  Future<UserProfile> setPreferences({String? displayName, String? language, int? birthYear}) async {
     final response = await _dio.put('/profile/preferences', data: {
+      'display_name': ?displayName,
       'language': ?language,
       'birth_year': ?birthYear,
     });
     return UserProfile.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Replaces the profile photo with the picked image. The content type is
+  /// read off the file's extension rather than `XFile.mimeType` — that
+  /// field isn't reliably populated across every platform image_picker
+  /// supports, while the extension always is.
+  Future<UserProfile> uploadAvatar(XFile file) async {
+    final bytes = await file.readAsBytes();
+    final response = await _dio.put(
+      '/profile/avatar',
+      data: FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: file.name,
+          contentType: MediaType.parse(_contentTypeFor(file.name)),
+        ),
+      }),
+    );
+    return UserProfile.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// The signed-in user's avatar, or `null` if they haven't uploaded one.
+  Future<Uint8List?> fetchAvatar() async {
+    try {
+      final response = await _dio.get<List<int>>(
+        '/profile/avatar',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return Uint8List.fromList(response.data!);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  String _contentTypeFor(String filename) {
+    final lower = filename.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
   }
 }

@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::auth::AuthUser;
-use crate::routes::user_for;
+use crate::routes::{assessment_for, user_for};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -88,7 +88,8 @@ async fn send_message(
     let person = user
         .as_ref()
         .map(PersonContext::from_user)
-        .unwrap_or_else(PersonContext::unknown);
+        .unwrap_or_else(PersonContext::unknown)
+        .with_assessment(assessment_for(&state, auth.user_id).await);
 
     let result = generate_chat_reply(
         &req.message,

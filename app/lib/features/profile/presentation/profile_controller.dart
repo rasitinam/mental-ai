@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/l10n/locale_controller.dart';
 import '../../../core/storage/local_prefs.dart';
@@ -9,6 +10,7 @@ class ProfileState {
   /// Catalog slugs currently selected in the editor. Held locally while the
   /// person is ticking boxes and only sent on save.
   final Set<String> diagnoses;
+  final String displayName;
   final String? email;
   final String language;
   final int? birthYear;
@@ -20,6 +22,7 @@ class ProfileState {
 
   const ProfileState({
     this.diagnoses = const {},
+    this.displayName = '',
     this.email,
     this.language = 'tr',
     this.birthYear,
@@ -32,6 +35,7 @@ class ProfileState {
 
   ProfileState copyWith({
     Set<String>? diagnoses,
+    String? displayName,
     String? email,
     String? language,
     int? birthYear,
@@ -43,6 +47,7 @@ class ProfileState {
   }) =>
       ProfileState(
         diagnoses: diagnoses ?? this.diagnoses,
+        displayName: displayName ?? this.displayName,
         email: email ?? this.email,
         language: language ?? this.language,
         birthYear: birthYear ?? this.birthYear,
@@ -94,7 +99,7 @@ class ProfileController extends Notifier<ProfileState> {
   /// Language switches locally first so the UI changes immediately, then is
   /// stored on the account — the backend needs it to generate reports and
   /// chat replies in the same language, not just to label them.
-  Future<void> savePreferences({String? language, int? birthYear}) async {
+  Future<void> savePreferences({String? displayName, String? language, int? birthYear}) async {
     state = state.copyWith(saving: true, error: null);
 
     if (language != null) {
@@ -104,8 +109,25 @@ class ProfileController extends Notifier<ProfileState> {
     try {
       final profile = await ref
           .read(profileApiProvider)
-          .setPreferences(language: language, birthYear: birthYear);
+          .setPreferences(displayName: displayName, language: language, birthYear: birthYear);
       state = _fromProfile(profile).copyWith(saved: true);
+    } catch (e) {
+      state = state.copyWith(saving: false, error: e.toString());
+    }
+  }
+
+  /// Picks a photo from the gallery and uploads it. A cancelled picker
+  /// (`pickImage` returning `null`) is silently a no-op, same as tapping
+  /// away from any other picker — not an error.
+  Future<void> pickAndUploadAvatar() async {
+    final file = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1024, maxHeight: 1024);
+    if (file == null) return;
+
+    state = state.copyWith(saving: true, error: null);
+    try {
+      final profile = await ref.read(profileApiProvider).uploadAvatar(file);
+      state = _fromProfile(profile).copyWith(saved: true);
+      ref.invalidate(avatarBytesProvider);
     } catch (e) {
       state = state.copyWith(saving: false, error: e.toString());
     }
@@ -113,6 +135,7 @@ class ProfileController extends Notifier<ProfileState> {
 
   ProfileState _fromProfile(UserProfile profile) => ProfileState(
         diagnoses: profile.diagnoses.toSet(),
+        displayName: profile.displayName,
         email: profile.email,
         language: profile.language,
         birthYear: profile.birthYear,

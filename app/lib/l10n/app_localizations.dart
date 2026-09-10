@@ -782,6 +782,18 @@ abstract class AppLocalizations {
   /// **'Hesabın yok mu? Kayıt ol'**
   String get authSwitchToRegister;
 
+  /// No description provided for @authDisplayNameLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Adın'**
+  String get authDisplayNameLabel;
+
+  /// No description provided for @authDisplayNameHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sana nasıl seslenelim?'**
+  String get authDisplayNameHint;
+
   /// No description provided for @moodDoneToday.
   ///
   /// In tr, this message translates to:
@@ -1339,6 +1351,282 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Bildiren notu:'**
   String get storiesModerationReporterNote;
+
+  /// No description provided for @settingsAssessment.
+  ///
+  /// In tr, this message translates to:
+  /// **'Öz-değerlendirme'**
+  String get settingsAssessment;
+
+  /// No description provided for @assessmentOnboardTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Seni biraz tanıyalım'**
+  String get assessmentOnboardTitle;
+
+  /// No description provided for @assessmentOnboardIntro.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son iki haftaya dair 16 kısa soru. Sana nasıl yaklaşacağımızı bu belirler; istersen şimdi atlayıp sonra Ayarlar\'dan yapabilirsin.'**
+  String get assessmentOnboardIntro;
+
+  /// No description provided for @assessmentStart.
+  ///
+  /// In tr, this message translates to:
+  /// **'Başla'**
+  String get assessmentStart;
+
+  /// No description provided for @assessmentSkip.
+  ///
+  /// In tr, this message translates to:
+  /// **'Şimdi değil'**
+  String get assessmentSkip;
+
+  /// No description provided for @assessmentProgress.
+  ///
+  /// In tr, this message translates to:
+  /// **'{current} / {total}'**
+  String assessmentProgress(int current, int total);
+
+  /// No description provided for @assessmentSectionMood.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son iki hafta — ruh halin'**
+  String get assessmentSectionMood;
+
+  /// No description provided for @assessmentSectionAnxiety.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son iki hafta — kaygın'**
+  String get assessmentSectionAnxiety;
+
+  /// No description provided for @assessmentAnswer0.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hiçbir zaman'**
+  String get assessmentAnswer0;
+
+  /// No description provided for @assessmentAnswer1.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bazı günler'**
+  String get assessmentAnswer1;
+
+  /// No description provided for @assessmentAnswer2.
+  ///
+  /// In tr, this message translates to:
+  /// **'Günlerin yarıdan fazlasında'**
+  String get assessmentAnswer2;
+
+  /// No description provided for @assessmentAnswer3.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hemen hemen her gün'**
+  String get assessmentAnswer3;
+
+  /// No description provided for @assessmentResultTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Teşekkürler'**
+  String get assessmentResultTitle;
+
+  /// No description provided for @assessmentResultNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu bir tanı değil, sana nasıl yaklaşacağımızı ayarlamamıza yardımcı olan bir tarama sinyali.'**
+  String get assessmentResultNote;
+
+  /// No description provided for @assessmentResultDepression.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh hali taraması'**
+  String get assessmentResultDepression;
+
+  /// No description provided for @assessmentResultAnxiety.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaygı taraması'**
+  String get assessmentResultAnxiety;
+
+  /// No description provided for @assessmentBandMinimal.
+  ///
+  /// In tr, this message translates to:
+  /// **'Minimal'**
+  String get assessmentBandMinimal;
+
+  /// No description provided for @assessmentBandMild.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hafif'**
+  String get assessmentBandMild;
+
+  /// No description provided for @assessmentBandModerate.
+  ///
+  /// In tr, this message translates to:
+  /// **'Orta'**
+  String get assessmentBandModerate;
+
+  /// No description provided for @assessmentBandModeratelySevere.
+  ///
+  /// In tr, this message translates to:
+  /// **'Orta-ağır'**
+  String get assessmentBandModeratelySevere;
+
+  /// No description provided for @assessmentBandSevere.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ağır'**
+  String get assessmentBandSevere;
+
+  /// No description provided for @assessmentContinueCta.
+  ///
+  /// In tr, this message translates to:
+  /// **'Devam et'**
+  String get assessmentContinueCta;
+
+  /// No description provided for @assessmentSubmitError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gönderilemedi, tekrar dener misin?'**
+  String get assessmentSubmitError;
+
+  /// No description provided for @assessmentRetakeTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Öz-değerlendirme'**
+  String get assessmentRetakeTitle;
+
+  /// No description provided for @assessmentRetakeIntro.
+  ///
+  /// In tr, this message translates to:
+  /// **'PHQ-9 ve GAD-7 — son iki haftana dair 16 kısa soru. Sonuçlar, sohbet ve önerilerinin arka planında kullanılır.'**
+  String get assessmentRetakeIntro;
+
+  /// No description provided for @assessmentRetakeCta.
+  ///
+  /// In tr, this message translates to:
+  /// **'Değerlendirmeyi başlat'**
+  String get assessmentRetakeCta;
+
+  /// No description provided for @assessmentRetakeAgain.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeniden değerlendir'**
+  String get assessmentRetakeAgain;
+
+  /// No description provided for @assessmentLastTakenToday.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bugün yapıldı'**
+  String get assessmentLastTakenToday;
+
+  /// No description provided for @assessmentLastTaken.
+  ///
+  /// In tr, this message translates to:
+  /// **'{days} gün önce yapıldı'**
+  String assessmentLastTaken(int days);
+
+  /// No description provided for @assessmentNeverTaken.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz yapılmadı'**
+  String get assessmentNeverTaken;
+
+  /// No description provided for @phq9Q1.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yaptığınız işlere karşı ilgi azlığı ya da yaptığınız işlerden zevk almama'**
+  String get phq9Q1;
+
+  /// No description provided for @phq9Q2.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kendini çökkün, depresif ya da ümitsiz hissetme'**
+  String get phq9Q2;
+
+  /// No description provided for @phq9Q3.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uykuya dalmakta güçlük çekme, uykuyu sürdürmekte güçlük çekme ya da fazla uyuma'**
+  String get phq9Q3;
+
+  /// No description provided for @phq9Q4.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kendini yorgun hissetme ya da enerjinin az olması'**
+  String get phq9Q4;
+
+  /// No description provided for @phq9Q5.
+  ///
+  /// In tr, this message translates to:
+  /// **'İştah azlığı ya da aşırı yeme'**
+  String get phq9Q5;
+
+  /// No description provided for @phq9Q6.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kendini kötü hissetme; kendini ya da ailesini hayal kırıklığına uğrattığını düşünme'**
+  String get phq9Q6;
+
+  /// No description provided for @phq9Q7.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gazete okumak ya da televizyon izlemek gibi işlere yoğunlaşmakta güçlük çekme'**
+  String get phq9Q7;
+
+  /// No description provided for @phq9Q8.
+  ///
+  /// In tr, this message translates to:
+  /// **'Başkalarının fark edebileceği kadar yavaş hareket etme ya da konuşma; ya da tam tersi, her zamankinden daha hareketli ve huzursuz olma'**
+  String get phq9Q8;
+
+  /// No description provided for @phq9Q9.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ölü olsan daha iyi olur diye düşünme ya da bir şekilde kendine zarar verme'**
+  String get phq9Q9;
+
+  /// No description provided for @gad7Q1.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sinirli, kaygılı ya da gergin hissetme'**
+  String get gad7Q1;
+
+  /// No description provided for @gad7Q2.
+  ///
+  /// In tr, this message translates to:
+  /// **'Endişelerini kontrol edememe ya da durduramama'**
+  String get gad7Q2;
+
+  /// No description provided for @gad7Q3.
+  ///
+  /// In tr, this message translates to:
+  /// **'Farklı konularda çok fazla endişelenme'**
+  String get gad7Q3;
+
+  /// No description provided for @gad7Q4.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gevşeyip rahatlayamama'**
+  String get gad7Q4;
+
+  /// No description provided for @gad7Q5.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yerinde duramayacak kadar huzursuz olma'**
+  String get gad7Q5;
+
+  /// No description provided for @gad7Q6.
+  ///
+  /// In tr, this message translates to:
+  /// **'Çabuk sinirlenme ya da huysuzlaşma'**
+  String get gad7Q6;
+
+  /// No description provided for @gad7Q7.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kötü bir şey olacakmış gibi korku hissetme'**
+  String get gad7Q7;
 }
 
 class _AppLocalizationsDelegate
