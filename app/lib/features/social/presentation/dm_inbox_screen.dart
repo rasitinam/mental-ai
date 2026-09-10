@@ -107,7 +107,10 @@ class _DmInboxScreenState extends ConsumerState<DmInboxScreen> {
                           ],
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(22, 0, 22, 28),
+                          // 140 rather than 28: this route now lives
+                          // inside the shell, so the floating nav bar
+                          // sits over the last ~100px of the list.
+                          padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
                           itemCount: list.length,
                           itemBuilder: (context, i) => _ThreadRow(
                             thread: list[i],

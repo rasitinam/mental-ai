@@ -163,7 +163,12 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
             ),
             if (awaitingMyAnswer)
               Padding(
-                padding: const EdgeInsets.fromLTRB(22, 8, 22, 24),
+                // 140 rather than 24: this route now lives inside the
+                // shell (see `app/router.dart`), so `HomeShell`'s
+                // floating nav bar sits over the last ~100px of the
+                // screen — without this the accept/decline buttons were
+                // unreachable on Android.
+                padding: const EdgeInsets.fromLTRB(22, 8, 22, 140),
                 child: Column(
                   children: [
                     Text(l10n.dmAcceptPrompt,
@@ -203,14 +208,14 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
               )
             else if (waitingOnThem)
               Padding(
-                padding: const EdgeInsets.fromLTRB(22, 8, 22, 28),
+                padding: const EdgeInsets.fromLTRB(22, 8, 22, 140),
                 child: Text(l10n.dmWaitingBody,
                     textAlign: TextAlign.center,
                     style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
               )
             else
               Padding(
-                padding: const EdgeInsets.fromLTRB(22, 4, 22, 24),
+                padding: const EdgeInsets.fromLTRB(22, 4, 22, 140),
                 child: Row(
                   children: [
                     Expanded(

@@ -63,7 +63,12 @@ class DiagnosesScreen extends ConsumerWidget {
         ),
       ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(22, 0, 22, 24),
+        // 100 rather than 24: this screen's own `bottomNavigationBar`
+        // renders at the very bottom of the space `HomeShell` gives its
+        // body, which is *behind* the floating nav bar (`extendBody:
+        // true`) — without enough clearance here, the Save button sits
+        // right where that floating bar is, effectively covered by it.
+        minimum: const EdgeInsets.fromLTRB(22, 0, 22, 100),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

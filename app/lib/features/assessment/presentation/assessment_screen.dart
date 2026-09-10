@@ -334,40 +334,57 @@ class _ResultView extends StatelessWidget {
       (title: l10n.assessmentResultSubstance, score: result.cageaidScore, max: 4, band: result.substanceBand),
     ];
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 20),
-          Text(l10n.assessmentResultTitle, style: AppTypography.largeTitle.copyWith(color: palette.textPrimary)),
-          const SizedBox(height: 8),
-          Text(l10n.assessmentResultNote, style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
-          const SizedBox(height: 24),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              for (final card in cards)
-                SizedBox(
-                  width: (MediaQuery.of(context).size.width - 44 - 12) / 2,
-                  child: _ScoreCard(
-                    title: card.title,
-                    score: card.score,
-                    max: card.max,
-                    band: _bandLabel(card.band),
-                    palette: palette,
-                  ),
+    // The button is a direct `Column` child, outside the
+    // `SingleChildScrollView` — seven score cards is enough content that
+    // it doesn't always fit on one screen, and a "Devam et" that only
+    // existed at the bottom of a scrollable area reads as a missing
+    // button to someone who never scrolls down. Pinning it below the
+    // scroll area means it's always visible regardless of how tall the
+    // card grid or the crisis banner get.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 20),
+                Text(l10n.assessmentResultTitle,
+                    style: AppTypography.largeTitle.copyWith(color: palette.textPrimary)),
+                const SizedBox(height: 8),
+                Text(l10n.assessmentResultNote,
+                    style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
+                const SizedBox(height: 24),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (final card in cards)
+                      SizedBox(
+                        width: (MediaQuery.of(context).size.width - 44 - 12) / 2,
+                        child: _ScoreCard(
+                          title: card.title,
+                          score: card.score,
+                          max: card.max,
+                          band: _bandLabel(card.band),
+                          palette: palette,
+                        ),
+                      ),
+                  ],
                 ),
-            ],
+                if (result.crisisFlag) ...[
+                  const SizedBox(height: 20),
+                  _AssessmentCrisisBanner(palette: palette, l10n: l10n),
+                ],
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
-          if (result.crisisFlag) ...[
-            const SizedBox(height: 20),
-            _AssessmentCrisisBanner(palette: palette, l10n: l10n),
-          ],
-          const SizedBox(height: 28),
-          AppPrimaryButton(label: l10n.assessmentContinueCta, onPressed: onContinue),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        AppPrimaryButton(label: l10n.assessmentContinueCta, onPressed: onContinue),
+      ],
     );
   }
 }
