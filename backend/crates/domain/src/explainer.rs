@@ -13,6 +13,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DisorderExplainer {
     pub slug: String,
+    /// Which language this card was written in. Part of the cache key, not
+    /// decoration: a card generated for a Turkish reader must not be served
+    /// to an English one just because the slug matches.
+    pub language: String,
     pub category: String,
     pub name: String,
     pub what_it_is: String,

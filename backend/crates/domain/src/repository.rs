@@ -127,20 +127,43 @@ pub trait InsightRepository: Send + Sync {
     async fn recent(&self, limit: u32) -> anyhow::Result<Vec<Insight>>;
     /// The feed filtered to one `catalog` category.
     async fn recent_in_category(&self, category: &str, limit: u32) -> anyhow::Result<Vec<Insight>>;
+    async fn get(&self, id: Uuid) -> anyhow::Result<Option<Insight>>;
+    /// A cached `(title, body)` translation of one card, if some earlier
+    /// reader already asked for this language.
+    async fn get_translation(
+        &self,
+        insight_id: Uuid,
+        target_language: &str,
+    ) -> anyhow::Result<Option<(String, String)>>;
+    async fn save_translation(
+        &self,
+        insight_id: Uuid,
+        target_language: &str,
+        title: &str,
+        body: &str,
+    ) -> anyhow::Result<()>;
 }
 
 #[async_trait]
 pub trait ExplainerRepository: Send + Sync {
-    async fn get(&self, slug: &str) -> anyhow::Result<Option<DisorderExplainer>>;
+    /// Cards are cached per (slug, language) — the same condition written
+    /// for a Turkish reader is a different card from the English one.
+    async fn get(&self, slug: &str, language: &str) -> anyhow::Result<Option<DisorderExplainer>>;
     async fn save(&self, explainer: &DisorderExplainer) -> anyhow::Result<()>;
-    /// Slugs that already have a cached card. The warm-up job walks the
-    /// catalog against this so it only spends LLM calls on what's missing
-    /// instead of regenerating the whole list on every boot.
-    async fn cached_slugs(&self) -> anyhow::Result<Vec<String>>;
-    /// Cards generated before `cutoff`, oldest first. The research corpus
-    /// keeps growing underneath these, so a card written months ago is
-    /// grounded in a smaller evidence base than one written today.
-    async fn stale_slugs(&self, cutoff: DateTime<Utc>, limit: u32) -> anyhow::Result<Vec<String>>;
+    /// Slugs that already have a cached card in `language`. The warm-up job
+    /// walks the catalog against this so it only spends LLM calls on what's
+    /// missing instead of regenerating the whole list on every boot.
+    async fn cached_slugs(&self, language: &str) -> anyhow::Result<Vec<String>>;
+    /// Cards in `language` generated before `cutoff`, oldest first. The
+    /// research corpus keeps growing underneath these, so a card written
+    /// months ago is grounded in a smaller evidence base than one written
+    /// today.
+    async fn stale_slugs(
+        &self,
+        cutoff: DateTime<Utc>,
+        limit: u32,
+        language: &str,
+    ) -> anyhow::Result<Vec<String>>;
 }
 
 #[async_trait]

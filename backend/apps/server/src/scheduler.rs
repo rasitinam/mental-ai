@@ -32,6 +32,10 @@ const EXPLAINER_MAX_AGE_DAYS: i64 = 30;
 /// filling in the ones that are still missing.
 const EXPLAINER_REFRESH_PER_RUN: u32 = 10;
 
+/// The one language the warm-up pre-builds; every other language is filled
+/// in lazily on first request.
+const EXPLAINER_WARMUP_LANGUAGE: &str = "tr";
+
 /// Fills in the disorder-explainer cache in the background, one condition at
 /// a time, so that opening a card is a database read rather than a ~30s LLM
 /// call. That wait was the real bug behind the timeouts on the guide screen:
@@ -43,7 +47,11 @@ const EXPLAINER_REFRESH_PER_RUN: u32 = 10;
 /// research that has been ingested since they were written.
 pub fn spawn_explainer_warmup_job(state: AppState) {
     tokio::spawn(async move {
-        let cached = match state.explainers.cached_slugs().await {
+        // Only Turkish is pre-warmed: it's what almost every account reads,
+        // and warming a second language would double a job that already
+        // spends ~150 LLM calls. English cards generate on first request
+        // and are cached from then on (see `routes::catalog::explainer`).
+        let cached = match state.explainers.cached_slugs(EXPLAINER_WARMUP_LANGUAGE).await {
             Ok(slugs) => slugs,
             Err(err) => {
                 tracing::warn!(error = %err, "explainer warm-up: could not read cache, skipping");
@@ -64,7 +72,7 @@ pub fn spawn_explainer_warmup_job(state: AppState) {
         let cutoff = Utc::now() - ChronoDuration::days(EXPLAINER_MAX_AGE_DAYS);
         let stale = state
             .explainers
-            .stale_slugs(cutoff, EXPLAINER_REFRESH_PER_RUN)
+            .stale_slugs(cutoff, EXPLAINER_REFRESH_PER_RUN, EXPLAINER_WARMUP_LANGUAGE)
             .await
             .unwrap_or_default();
 
@@ -82,7 +90,7 @@ pub fn spawn_explainer_warmup_job(state: AppState) {
         for slug in missing.into_iter().chain(stale) {
             match generate_disorder_explainer(
                 &slug,
-                "tr",
+                EXPLAINER_WARMUP_LANGUAGE,
                 state.llm.as_ref(),
                 state.research.as_ref(),
                 state.vector_store.as_ref(),

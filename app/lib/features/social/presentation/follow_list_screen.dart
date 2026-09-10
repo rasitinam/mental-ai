@@ -7,7 +7,6 @@ import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/social_api.dart';
-import '../domain/social_models.dart';
 import 'user_profile_screen.dart' show UserAvatar;
 
 /// Followers or following for one account — the same list either way,
@@ -22,8 +21,7 @@ class FollowListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
-    final api = ref.watch(socialApiProvider);
-    final future = followers ? api.followers(userId) : api.following(userId);
+    final list = ref.watch(followListProvider((userId: userId, followers: followers)));
 
     return Scaffold(
       body: SafeArea(
@@ -47,14 +45,14 @@ class FollowListScreen extends ConsumerWidget {
               ),
             ),
             Expanded(
-              child: FutureBuilder<List<UserCard>>(
-                future: future,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator(color: palette.accent));
-                  }
-                  final list = snapshot.data!;
-                  if (list.isEmpty) {
+              child: list.when(
+                loading: () => Center(child: CircularProgressIndicator(color: palette.accent)),
+                error: (_, _) => Center(
+                  child: Text(l10n.commonError,
+                      style: AppTypography.subheadline.copyWith(color: palette.warning)),
+                ),
+                data: (people) {
+                  if (people.isEmpty) {
                     return Center(
                       child: Text(l10n.profileNobodyYet,
                           style: AppTypography.subheadline
@@ -63,9 +61,9 @@ class FollowListScreen extends ConsumerWidget {
                   }
                   return ListView.builder(
                     padding: const EdgeInsets.fromLTRB(22, 0, 22, 28),
-                    itemCount: list.length,
+                    itemCount: people.length,
                     itemBuilder: (context, i) {
-                      final card = list[i];
+                      final card = people[i];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: GlassSurface(

@@ -6,6 +6,15 @@ import '../domain/insight.dart';
 
 final insightsApiProvider = Provider<InsightsApi>((ref) => InsightsApi(ref.watch(apiClientProvider)));
 
+/// One card translated into the reader's own account language. Same shape
+/// as `storyTranslationProvider`: `autoDispose.family`, so a card is
+/// translated once while it's on screen rather than the whole feed being
+/// translated up front.
+final insightTranslationProvider =
+    FutureProvider.autoDispose.family<InsightTranslation, String>(
+  (ref, insightId) => ref.watch(insightsApiProvider).translate(insightId),
+);
+
 class InsightsApi {
   final Dio _dio;
   InsightsApi(this._dio);
@@ -20,6 +29,14 @@ class InsightsApi {
       queryParameters: category == null ? null : {'category': category},
     );
     return (response.data as List<dynamic>).map((e) => Insight.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Translates one card into the caller's own account language. The
+  /// backend picks the target from the signed-in account and caches the
+  /// result per (card, language), so this is cheap after the first reader.
+  Future<InsightTranslation> translate(String id) async {
+    final response = await _dio.get('/insights/$id/translate');
+    return InsightTranslation.fromJson(response.data as Map<String, dynamic>);
   }
 
   /// Manually turns already-ingested research articles into insight

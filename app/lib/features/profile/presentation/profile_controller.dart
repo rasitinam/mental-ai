@@ -91,6 +91,7 @@ class ProfileController extends Notifier<ProfileState> {
     try {
       final profile = await ref.read(profileApiProvider).setDiagnoses(state.diagnoses.toList());
       state = _fromProfile(profile).copyWith(saved: true);
+      ref.invalidate(myProfileProvider);
     } catch (e) {
       state = state.copyWith(saving: false, error: e.toString());
     }
@@ -107,6 +108,7 @@ class ProfileController extends Notifier<ProfileState> {
   }) async {
     state = state.copyWith(saving: true, error: null);
 
+    final previousLanguage = ref.read(localeControllerProvider).languageCode;
     if (language != null) {
       await ref.read(localeControllerProvider.notifier).setLanguage(language);
     }
@@ -121,7 +123,15 @@ class ProfileController extends Notifier<ProfileState> {
             dmPolicy: dmPolicy,
           );
       state = _fromProfile(profile).copyWith(saved: true);
+      ref.invalidate(myProfileProvider);
     } catch (e) {
+      // Put the interface back in the language the account is still stored
+      // in. Leaving it switched after a failed save is worse than not
+      // switching at all: the app would be speaking one language while
+      // every generated report and chat reply came back in the other.
+      if (language != null && language != previousLanguage) {
+        await ref.read(localeControllerProvider.notifier).setLanguage(previousLanguage);
+      }
       state = state.copyWith(saving: false, error: e.toString());
     }
   }
@@ -138,6 +148,7 @@ class ProfileController extends Notifier<ProfileState> {
       final profile = await ref.read(profileApiProvider).uploadAvatar(file);
       state = _fromProfile(profile).copyWith(saved: true);
       ref.invalidate(avatarBytesProvider);
+      ref.invalidate(myProfileProvider);
     } catch (e) {
       state = state.copyWith(saving: false, error: e.toString());
     }

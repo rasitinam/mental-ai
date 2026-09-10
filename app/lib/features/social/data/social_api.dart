@@ -23,6 +23,17 @@ final userAvatarProvider = FutureProvider.autoDispose.family<Uint8List?, String>
   (ref, userId) => ref.watch(socialApiProvider).avatar(userId),
 );
 
+/// Followers/following for one account. A provider rather than a `Future`
+/// built inside `build()` — the latter re-fires the request on every
+/// rebuild and has no error state, so a failed load spins forever.
+final followListProvider =
+    FutureProvider.autoDispose.family<List<UserCard>, ({String userId, bool followers})>(
+  (ref, args) {
+    final api = ref.watch(socialApiProvider);
+    return args.followers ? api.followers(args.userId) : api.following(args.userId);
+  },
+);
+
 final dmThreadsProvider = FutureProvider.autoDispose<List<DmThread>>(
   (ref) => ref.watch(socialApiProvider).threads(),
 );

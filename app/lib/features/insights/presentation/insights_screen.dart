@@ -9,6 +9,7 @@ import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
+import '../data/insights_api.dart' show insightTranslationProvider;
 import '../domain/insight.dart';
 import 'insights_controller.dart';
 
@@ -518,25 +519,68 @@ class _DisorderCard extends StatelessWidget {
   }
 }
 
-class _InsightCard extends StatelessWidget {
+/// A research card. Cards are synthesized once for the whole app in one
+/// language, so a reader on another language gets a translated copy with a
+/// toggle back to the original — the same treatment story cards get, and
+/// keyed off the card's own `language` rather than a hardcoded assumption
+/// about which language the feed is written in.
+class _InsightCard extends ConsumerStatefulWidget {
   final Insight insight;
   const _InsightCard({required this.insight});
 
   @override
+  ConsumerState<_InsightCard> createState() => _InsightCardState();
+}
+
+class _InsightCardState extends ConsumerState<_InsightCard> {
+  bool _showOriginal = false;
+
+  @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final insight = widget.insight;
+    final appLanguage = Localizations.localeOf(context).languageCode;
+    final needsTranslation = insight.language != appLanguage;
+
+    final translation =
+        needsTranslation ? ref.watch(insightTranslationProvider(insight.id)) : null;
+    final translated = translation?.valueOrNull;
+    final showingOriginal = !needsTranslation || _showOriginal || translated == null;
+    final title = showingOriginal ? insight.title : translated.title;
+    final body = showingOriginal ? insight.body : translated.body;
 
     return GlassSurface(
       radius: 18,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(insight.title,
-              style: AppTypography.cardTitle.copyWith(color: palette.textPrimary)),
+          if (needsTranslation && translated != null) ...[
+            InkWell(
+              onTap: () => setState(() => _showOriginal = !_showOriginal),
+              borderRadius: BorderRadius.circular(6),
+              child: Text(
+                showingOriginal ? l10n.storiesShowTranslation : l10n.storiesTranslated,
+                style: AppTypography.caption
+                    .copyWith(color: palette.textSecondary, fontStyle: FontStyle.italic),
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          Text(title, style: AppTypography.cardTitle.copyWith(color: palette.textPrimary)),
           const SizedBox(height: 10),
-          Text(insight.body,
+          Text(body,
               style: AppTypography.subheadline
                   .copyWith(color: palette.textSecondary, fontSize: 13.5, height: 1.6)),
+          if (needsTranslation && translated != null && !showingOriginal) ...[
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: () => setState(() => _showOriginal = true),
+              borderRadius: BorderRadius.circular(6),
+              child: Text(l10n.storiesShowOriginal,
+                  style: AppTypography.caption.copyWith(color: palette.accent)),
+            ),
+          ],
           if (insight.tags.isNotEmpty) ...[
             const SizedBox(height: 12),
             Wrap(

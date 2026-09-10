@@ -88,30 +88,37 @@ class HomeShell extends ConsumerWidget {
                 bordered: true,
                 blurSigma: 16,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
+                // `Expanded` per icon rather than fixed widths: seven 44px
+                // targets plus this bar's own margins need ~352px, which a
+                // 320dp phone (or either half of a split screen) doesn't
+                // have — they'd overflow and clip the last tab. Dividing
+                // the available width instead means the bar fits any
+                // screen and only the touch targets get tighter.
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     for (var i = 0; i < destinations.length; i++)
-                      _TabIcon(
-                        data: destinations[i],
-                        selected: i == navigationShell.currentIndex,
-                        showBadge: i == _messagesIndex && badgeVisible,
-                        color: palette.accent,
-                        activeBackground: palette.accentSoft,
-                        inactiveColor: palette.textSecondary,
-                        badgeColor: palette.warning,
-                        onTap: () {
-                          // Tapping the tab directly is "straight from
-                          // the bar", even if a stale flag was left set
-                          // by an earlier Settings-row visit.
-                          if (i == _messagesIndex) {
-                            ref.read(dmEnteredFromSettingsProvider.notifier).state = false;
-                          }
-                          navigationShell.goBranch(
-                            i,
-                            initialLocation: i == navigationShell.currentIndex,
-                          );
-                        },
+                      Expanded(
+                        child: _TabIcon(
+                          data: destinations[i],
+                          selected: i == navigationShell.currentIndex,
+                          showBadge: i == _messagesIndex && badgeVisible,
+                          color: palette.accent,
+                          activeBackground: palette.accentSoft,
+                          inactiveColor: palette.textSecondary,
+                          badgeColor: palette.warning,
+                          onTap: () {
+                            // Tapping the tab directly is "straight from
+                            // the bar", even if a stale flag was left set
+                            // by an earlier Settings-row visit.
+                            if (i == _messagesIndex) {
+                              ref.read(dmEnteredFromSettingsProvider.notifier).state = false;
+                            }
+                            navigationShell.goBranch(
+                              i,
+                              initialLocation: i == navigationShell.currentIndex,
+                            );
+                          },
+                        ),
                       ),
                   ],
                 ),
@@ -147,48 +154,63 @@ class _TabIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: data.tooltip,
-      child: InkResponse(
-        onTap: onTap,
-        radius: 28,
-        highlightShape: BoxShape.circle,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOut,
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: selected ? activeBackground : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          alignment: Alignment.center,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Icon(
-                selected ? data.activeIcon : data.icon,
-                size: 21,
-                color: selected ? color : inactiveColor,
-              ),
-              if (showBadge)
-                Positioned(
-                  top: -1,
-                  right: -3,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: badgeColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1),
-                    ),
-                  ),
+    // Its `Expanded` parent hands over a share of the bar's width, which on
+    // a wide screen is more than this needs and on a 320dp one is less. The
+    // box stays a 44px square where there's room and shrinks to the share
+    // where there isn't, so the bar never overflows and never stretches the
+    // selected-tab highlight across the whole slot.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final side = constraints.maxWidth.isFinite && constraints.maxWidth < 44
+            ? constraints.maxWidth
+            : 44.0;
+
+        return Center(
+          child: Tooltip(
+            message: data.tooltip,
+            child: InkResponse(
+              onTap: onTap,
+              radius: 28,
+              highlightShape: BoxShape.circle,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                width: side,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: selected ? activeBackground : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-            ],
+                alignment: Alignment.center,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      selected ? data.activeIcon : data.icon,
+                      size: 21,
+                      color: selected ? color : inactiveColor,
+                    ),
+                    if (showBadge)
+                      Positioned(
+                        top: -1,
+                        right: -3,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: badgeColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

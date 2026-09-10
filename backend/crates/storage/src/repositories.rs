@@ -596,6 +596,61 @@ impl InsightRepository for SqliteInsightRepository {
 
         Ok(rows.into_iter().map(insight_from_row).collect())
     }
+
+    async fn get(&self, id: Uuid) -> anyhow::Result<Option<Insight>> {
+        let row = sqlx::query_as::<_, InsightRow>(
+            "SELECT id, title, body, source_article_ids, tags, category, created_at
+             FROM insights WHERE id = ?1",
+        )
+        .bind(id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(insight_from_row))
+    }
+
+    async fn get_translation(
+        &self,
+        insight_id: Uuid,
+        target_language: &str,
+    ) -> anyhow::Result<Option<(String, String)>> {
+        let row: Option<(String, String)> = sqlx::query_as(
+            "SELECT title, body FROM insight_translations
+             WHERE insight_id = ?1 AND target_language = ?2",
+        )
+        .bind(insight_id.to_string())
+        .bind(target_language)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row)
+    }
+
+    async fn save_translation(
+        &self,
+        insight_id: Uuid,
+        target_language: &str,
+        title: &str,
+        body: &str,
+    ) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO insight_translations (insight_id, target_language, title, body, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT (insight_id, target_language) DO UPDATE SET
+                title = excluded.title,
+                body = excluded.body,
+                created_at = excluded.created_at",
+        )
+        .bind(insight_id.to_string())
+        .bind(target_language)
+        .bind(title)
+        .bind(body)
+        .bind(Utc::now())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
 }
 
 type InsightRow = (String, String, String, String, String, Option<String>, DateTime<Utc>);
@@ -685,19 +740,21 @@ impl SqliteExplainerRepository {
 
 #[async_trait]
 impl ExplainerRepository for SqliteExplainerRepository {
-    async fn get(&self, slug: &str) -> anyhow::Result<Option<DisorderExplainer>> {
-        let row = sqlx::query_as::<_, (String, String, String, String, String, String, String, DateTime<Utc>)>(
-            "SELECT slug, category, name, what_it_is, how_it_develops, coping_paths, treatment_paths, generated_at
-             FROM disorder_explainers WHERE slug = ?1",
+    async fn get(&self, slug: &str, language: &str) -> anyhow::Result<Option<DisorderExplainer>> {
+        let row = sqlx::query_as::<_, (String, String, String, String, String, String, String, String, DateTime<Utc>)>(
+            "SELECT slug, language, category, name, what_it_is, how_it_develops, coping_paths, treatment_paths, generated_at
+             FROM disorder_explainers WHERE slug = ?1 AND language = ?2",
         )
         .bind(slug)
+        .bind(language)
         .fetch_optional(&self.pool)
         .await?;
 
         Ok(row.map(
-            |(slug, category, name, what_it_is, how_it_develops, coping, treatment, generated_at)| {
+            |(slug, language, category, name, what_it_is, how_it_develops, coping, treatment, generated_at)| {
                 DisorderExplainer {
                     slug,
+                    language,
                     category,
                     name,
                     what_it_is,
@@ -712,9 +769,10 @@ impl ExplainerRepository for SqliteExplainerRepository {
 
     async fn save(&self, explainer: &DisorderExplainer) -> anyhow::Result<()> {
         sqlx::query(
-            "INSERT INTO disorder_explainers (slug, category, name, what_it_is, how_it_develops, coping_paths, treatment_paths, generated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
-             ON CONFLICT(slug) DO UPDATE SET
+            "INSERT INTO disorder_explainers (slug, language, category, name, what_it_is, how_it_develops, coping_paths, treatment_paths, generated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+             ON CONFLICT(slug, language) DO UPDATE SET
+                name = excluded.name,
                 what_it_is = excluded.what_it_is,
                 how_it_develops = excluded.how_it_develops,
                 coping_paths = excluded.coping_paths,
@@ -722,6 +780,7 @@ impl ExplainerRepository for SqliteExplainerRepository {
                 generated_at = excluded.generated_at",
         )
         .bind(&explainer.slug)
+        .bind(&explainer.language)
         .bind(&explainer.category)
         .bind(&explainer.name)
         .bind(&explainer.what_it_is)
@@ -735,22 +794,30 @@ impl ExplainerRepository for SqliteExplainerRepository {
         Ok(())
     }
 
-    async fn cached_slugs(&self) -> anyhow::Result<Vec<String>> {
-        let rows = sqlx::query_as::<_, (String,)>("SELECT slug FROM disorder_explainers")
-            .fetch_all(&self.pool)
-            .await?;
+    async fn cached_slugs(&self, language: &str) -> anyhow::Result<Vec<String>> {
+        let rows =
+            sqlx::query_as::<_, (String,)>("SELECT slug FROM disorder_explainers WHERE language = ?1")
+                .bind(language)
+                .fetch_all(&self.pool)
+                .await?;
 
         Ok(rows.into_iter().map(|(slug,)| slug).collect())
     }
 
-    async fn stale_slugs(&self, cutoff: DateTime<Utc>, limit: u32) -> anyhow::Result<Vec<String>> {
+    async fn stale_slugs(
+        &self,
+        cutoff: DateTime<Utc>,
+        limit: u32,
+        language: &str,
+    ) -> anyhow::Result<Vec<String>> {
         let rows = sqlx::query_as::<_, (String,)>(
             "SELECT slug FROM disorder_explainers
-             WHERE generated_at < ?1
+             WHERE generated_at < ?1 AND language = ?2
              ORDER BY generated_at ASC
-             LIMIT ?2",
+             LIMIT ?3",
         )
         .bind(cutoff)
+        .bind(language)
         .bind(limit)
         .fetch_all(&self.pool)
         .await?;

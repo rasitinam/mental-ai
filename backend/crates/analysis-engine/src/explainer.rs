@@ -27,14 +27,17 @@ pub async fn generate_disorder_explainer(
     let (category, disorder) = catalog::disorder(slug)
         .ok_or_else(|| anyhow::anyhow!("unknown disorder slug: {slug}"))?;
 
+    // The retrieval query stays Turkish whatever the output language: the
+    // ingested corpus is indexed on Turkish-language embeddings, so asking
+    // in English would retrieve worse context for the same condition.
     let query = format!("{} {} nedir, nedenleri ve tedavisi", disorder.name, category.name);
     let articles = retrieve_context(&query, 5, research, vector_store, embedder).await;
 
     let user_content = format!(
         "Condition: {} (category: {})\n\n\
          Related research abstracts:\n{}",
-        disorder.name,
-        category.name,
+        disorder.name_in(language),
+        category.name_in(language),
         format_context(&articles)
     );
 
@@ -64,8 +67,9 @@ pub async fn generate_disorder_explainer(
 
     Ok(DisorderExplainer {
         slug: disorder.slug.to_string(),
+        language: language.to_string(),
         category: category.slug.to_string(),
-        name: disorder.name.to_string(),
+        name: disorder.name_in(language).to_string(),
         what_it_is: parsed.0,
         how_it_develops: parsed.1,
         coping_paths: parsed.2,
