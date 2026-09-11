@@ -7,11 +7,11 @@ import '../domain/daily_report.dart';
 class DailyReportState {
   final DailyReport? report;
   final bool loading;
-  final String? error;
+  final Object? error;
 
   const DailyReportState({this.report, this.loading = false, this.error});
 
-  DailyReportState copyWith({DailyReport? report, bool? loading, String? error}) => DailyReportState(
+  DailyReportState copyWith({DailyReport? report, bool? loading, Object? error}) => DailyReportState(
         report: report ?? this.report,
         loading: loading ?? this.loading,
         error: error,
@@ -37,7 +37,7 @@ class DailyReportController extends Notifier<DailyReportState> {
       final report = await ref.read(reportApiProvider).latest();
       state = state.copyWith(report: report, loading: false);
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: e);
     }
   }
 
@@ -47,7 +47,7 @@ class DailyReportController extends Notifier<DailyReportState> {
       final report = await ref.read(reportApiProvider).generate();
       state = state.copyWith(report: report, loading: false);
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: e);
     }
   }
 }

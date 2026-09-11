@@ -1,11 +1,34 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/network/error_messages.dart';
 import '../../../l10n/app_localizations.dart';
 import 'auth_controller.dart';
+
+/// Classifies the login/register-specific status codes into what they
+/// actually mean in this one context — a 401 here is "wrong password",
+/// not the generic "something went wrong" [friendlyErrorMessage] would
+/// give it, since it doesn't know it's looking at a login attempt.
+/// Everything else (network trouble, server errors, the plain validation
+/// strings `AuthController._validate` sets directly) falls through to the
+/// shared classifier.
+String authErrorMessage(AppLocalizations l10n, Object error) {
+  if (error is DioException && error.type == DioExceptionType.badResponse) {
+    switch (error.response?.statusCode) {
+      case 401:
+        return l10n.authErrorWrongCredentials;
+      case 409:
+        return l10n.authErrorEmailTaken;
+      case 400:
+        return l10n.authErrorCheckDetails;
+    }
+  }
+  return friendlyErrorMessage(l10n, error);
+}
 
 /// The app's one auth surface — a login form by default, toggling in
 /// place to a register form rather than routing to a second screen
@@ -139,7 +162,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
                   if (state.error != null) ...[
                     const SizedBox(height: 14),
-                    Text(state.error!,
+                    Text(authErrorMessage(l10n, state.error!),
                         style: TextStyle(color: palette.warning), textAlign: TextAlign.center),
                   ],
                   const SizedBox(height: 26),

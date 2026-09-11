@@ -8,7 +8,7 @@ class ChatState {
   final List<ChatMessage> messages;
   final bool sending;
   final bool loadingHistory;
-  final String? error;
+  final Object? error;
 
   const ChatState({
     this.messages = const [],
@@ -21,7 +21,7 @@ class ChatState {
     List<ChatMessage>? messages,
     bool? sending,
     bool? loadingHistory,
-    String? error,
+    Object? error,
   }) =>
       ChatState(
         messages: messages ?? this.messages,
@@ -79,7 +79,7 @@ class ChatController extends Notifier<ChatState> {
       );
       state = state.copyWith(messages: [...state.messages, assistantMessage], sending: false);
     } catch (e) {
-      state = state.copyWith(sending: false, error: e.toString());
+      state = state.copyWith(sending: false, error: e);
     }
   }
 }

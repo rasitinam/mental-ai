@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/network/error_messages.dart';
 import '../../../l10n/app_localizations.dart';
 import '../domain/assessment_result.dart';
 import '../domain/instruments.dart';
@@ -222,7 +223,7 @@ class _QuestionView extends StatelessWidget {
           ],
           if (state.error != null) ...[
             const SizedBox(height: 16),
-            Text(l10n.assessmentSubmitError, style: TextStyle(color: palette.warning)),
+            Text(friendlyErrorMessage(l10n, state.error!), style: TextStyle(color: palette.warning)),
           ],
           if (state.submitting) ...[
             const SizedBox(height: 20),

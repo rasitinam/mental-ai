@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/network/error_messages.dart';
 import '../../../core/storage/local_prefs.dart';
 import '../../../core/widgets/countdown_text.dart';
 import '../../../l10n/app_localizations.dart';
@@ -148,7 +149,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       if (state.error != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(state.error!, style: TextStyle(color: palette.warning)),
+                          child: Text(friendlyErrorMessage(l10n, state.error!),
+                              style: TextStyle(color: palette.warning)),
                         ),
                       AppPrimaryButton(
                         label: l10n.commonSave,

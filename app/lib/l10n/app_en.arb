@@ -8,6 +8,12 @@
   "commonClose": "Close",
   "commonError": "Something went wrong",
   "commonLoading": "Loading",
+  "errorNoConnection": "Check your internet connection and try again.",
+  "errorServer": "Can't reach the server right now. Try again shortly.",
+  "errorTimeout": "The connection timed out. Want to try again?",
+  "authErrorWrongCredentials": "Wrong email or password.",
+  "authErrorEmailTaken": "An account with this email already exists.",
+  "authErrorCheckDetails": "Check your details.",
 
   "navReport": "Home",
   "navMood": "Mood",

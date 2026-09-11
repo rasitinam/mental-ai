@@ -11,7 +11,7 @@ class HomeStateData {
   /// "reassessing" rather than showing a bare spinner over stale numbers.
   final bool refreshing;
   final bool loading;
-  final String? error;
+  final Object? error;
 
   const HomeStateData({
     this.state,
@@ -24,7 +24,7 @@ class HomeStateData {
     UserState? state,
     bool? refreshing,
     bool? loading,
-    String? error,
+    Object? error,
   }) =>
       HomeStateData(
         state: state ?? this.state,
@@ -54,7 +54,7 @@ class StateController extends Notifier<HomeStateData> {
       final latest = await ref.read(stateApiProvider).latest();
       state = HomeStateData(state: latest, loading: false);
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: e);
     }
   }
 
@@ -66,7 +66,7 @@ class StateController extends Notifier<HomeStateData> {
       final assessed = await ref.read(stateApiProvider).refresh();
       state = HomeStateData(state: assessed, loading: false);
     } catch (e) {
-      state = state.copyWith(refreshing: false, loading: false, error: e.toString());
+      state = state.copyWith(refreshing: false, loading: false, error: e);
     }
   }
 }

@@ -7,6 +7,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../core/network/error_messages.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
 import '../data/insights_api.dart' show insightTranslationProvider;
@@ -149,7 +150,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                                             CircularProgressIndicator(color: palette.accent)),
                                   )
                                 else if (state.error != null)
-                                  Text(state.error!,
+                                  Text(friendlyErrorMessage(l10n, state.error!),
                                       style: TextStyle(color: palette.warning),
                                       textAlign: TextAlign.center)
                                 else if (state.insights.isEmpty)

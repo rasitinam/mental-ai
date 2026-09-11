@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/network/error_messages.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
@@ -90,7 +91,8 @@ class DailyReportScreen extends ConsumerWidget {
               if (report.error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(report.error!, style: TextStyle(color: palette.warning)),
+                  child: Text(friendlyErrorMessage(l10n, report.error!),
+                      style: TextStyle(color: palette.warning)),
                 ),
               if (report.loading)
                 Padding(

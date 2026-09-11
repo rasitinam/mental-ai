@@ -7,7 +7,7 @@ import '../domain/life_analysis.dart';
 class LifeAnalysisState {
   final LifeAnalysis? analysis;
   final bool loading;
-  final String? error;
+  final Object? error;
 
   /// When the next generation becomes available (weekly cooldown).
   final DateTime? cooldownUntil;
@@ -19,7 +19,7 @@ class LifeAnalysisState {
   LifeAnalysisState copyWith({
     LifeAnalysis? analysis,
     bool? loading,
-    String? error,
+    Object? error,
     DateTime? cooldownUntil,
   }) =>
       LifeAnalysisState(
@@ -55,7 +55,7 @@ class LifeAnalysisController extends Notifier<LifeAnalysisState> {
         cooldownUntil: analysis?.generatedAt.add(const Duration(days: 7)),
       );
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: e);
     }
   }
 
@@ -71,7 +71,7 @@ class LifeAnalysisController extends Notifier<LifeAnalysisState> {
     } on LifeAnalysisCooldownException catch (e) {
       state = state.copyWith(loading: false, cooldownUntil: e.retryAfter);
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: e);
     }
   }
 }

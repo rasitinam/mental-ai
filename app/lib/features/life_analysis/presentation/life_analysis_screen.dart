@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/network/error_messages.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../streak/data/streak_api.dart';
 import 'life_analysis_controller.dart';
@@ -77,7 +78,8 @@ class LifeAnalysisScreen extends ConsumerWidget {
                     if (state.error != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(state.error!, style: TextStyle(color: palette.warning)),
+                        child: Text(friendlyErrorMessage(l10n, state.error!),
+                            style: TextStyle(color: palette.warning)),
                       ),
                     if (analysis == null && state.error == null)
                       _EmptyState(onGenerate: controller.generateNow, palette: palette)

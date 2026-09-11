@@ -10,7 +10,7 @@ class StoriesState {
   final bool loadingMine;
   final bool submitting;
   final bool submitted;
-  final String? error;
+  final Object? error;
 
   const StoriesState({
     this.feed = const [],
@@ -29,7 +29,7 @@ class StoriesState {
     bool? loadingMine,
     bool? submitting,
     bool? submitted,
-    String? error,
+    Object? error,
   }) =>
       StoriesState(
         feed: feed ?? this.feed,
@@ -59,7 +59,7 @@ class StoriesController extends Notifier<StoriesState> {
       final feed = await ref.read(lifeStoriesApiProvider).feed();
       state = state.copyWith(feed: feed, loadingFeed: false);
     } catch (e) {
-      state = state.copyWith(loadingFeed: false, error: e.toString());
+      state = state.copyWith(loadingFeed: false, error: e);
     }
   }
 
@@ -69,7 +69,7 @@ class StoriesController extends Notifier<StoriesState> {
       final mine = await ref.read(lifeStoriesApiProvider).mine();
       state = state.copyWith(mine: mine, loadingMine: false);
     } catch (e) {
-      state = state.copyWith(loadingMine: false, error: e.toString());
+      state = state.copyWith(loadingMine: false, error: e);
     }
   }
 
@@ -117,7 +117,7 @@ class StoriesController extends Notifier<StoriesState> {
       await loadMine();
       return true;
     } catch (e) {
-      state = state.copyWith(submitting: false, error: e.toString());
+      state = state.copyWith(submitting: false, error: e);
       return false;
     }
   }
@@ -127,7 +127,7 @@ class StoriesController extends Notifier<StoriesState> {
       await ref.read(lifeStoriesApiProvider).withdraw(id);
       await loadMine();
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: e);
     }
   }
 

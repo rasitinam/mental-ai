@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/local_prefs.dart';
@@ -8,10 +7,15 @@ import '../domain/session.dart';
 
 class AuthState {
   final bool submitting;
-  final String? error;
+  /// A `DioException` (classified and localized for display by
+  /// `auth_screen.dart`'s `authErrorMessage`), or a plain already-worded
+  /// `String` for the local validation checks in `_validate` below —
+  /// `friendlyErrorMessage` passes a `String` through unchanged, so both
+  /// shapes render correctly without this needing to know which one it has.
+  final Object? error;
   const AuthState({this.submitting = false, this.error});
 
-  AuthState copyWith({bool? submitting, String? error}) =>
+  AuthState copyWith({bool? submitting, Object? error}) =>
       AuthState(submitting: submitting ?? this.submitting, error: error);
 }
 
@@ -50,12 +54,17 @@ class AuthController extends Notifier<AuthState> {
   }
 
   bool _validate(String email, String password) {
+    final tr = ref.read(localeControllerProvider).languageCode != 'en';
     if (!email.contains('@') || email.trim().length < 3) {
-      state = state.copyWith(error: 'Geçerli bir e-posta adresi gir.');
+      state = state.copyWith(
+        error: tr ? 'Geçerli bir e-posta adresi gir.' : 'Enter a valid email address.',
+      );
       return false;
     }
     if (password.length < 8) {
-      state = state.copyWith(error: 'Şifre en az 8 karakter olmalı.');
+      state = state.copyWith(
+        error: tr ? 'Şifre en az 8 karakter olmalı.' : 'Password must be at least 8 characters.',
+      );
       return false;
     }
     return true;
@@ -69,18 +78,13 @@ class AuthController extends Notifier<AuthState> {
       await saveSession(prefs, StoredSession(userId: session.userId, token: session.token));
       ref.read(sessionTokenProvider.notifier).state = session.token;
       state = state.copyWith(submitting: false);
-    } on DioException catch (e) {
-      state = state.copyWith(submitting: false, error: _messageFor(e));
     } catch (e) {
-      state = state.copyWith(submitting: false, error: e.toString());
+      // Stored raw (a `DioException`, or whatever else went wrong) rather
+      // than stringified here — `auth_screen.dart`'s `authErrorMessage`
+      // classifies 401/409/400 into "wrong password" / "email taken" /
+      // "check your details" at display time, in whatever language the
+      // interface is currently showing.
+      state = state.copyWith(submitting: false, error: e);
     }
-  }
-
-  String _messageFor(DioException e) {
-    final status = e.response?.statusCode;
-    if (status == 401) return 'E-posta veya şifre hatalı.';
-    if (status == 409) return 'Bu e-posta ile zaten bir hesap var.';
-    if (status == 400) return 'Bilgileri kontrol et.';
-    return 'Bağlantı hatası: ${e.message ?? 'sunucuya ulaşılamadı'}';
   }
 }

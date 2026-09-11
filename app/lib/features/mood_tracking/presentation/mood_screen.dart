@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/network/error_messages.dart';
 import '../../../core/widgets/countdown_text.dart';
 import '../../../l10n/app_localizations.dart';
 import '../domain/mood_emotion.dart';
@@ -135,7 +136,7 @@ class _MoodScreenState extends ConsumerState<MoodScreen> {
               ),
               const SizedBox(height: 24),
               if (state.error != null) ...[
-                Text(state.error!,
+                Text(friendlyErrorMessage(l10n, state.error!),
                     textAlign: TextAlign.center, style: TextStyle(color: palette.warning)),
                 const SizedBox(height: 12),
               ],

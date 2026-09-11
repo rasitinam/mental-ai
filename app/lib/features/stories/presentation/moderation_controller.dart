@@ -10,7 +10,7 @@ class ModerationState {
   /// Ids currently being approved/rejected/dismissed — lets a single row
   /// show its own spinner instead of blocking the whole queue.
   final Set<String> processing;
-  final String? error;
+  final Object? error;
 
   const ModerationState({
     this.pending = const [],
@@ -25,7 +25,7 @@ class ModerationState {
     List<ReportedStory>? reports,
     bool? loading,
     Set<String>? processing,
-    String? error,
+    Object? error,
   }) =>
       ModerationState(
         pending: pending ?? this.pending,
@@ -57,7 +57,7 @@ class ModerationController extends Notifier<ModerationState> {
         loading: false,
       );
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: e);
     }
   }
 
@@ -75,7 +75,7 @@ class ModerationController extends Notifier<ModerationState> {
       await action();
       await load();
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: e);
     } finally {
       state = state.copyWith(processing: state.processing.difference({id}));
     }

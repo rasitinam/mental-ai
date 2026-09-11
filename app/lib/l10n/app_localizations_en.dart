@@ -31,6 +31,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonLoading => 'Loading';
 
   @override
+  String get errorNoConnection =>
+      'Check your internet connection and try again.';
+
+  @override
+  String get errorServer =>
+      'Can\'t reach the server right now. Try again shortly.';
+
+  @override
+  String get errorTimeout => 'The connection timed out. Want to try again?';
+
+  @override
+  String get authErrorWrongCredentials => 'Wrong email or password.';
+
+  @override
+  String get authErrorEmailTaken =>
+      'An account with this email already exists.';
+
+  @override
+  String get authErrorCheckDetails => 'Check your details.';
+
+  @override
   String get navReport => 'Home';
 
   @override

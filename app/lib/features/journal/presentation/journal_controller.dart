@@ -9,7 +9,7 @@ class JournalState {
   final bool loading;
   final bool submitting;
   final bool submitted;
-  final String? error;
+  final Object? error;
 
   /// When the next entry becomes available. `null` means no cooldown is
   /// known (nothing written yet, or the last one is older than a day).
@@ -31,7 +31,7 @@ class JournalState {
     bool? loading,
     bool? submitting,
     bool? submitted,
-    String? error,
+    Object? error,
     DateTime? cooldownUntil,
   }) =>
       JournalState(
@@ -69,7 +69,7 @@ class JournalController extends Notifier<JournalState> {
             entries.isEmpty ? null : entries.first.createdAt.add(const Duration(hours: 24)),
       );
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: e);
     }
   }
 
@@ -83,7 +83,7 @@ class JournalController extends Notifier<JournalState> {
     } on JournalCooldownException catch (e) {
       state = state.copyWith(submitting: false, cooldownUntil: e.retryAfter);
     } catch (e) {
-      state = state.copyWith(submitting: false, error: e.toString());
+      state = state.copyWith(submitting: false, error: e);
     }
   }
 

@@ -18,7 +18,7 @@ class ProfileState {
   final bool loading;
   final bool saving;
   final bool saved;
-  final String? error;
+  final Object? error;
 
   const ProfileState({
     this.diagnoses = const {},
@@ -43,7 +43,7 @@ class ProfileState {
     bool? loading,
     bool? saving,
     bool? saved,
-    String? error,
+    Object? error,
   }) =>
       ProfileState(
         diagnoses: diagnoses ?? this.diagnoses,
@@ -76,7 +76,7 @@ class ProfileController extends Notifier<ProfileState> {
       final profile = await ref.read(profileApiProvider).profile();
       state = _fromProfile(profile);
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: e);
     }
   }
 
@@ -93,7 +93,7 @@ class ProfileController extends Notifier<ProfileState> {
       state = _fromProfile(profile).copyWith(saved: true);
       ref.invalidate(myProfileProvider);
     } catch (e) {
-      state = state.copyWith(saving: false, error: e.toString());
+      state = state.copyWith(saving: false, error: e);
     }
   }
 
@@ -132,7 +132,7 @@ class ProfileController extends Notifier<ProfileState> {
       if (language != null && language != previousLanguage) {
         await ref.read(localeControllerProvider.notifier).setLanguage(previousLanguage);
       }
-      state = state.copyWith(saving: false, error: e.toString());
+      state = state.copyWith(saving: false, error: e);
     }
   }
 
@@ -150,7 +150,7 @@ class ProfileController extends Notifier<ProfileState> {
       ref.invalidate(avatarBytesProvider);
       ref.invalidate(myProfileProvider);
     } catch (e) {
-      state = state.copyWith(saving: false, error: e.toString());
+      state = state.copyWith(saving: false, error: e);
     }
   }
 

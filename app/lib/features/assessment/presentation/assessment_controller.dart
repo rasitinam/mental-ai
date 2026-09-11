@@ -19,7 +19,7 @@ class AssessmentState {
   final List<int?> answers;
   final int step;
   final bool submitting;
-  final String? error;
+  final Object? error;
   final AssessmentResult? result;
 
   const AssessmentState({
@@ -41,7 +41,7 @@ class AssessmentState {
     List<int?>? answers,
     int? step,
     bool? submitting,
-    String? error,
+    Object? error,
     bool clearError = false,
     AssessmentResult? result,
   }) =>
@@ -114,7 +114,7 @@ class AssessmentController extends AutoDisposeNotifier<AssessmentState> {
       state = state.copyWith(submitting: false, result: result);
       ref.invalidate(latestAssessmentProvider);
     } catch (e) {
-      state = state.copyWith(submitting: false, error: e.toString());
+      state = state.copyWith(submitting: false, error: e);
     }
   }
 }

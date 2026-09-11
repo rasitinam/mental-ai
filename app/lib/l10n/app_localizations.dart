@@ -140,6 +140,42 @@ abstract class AppLocalizations {
   /// **'Yükleniyor'**
   String get commonLoading;
 
+  /// No description provided for @errorNoConnection.
+  ///
+  /// In tr, this message translates to:
+  /// **'İnternet bağlantını kontrol et ve tekrar dene.'**
+  String get errorNoConnection;
+
+  /// No description provided for @errorServer.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sunucuya şu an ulaşılamıyor. Birazdan tekrar dene.'**
+  String get errorServer;
+
+  /// No description provided for @errorTimeout.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bağlantı zaman aşımına uğradı. Tekrar dener misin?'**
+  String get errorTimeout;
+
+  /// No description provided for @authErrorWrongCredentials.
+  ///
+  /// In tr, this message translates to:
+  /// **'E-posta veya şifre hatalı.'**
+  String get authErrorWrongCredentials;
+
+  /// No description provided for @authErrorEmailTaken.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu e-posta ile zaten bir hesap var.'**
+  String get authErrorEmailTaken;
+
+  /// No description provided for @authErrorCheckDetails.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bilgileri kontrol et.'**
+  String get authErrorCheckDetails;
+
   /// No description provided for @navReport.
   ///
   /// In tr, this message translates to:

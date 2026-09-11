@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/network/error_messages.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
@@ -245,7 +246,8 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
               ),
               const SizedBox(height: 22),
               if (state.error != null) ...[
-                Text(state.error!, style: TextStyle(color: palette.warning), textAlign: TextAlign.center),
+                Text(friendlyErrorMessage(l10n, state.error!),
+                    style: TextStyle(color: palette.warning), textAlign: TextAlign.center),
                 const SizedBox(height: 12),
               ],
               AppPrimaryButton(

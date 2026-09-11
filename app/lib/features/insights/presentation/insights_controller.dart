@@ -11,7 +11,7 @@ class InsightsState {
   final List<Insight> insights;
   final bool loading;
   final bool synthesizing;
-  final String? error;
+  final Object? error;
 
   const InsightsState({
     this.insights = const [],
@@ -24,7 +24,7 @@ class InsightsState {
     List<Insight>? insights,
     bool? loading,
     bool? synthesizing,
-    String? error,
+    Object? error,
   }) =>
       InsightsState(
         insights: insights ?? this.insights,
@@ -53,7 +53,7 @@ class InsightsController extends Notifier<InsightsState> {
       final insights = await ref.read(insightsApiProvider).recent(category: category);
       state = state.copyWith(insights: insights, loading: false);
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: e);
     }
   }
 
@@ -68,7 +68,7 @@ class InsightsController extends Notifier<InsightsState> {
       final insights = await ref.read(insightsApiProvider).recent(category: category);
       state = state.copyWith(insights: insights, synthesizing: false);
     } catch (e) {
-      state = state.copyWith(synthesizing: false, error: e.toString());
+      state = state.copyWith(synthesizing: false, error: e);
     }
   }
 }

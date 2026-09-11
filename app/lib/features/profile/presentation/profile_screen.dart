@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/network/error_messages.dart';
 import '../../../core/theme/theme_mode_controller.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/profile_api.dart';
@@ -294,7 +295,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   if (state.error != null) ...[
                     const SizedBox(height: 16),
-                    Text(state.error!, style: TextStyle(color: palette.warning)),
+                    Text(friendlyErrorMessage(l10n, state.error!),
+                        style: TextStyle(color: palette.warning)),
                   ],
                   const SizedBox(height: 26),
                   const _AppearanceGroup(),

@@ -31,6 +31,27 @@ class AppLocalizationsTr extends AppLocalizations {
   String get commonLoading => 'Yükleniyor';
 
   @override
+  String get errorNoConnection =>
+      'İnternet bağlantını kontrol et ve tekrar dene.';
+
+  @override
+  String get errorServer =>
+      'Sunucuya şu an ulaşılamıyor. Birazdan tekrar dene.';
+
+  @override
+  String get errorTimeout =>
+      'Bağlantı zaman aşımına uğradı. Tekrar dener misin?';
+
+  @override
+  String get authErrorWrongCredentials => 'E-posta veya şifre hatalı.';
+
+  @override
+  String get authErrorEmailTaken => 'Bu e-posta ile zaten bir hesap var.';
+
+  @override
+  String get authErrorCheckDetails => 'Bilgileri kontrol et.';
+
+  @override
   String get navReport => 'Ana Ekran';
 
   @override

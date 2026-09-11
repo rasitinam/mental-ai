@@ -13,7 +13,7 @@ class MoodState {
   final Set<String> emotions;
   final bool submitting;
   final bool submitted;
-  final String? error;
+  final Object? error;
   /// When the next check-in becomes available. `null` while unknown
   /// (still loading) or once the cooldown has passed.
   final DateTime? cooldownUntil;
@@ -38,7 +38,7 @@ class MoodState {
     Set<String>? emotions,
     bool? submitting,
     bool? submitted,
-    String? error,
+    Object? error,
     DateTime? cooldownUntil,
     bool clearCooldown = false,
     bool? loadingCooldown,
@@ -120,7 +120,7 @@ class MoodController extends Notifier<MoodState> {
     } on MoodCooldownException catch (e) {
       state = state.copyWith(submitting: false, cooldownUntil: e.retryAfter);
     } catch (e) {
-      state = state.copyWith(submitting: false, error: e.toString());
+      state = state.copyWith(submitting: false, error: e);
     }
   }
 }
