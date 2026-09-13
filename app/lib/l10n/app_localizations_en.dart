@@ -1194,12 +1194,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myProfileStories => 'My Stories';
 
   @override
-  String get myProfileStoriesSeeAll => 'See all';
-
-  @override
-  String get myProfileStoriesAdd => 'New';
-
-  @override
   String get settingsDmPrivacy => 'Message privacy';
 
   @override

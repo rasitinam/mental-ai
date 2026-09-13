@@ -8,9 +8,9 @@ import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
-import '../domain/life_story.dart';
 import 'stories_controller.dart';
 import 'story_detail_screen.dart';
+import 'story_grid_tile.dart';
 import 'story_submit_screen.dart';
 
 /// The author's own submissions, with the moderation status the public
@@ -145,7 +145,7 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
       itemCount: state.mine.length,
       itemBuilder: (context, i) {
         final story = state.mine[i];
-        return _StoryTile(
+        return StoryGridTile(
           story: story,
           tag: _resolve(categories, story.diagnosisSlug),
           palette: palette,
@@ -154,73 +154,6 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-class _StoryTile extends StatelessWidget {
-  final LifeStory story;
-  final ({String emoji, String name})? tag;
-  final AppPalette palette;
-  final VoidCallback onTap;
-
-  const _StoryTile({required this.story, required this.tag, required this.palette, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: palette.glassFill,
-      borderRadius: BorderRadius.circular(8),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      if (tag != null) Text(tag!.emoji, style: const TextStyle(fontSize: 14)),
-                      const Spacer(),
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: storyStatusColor(palette, story.status),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Expanded(
-                    child: Text(
-                      story.body,
-                      maxLines: 5,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        height: 1.35,
-                        fontWeight: FontWeight.w400,
-                        color: palette.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (story.anonymous)
-              Positioned(
-                right: 6,
-                bottom: 6,
-                child: Icon(Icons.visibility_off_rounded, size: 12, color: palette.textTertiary),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

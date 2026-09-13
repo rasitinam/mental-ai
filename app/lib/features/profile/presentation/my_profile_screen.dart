@@ -13,6 +13,9 @@ import '../../catalog/domain/disorder_category.dart';
 import '../../social/data/social_api.dart';
 import '../../stories/domain/life_story.dart';
 import '../../stories/presentation/stories_controller.dart';
+import '../../stories/presentation/story_detail_screen.dart';
+import '../../stories/presentation/story_grid_tile.dart';
+import '../../stories/presentation/story_submit_screen.dart';
 import '../data/profile_api.dart';
 
 /// The account's own landing view for the tab that used to open straight
@@ -142,30 +145,19 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
               onTap: () => context.push('/settings/profile'),
             ),
             const SizedBox(height: 30),
-            Row(
-              children: [
-                SectionLabel(l10n.myProfileStories),
-                const Spacer(),
-                InkWell(
-                  onTap: () => context.push('/settings/my-stories'),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    child: Text(l10n.myProfileStoriesSeeAll,
-                        style: AppTypography.footnote.copyWith(color: palette.accent, fontWeight: FontWeight.w600)),
-                  ),
-                ),
-              ],
-            ),
+            SectionLabel(l10n.myProfileStories),
             const SizedBox(height: 12),
-            _StoryHighlights(
+            _StoryGrid(
               loading: stories.loadingMine,
               stories: stories.mine,
               categories: categories,
               palette: palette,
-              l10n: l10n,
-              onAdd: () => context.push('/stories/new'),
-              onOpen: () => context.push('/settings/my-stories'),
+              onAdd: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const StorySubmitScreen()),
+              ),
+              onOpen: (id) => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => StoryDetailScreen(storyId: id)),
+              ),
             ),
           ],
         ),
@@ -238,28 +230,24 @@ class _SecondaryButton extends StatelessWidget {
   }
 }
 
-/// The one genuinely new visual idea here: a horizontal strip of a
-/// person's own stories, styled after Instagram's highlight circles —
-/// text stories have no photo to put in one, so each circle carries its
-/// diagnosis category's emoji instead, ringed in the story's own
-/// moderation status color (see `MyStoriesScreen`'s same status→color
-/// mapping) so "still pending" or "needs another look" reads at a glance
-/// without opening anything.
-class _StoryHighlights extends StatelessWidget {
+/// The account's own post grid, embedded directly on the profile page
+/// rather than behind a "see all" tap — the same 3-across square tiles
+/// as the dedicated [MyStoriesScreen] (sharing [StoryGridTile]), laid out
+/// with [GridView]'s own scrolling disabled so it grows inline with the
+/// rest of the page instead of nesting a second scrollable.
+class _StoryGrid extends StatelessWidget {
   final bool loading;
   final List<LifeStory> stories;
   final List<DisorderCategory> categories;
   final AppPalette palette;
-  final AppLocalizations l10n;
   final VoidCallback onAdd;
-  final VoidCallback onOpen;
+  final void Function(String storyId) onOpen;
 
-  const _StoryHighlights({
+  const _StoryGrid({
     required this.loading,
     required this.stories,
     required this.categories,
     required this.palette,
-    required this.l10n,
     required this.onAdd,
     required this.onOpen,
   });
@@ -273,96 +261,32 @@ class _StoryHighlights extends StatelessWidget {
     return null;
   }
 
-  Color _ringColor(StoryStatus status) => switch (status) {
-        StoryStatus.approved => palette.accent,
-        StoryStatus.pending => palette.textTertiary,
-        StoryStatus.rejected => palette.warning,
-      };
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 96,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _HighlightCircle(
-            label: l10n.myProfileStoriesAdd,
-            palette: palette,
-            onTap: onAdd,
-            ringColor: palette.separator,
-            child: Icon(Icons.add_rounded, size: 22, color: palette.accent),
-          ),
-          if (loading)
-            for (var i = 0; i < 3; i++)
-              const Padding(
-                padding: EdgeInsets.only(left: 14, top: 2),
-                child: SkeletonBox(width: 60, height: 60, radius: 30),
-              )
-          else
-            for (final story in stories)
-              _HighlightCircle(
-                label: _resolve(story.diagnosisSlug)?.name ?? l10n.storiesTitle,
-                palette: palette,
-                onTap: onOpen,
-                ringColor: _ringColor(story.status),
-                child: Text(_resolve(story.diagnosisSlug)?.emoji ?? '📝', style: const TextStyle(fontSize: 22)),
-              ),
-        ],
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 3,
+        mainAxisSpacing: 3,
       ),
-    );
-  }
-}
+      // +1 for the leading "write a new one" tile, always first — loading
+      // shows five skeleton squares behind it so the grid's shape doesn't
+      // jump once real tiles arrive.
+      itemCount: 1 + (loading ? 5 : stories.length),
+      itemBuilder: (context, i) {
+        if (i == 0) return AddStoryTile(palette: palette, onTap: onAdd);
+        if (loading) return SkeletonBox(radius: 8, height: double.infinity);
 
-class _HighlightCircle extends StatelessWidget {
-  final String label;
-  final Widget child;
-  final Color ringColor;
-  final AppPalette palette;
-  final VoidCallback onTap;
-
-  const _HighlightCircle({
-    required this.label,
-    required this.child,
-    required this.ringColor,
-    required this.palette,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: SizedBox(
-          width: 64,
-          child: Column(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: palette.glassFill,
-                  border: Border.all(color: ringColor, width: 2),
-                ),
-                child: child,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: AppTypography.caption.copyWith(color: palette.textSecondary, fontSize: 10.5),
-              ),
-            ],
-          ),
-        ),
-      ),
+        final story = stories[i - 1];
+        return StoryGridTile(
+          story: story,
+          tag: _resolve(story.diagnosisSlug),
+          palette: palette,
+          onTap: () => onOpen(story.id),
+        );
+      },
     );
   }
 }

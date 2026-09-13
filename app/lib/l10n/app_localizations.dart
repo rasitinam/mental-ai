@@ -2288,18 +2288,6 @@ abstract class AppLocalizations {
   /// **'Hikayelerim'**
   String get myProfileStories;
 
-  /// No description provided for @myProfileStoriesSeeAll.
-  ///
-  /// In tr, this message translates to:
-  /// **'Tümünü gör'**
-  String get myProfileStoriesSeeAll;
-
-  /// No description provided for @myProfileStoriesAdd.
-  ///
-  /// In tr, this message translates to:
-  /// **'Yeni'**
-  String get myProfileStoriesAdd;
-
   /// No description provided for @settingsDmPrivacy.
   ///
   /// In tr, this message translates to:

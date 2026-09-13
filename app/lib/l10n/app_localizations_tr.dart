@@ -1190,12 +1190,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get myProfileStories => 'Hikayelerim';
 
   @override
-  String get myProfileStoriesSeeAll => 'Tümünü gör';
-
-  @override
-  String get myProfileStoriesAdd => 'Yeni';
-
-  @override
   String get settingsDmPrivacy => 'Mesaj gizliliği';
 
   @override
