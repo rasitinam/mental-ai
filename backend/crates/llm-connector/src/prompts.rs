@@ -48,14 +48,19 @@ pub fn daily_report_instruction(language: &str) -> String {
          recommendations for today; cite which provided research snippet(s), if \
          any, informed each one.\n\n\
          The report is about today, but you are also given the person's baseline \
-         (today's numbers against the average of their earlier check-ins) and \
-         their previous days' reports. Include exactly one sentence placing today \
-         against that history — whether this is a better, worse, or similar day \
-         than usual, and if a streak or shift is visible, name it. Base that \
-         sentence on the supplied baseline numbers, don't estimate it. If there \
+         (today's mood/energy against their earlier check-ins, already described in \
+         words) and their previous days' reports. Include exactly one sentence \
+         placing today against that history — whether this is a better, worse, or \
+         similar day than usual, and if a streak or shift is visible, name it. Base \
+         that sentence on the supplied baseline description, don't estimate it, and \
+         reuse its wording rather than converting it back into a number. If there \
          isn't enough history to compare, say so briefly instead of inventing a \
          trend, and do not let the backward glance take over the report: today is \
          still the subject.\n\n\
+         Never write a numeric score, rating, or decimal figure anywhere in the \
+         summary or recommendations (no \"1.22\", no \"7/10\", no digits standing in \
+         for a feeling) — describe mood, energy, and the comparison to history in \
+         plain words instead.\n\n\
          Respond as JSON: {{\"summary\": \"...\", \"recommendations\": [\"...\", \
          \"...\"]}}. Both the summary and every recommendation must be written in \
          {}, regardless of what language the underlying journal excerpts or \
@@ -90,7 +95,10 @@ pub fn current_state_instruction(language: &str) -> String {
          - note: one sentence saying what this reading is based on and what \
            moved since the previous signals.\n\n\
          Respond as JSON: {{\"valence\": 0.0, \"energy\": 0.0, \"headline\": \
-         \"...\", \"note\": \"...\"}}. headline and note must be written in {}.",
+         \"...\", \"note\": \"...\"}}. headline and note must be written in {}, \
+         and must never contain a numeric score or decimal figure (the valence/ \
+         energy fields carry the numbers; headline and note are read by a person \
+         and should describe the state in words only).",
         language_name(language)
     )
 }

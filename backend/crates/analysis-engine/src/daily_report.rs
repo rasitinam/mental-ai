@@ -152,25 +152,74 @@ fn summarize_chat(messages: &[ChatMessageRecord]) -> String {
         .join("\n")
 }
 
+/// Rounds a -1.0..1.0 (or wider, for a today-vs-baseline delta) value to
+/// the nearest half point. The report should read "one and a half points
+/// lower", not "1.22 points lower" — a two-decimal average is precision
+/// the underlying check-ins never had, and it reads as noise, not signal.
+fn round_to_half(value: f32) -> f32 {
+    (value * 2.0).round() / 2.0
+}
+
+/// Turkish word for a magnitude already rounded to the nearest half point,
+/// never a digit — the daily report is meant to be read, not audited.
+fn magnitude_word(rounded_magnitude: f32) -> &'static str {
+    let steps = (rounded_magnitude / 0.5).round().abs() as i32;
+    match steps {
+        0 => "aynı düzeyde",
+        1 => "yarım puan",
+        2 => "bir puan",
+        3 => "bir buçuk puan",
+        4 => "iki puan",
+        _ => "iki buçuk puandan fazla",
+    }
+}
+
+/// A -1.0..1.0 axis value described in words, rounded to the nearest half
+/// point — same "no raw decimals" rule as [`magnitude_word`].
+fn level_phrase(value: f32) -> &'static str {
+    let steps = (round_to_half(value.clamp(-1.0, 1.0)) / 0.5).round() as i32;
+    match steps {
+        i32::MIN..=-2 => "çok düşük",
+        -1 => "düşük",
+        0 => "orta",
+        1 => "yüksek",
+        _ => "çok yüksek",
+    }
+}
+
+fn comparison_phrase(label: &str, diff: f32) -> String {
+    let rounded = round_to_half(diff);
+    if rounded == 0.0 {
+        return format!("{label} ortalamayla aynı düzeyde");
+    }
+    let direction = if rounded > 0.0 { "yüksek" } else { "düşük" };
+    format!("{label} ortalamadan {} {direction}", magnitude_word(rounded))
+}
+
 /// Computed directly from the actual mood entries rather than asked of
 /// the LLM - the numbers should reflect real data, not a model's
-/// restatement of data it was already given.
+/// restatement of data it was already given. Described in words (see
+/// [`level_phrase`]) rather than raw decimals, since this text is handed
+/// to the model as context and it otherwise tends to copy the digits
+/// straight into the report it writes for the person to read.
 fn summarize_moods(moods: &[MoodEntry]) -> String {
     if moods.is_empty() {
         return "Bugün için kaydedilmiş bir ruh hali yok.".to_string();
     }
     let (avg_valence, avg_arousal) = averages(moods);
     format!(
-        "{} kayıt, ortalama keyif düzeyi {:.2}, ortalama enerji düzeyi {:.2}",
+        "{} kayıt, ortalama keyif düzeyi {}, ortalama enerji düzeyi {}",
         moods.len(),
-        avg_valence,
-        avg_arousal
+        level_phrase(avg_valence),
+        level_phrase(avg_arousal),
     )
 }
 
 /// Today against everything before it. Also computed rather than inferred,
 /// so the "better/worse than usual" framing in the report rests on real
-/// arithmetic instead of the model's impression of a list.
+/// arithmetic instead of the model's impression of a list — expressed in
+/// words (see [`comparison_phrase`]) so that arithmetic never surfaces to
+/// the person as a raw decimal.
 fn summarize_baseline(today: &[MoodEntry], history: &[MoodEntry]) -> String {
     let today_ids: Vec<Uuid> = today.iter().map(|m| m.id).collect();
     let earlier: Vec<&MoodEntry> = history
@@ -186,15 +235,10 @@ fn summarize_baseline(today: &[MoodEntry], history: &[MoodEntry]) -> String {
     let (base_valence, base_arousal) = averages(earlier.iter().copied());
 
     format!(
-        "Bugün keyif {:.2} / enerji {:.2}; önceki {} kaydın ortalaması keyif {:.2} / enerji {:.2} \
-         (keyif farkı {:+.2}, enerji farkı {:+.2})",
-        today_valence,
-        today_arousal,
+        "Önceki {} kaydın ortalamasına göre bugün: {}, {}.",
         earlier.len(),
-        base_valence,
-        base_arousal,
-        today_valence - base_valence,
-        today_arousal - base_arousal,
+        comparison_phrase("keyif", today_valence - base_valence),
+        comparison_phrase("enerji", today_arousal - base_arousal),
     )
 }
 
