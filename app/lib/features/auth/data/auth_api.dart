@@ -35,4 +35,13 @@ class AuthApi {
   Future<void> logout() async {
     await _dio.post('/auth/logout');
   }
+
+  /// Permanently deletes the signed-in account and everything it owns.
+  /// Requires the current password — a session token alone (which could be
+  /// left open on a shared or lost device) isn't enough to authorize
+  /// something this irreversible. Throws [DioException] with a 401 for a
+  /// wrong password.
+  Future<void> deleteAccount({required String password}) async {
+    await _dio.delete('/account', data: {'password': password});
+  }
 }

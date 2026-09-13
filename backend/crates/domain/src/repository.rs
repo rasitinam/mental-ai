@@ -39,6 +39,13 @@ pub trait UserRepository: Send + Sync {
     /// with, or clears it (`None`) — the image bytes themselves are written
     /// straight to disk by the route handler, not through this trait.
     async fn set_avatar(&self, user_id: Uuid, content_type: Option<&str>) -> anyhow::Result<()>;
+    /// Permanently erases the account and everything it owns — every mood
+    /// entry, journal entry, chat message, story, DM, reaction, follow,
+    /// credential and session — in one transaction. There is no undo; the
+    /// route calling this re-checks the account's password first. The
+    /// avatar file on disk is the one thing this doesn't touch, since file
+    /// I/O isn't this trait's concern — the route removes it separately.
+    async fn delete_account(&self, user_id: Uuid) -> anyhow::Result<()>;
 }
 
 #[async_trait]

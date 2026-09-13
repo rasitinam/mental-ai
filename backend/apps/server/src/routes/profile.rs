@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 use axum::{
     extract::{Multipart, State},
     http::{header, StatusCode},
-    routing::{get, put},
+    routing::{delete, get, put},
     Json, Router,
 };
 use chrono::Utc;
@@ -12,7 +12,7 @@ use mental_domain::repository::{AuthRepository, PushTokenRepository, UserReposit
 use mental_domain::{DmPolicy, PushToken};
 use serde::{Deserialize, Serialize};
 
-use crate::auth::AuthUser;
+use crate::auth::{verify_password, AuthUser};
 use crate::state::AppState;
 
 /// Where uploaded avatar images live — one file per user, named by id, no
@@ -30,6 +30,7 @@ pub fn router() -> Router<AppState> {
         .route("/profile/avatar", put(upload_avatar).get(get_avatar))
         .layer(DefaultBodyLimit::max(MAX_AVATAR_BYTES + 1024))
         .route("/profile/push-token", put(register_push_token).delete(unregister_push_token))
+        .route("/account", delete(delete_account))
 }
 
 /// The account as the profile screen needs it. `email` lives in the
@@ -298,6 +299,54 @@ async fn unregister_push_token(
     state
         .push_tokens
         .unregister(&req.token)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Debug, Deserialize)]
+struct DeleteAccountRequest {
+    /// Re-confirms it's really the account holder — a bearer token alone
+    /// (which could be a session left open on a shared or stolen device)
+    /// isn't enough to authorize something this irreversible.
+    password: String,
+}
+
+/// Permanently deletes the signed-in account and everything it owns.
+/// Required for App Store review (Guideline 5.1.1(v): an app that lets
+/// someone create an account must also let them delete it from inside the
+/// app, not just by emailing support).
+async fn delete_account(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(req): Json<DeleteAccountRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let email = state
+        .auth
+        .find_email_for_user(auth.user_id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "account not found".to_string()))?;
+
+    let credentials = state
+        .auth
+        .find_credentials_by_email(&email)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "account not found".to_string()))?;
+
+    if !verify_password(&req.password, &credentials.password_hash) {
+        return Err((StatusCode::UNAUTHORIZED, "incorrect password".to_string()));
+    }
+
+    // Best-effort: a missing or unremovable avatar file shouldn't block
+    // deleting the account itself, which is the part that actually matters.
+    let _ = tokio::fs::remove_file(avatar_path(auth.user_id)).await;
+
+    state
+        .users
+        .delete_account(auth.user_id)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 

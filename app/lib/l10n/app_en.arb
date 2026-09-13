@@ -451,6 +451,14 @@
   "lifeMoodHistoryLegendLow": "Hard",
   "lifeMoodHistoryLegendHigh": "Good",
 
+  "settingsDeleteAccount": "Delete Account",
+  "deleteAccountTitle": "Delete your account?",
+  "deleteAccountBody": "This can't be undone. Your mood entries, journals, stories, messages, and everything else tied to your account will be permanently deleted.",
+  "deleteAccountPasswordHint": "Enter your password to confirm",
+  "deleteAccountConfirm": "Permanently Delete",
+  "deleteAccountWrongPassword": "Incorrect password.",
+  "deleteAccountDone": "Your account has been deleted.",
+
   "storiesReactionDestek": "You're not alone",
   "storiesReactionGuclusun": "You're strong",
   "storiesReactionAnliyorum": "I understand",

@@ -1304,6 +1304,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lifeMoodHistoryLegendHigh => 'Good';
 
   @override
+  String get settingsDeleteAccount => 'Delete Account';
+
+  @override
+  String get deleteAccountTitle => 'Delete your account?';
+
+  @override
+  String get deleteAccountBody =>
+      'This can\'t be undone. Your mood entries, journals, stories, messages, and everything else tied to your account will be permanently deleted.';
+
+  @override
+  String get deleteAccountPasswordHint => 'Enter your password to confirm';
+
+  @override
+  String get deleteAccountConfirm => 'Permanently Delete';
+
+  @override
+  String get deleteAccountWrongPassword => 'Incorrect password.';
+
+  @override
+  String get deleteAccountDone => 'Your account has been deleted.';
+
+  @override
   String get storiesReactionDestek => 'You\'re not alone';
 
   @override

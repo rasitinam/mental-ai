@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,6 +31,88 @@ class SettingsScreen extends ConsumerWidget {
       // Best-effort: even if the network call fails, clearing the local
       // session still logs the person out of this device.
     }
+    final prefs = ref.read(sharedPreferencesProvider);
+    await clearSession(prefs);
+    ref.read(sessionTokenProvider.notifier).state = null;
+  }
+
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+    final passwordController = TextEditingController();
+
+    final deleted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) {
+          String? error;
+          var busy = false;
+
+          Future<void> confirm() async {
+            setState(() {
+              busy = true;
+              error = null;
+            });
+            try {
+              await ref.read(authApiProvider).deleteAccount(password: passwordController.text);
+              if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+            } on DioException catch (e) {
+              setState(() {
+                busy = false;
+                error = e.response?.statusCode == 401 ? l10n.deleteAccountWrongPassword : l10n.commonError;
+              });
+            }
+          }
+
+          return AlertDialog(
+            backgroundColor: palette.glassFill,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(l10n.deleteAccountTitle,
+                style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.deleteAccountBody,
+                    style: AppTypography.footnote.copyWith(color: palette.textSecondary, height: 1.5)),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  onChanged: (_) => setState(() {}),
+                  style: AppTypography.subheadline.copyWith(color: palette.textPrimary),
+                  cursorColor: palette.warning,
+                  decoration: InputDecoration(
+                    hintText: l10n.deleteAccountPasswordHint,
+                    hintStyle: AppTypography.subheadline.copyWith(color: palette.textTertiary),
+                    errorText: error,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: busy ? null : () => Navigator.pop(dialogContext, false),
+                child: Text(l10n.commonCancel),
+              ),
+              TextButton(
+                onPressed: busy || passwordController.text.isEmpty ? null : confirm,
+                child: Text(l10n.deleteAccountConfirm, style: TextStyle(color: palette.warning)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (deleted != true || !context.mounted) return;
+
+    // Queued before the token clears, so it's on this (still current)
+    // screen's ScaffoldMessenger rather than racing the router's redirect
+    // to the login screen that clearing the token triggers.
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.deleteAccountDone)));
+
+    // Same local cleanup as logout — the account (and its push
+    // registration) is already gone server-side at this point.
     final prefs = ref.read(sharedPreferencesProvider);
     await clearSession(prefs);
     ref.read(sessionTokenProvider.notifier).state = null;
@@ -120,6 +203,11 @@ class SettingsScreen extends ConsumerWidget {
                   label: l10n.settingsLogout,
                   labelColor: palette.warning,
                   onTap: () => _logout(context, ref),
+                ),
+                _Row(
+                  label: l10n.settingsDeleteAccount,
+                  labelColor: palette.warning,
+                  onTap: () => _deleteAccount(context, ref),
                 ),
               ],
             ),

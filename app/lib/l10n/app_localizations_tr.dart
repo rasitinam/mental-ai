@@ -1300,6 +1300,28 @@ class AppLocalizationsTr extends AppLocalizations {
   String get lifeMoodHistoryLegendHigh => 'Keyifli';
 
   @override
+  String get settingsDeleteAccount => 'Hesabı Sil';
+
+  @override
+  String get deleteAccountTitle => 'Hesabını silmek istediğine emin misin?';
+
+  @override
+  String get deleteAccountBody =>
+      'Bu işlem geri alınamaz. Ruh hali kayıtların, günlüklerin, hikayelerin, mesajların ve hesabınla ilgili her şey kalıcı olarak silinir.';
+
+  @override
+  String get deleteAccountPasswordHint => 'Onaylamak için şifreni gir';
+
+  @override
+  String get deleteAccountConfirm => 'Kalıcı Olarak Sil';
+
+  @override
+  String get deleteAccountWrongPassword => 'Şifre yanlış.';
+
+  @override
+  String get deleteAccountDone => 'Hesabın silindi.';
+
+  @override
   String get storiesReactionDestek => 'Yalnız değilsin';
 
   @override

@@ -451,6 +451,14 @@
   "lifeMoodHistoryLegendLow": "Zorlu",
   "lifeMoodHistoryLegendHigh": "Keyifli",
 
+  "settingsDeleteAccount": "Hesabı Sil",
+  "deleteAccountTitle": "Hesabını silmek istediğine emin misin?",
+  "deleteAccountBody": "Bu işlem geri alınamaz. Ruh hali kayıtların, günlüklerin, hikayelerin, mesajların ve hesabınla ilgili her şey kalıcı olarak silinir.",
+  "deleteAccountPasswordHint": "Onaylamak için şifreni gir",
+  "deleteAccountConfirm": "Kalıcı Olarak Sil",
+  "deleteAccountWrongPassword": "Şifre yanlış.",
+  "deleteAccountDone": "Hesabın silindi.",
+
   "storiesReactionDestek": "Yalnız değilsin",
   "storiesReactionGuclusun": "Güçlüsün",
   "storiesReactionAnliyorum": "Anlıyorum",

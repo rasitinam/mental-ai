@@ -2498,6 +2498,48 @@ abstract class AppLocalizations {
   /// **'Keyifli'**
   String get lifeMoodHistoryLegendHigh;
 
+  /// No description provided for @settingsDeleteAccount.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hesabı Sil'**
+  String get settingsDeleteAccount;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hesabını silmek istediğine emin misin?'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteAccountBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu işlem geri alınamaz. Ruh hali kayıtların, günlüklerin, hikayelerin, mesajların ve hesabınla ilgili her şey kalıcı olarak silinir.'**
+  String get deleteAccountBody;
+
+  /// No description provided for @deleteAccountPasswordHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Onaylamak için şifreni gir'**
+  String get deleteAccountPasswordHint;
+
+  /// No description provided for @deleteAccountConfirm.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kalıcı Olarak Sil'**
+  String get deleteAccountConfirm;
+
+  /// No description provided for @deleteAccountWrongPassword.
+  ///
+  /// In tr, this message translates to:
+  /// **'Şifre yanlış.'**
+  String get deleteAccountWrongPassword;
+
+  /// No description provided for @deleteAccountDone.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hesabın silindi.'**
+  String get deleteAccountDone;
+
   /// No description provided for @storiesReactionDestek.
   ///
   /// In tr, this message translates to:

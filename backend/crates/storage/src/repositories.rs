@@ -148,6 +148,113 @@ impl UserRepository for SqliteUserRepository {
 
         Ok(())
     }
+
+    async fn delete_account(&self, user_id: Uuid) -> anyhow::Result<()> {
+        let id = user_id.to_string();
+        let mut tx = self.pool.begin().await?;
+
+        // Dependents of this user's own stories first — SQLite doesn't
+        // cascade (none of these were declared `ON DELETE CASCADE`), the
+        // same reason `LifeStoryRepository::delete` does its own cascade.
+        sqlx::query(
+            "DELETE FROM story_reactions WHERE story_id IN (SELECT id FROM life_stories WHERE user_id = ?1)",
+        )
+        .bind(&id)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "DELETE FROM story_upvotes WHERE story_id IN (SELECT id FROM life_stories WHERE user_id = ?1)",
+        )
+        .bind(&id)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "DELETE FROM life_story_reports WHERE story_id IN (SELECT id FROM life_stories WHERE user_id = ?1)",
+        )
+        .bind(&id)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "DELETE FROM story_translations WHERE story_id IN (SELECT id FROM life_stories WHERE user_id = ?1)",
+        )
+        .bind(&id)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("DELETE FROM life_stories WHERE user_id = ?1").bind(&id).execute(&mut *tx).await?;
+
+        // This account's own activity elsewhere in the feed — a reaction or
+        // report it made on someone else's story, not its own.
+        sqlx::query("DELETE FROM story_reactions WHERE user_id = ?1").bind(&id).execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM story_upvotes WHERE user_id = ?1").bind(&id).execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM life_story_reports WHERE reporter_user_id = ?1")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
+
+        // Cached translations of this account's own private content —
+        // `content_translations` has no user_id column, so each content
+        // type is matched back to its owning row a different way. See
+        // `routes::reports`/`routes::life_analysis`/`routes::state` for
+        // where these content ids and types come from.
+        sqlx::query(
+            "DELETE FROM content_translations WHERE content_type = 'daily_report'
+             AND content_id IN (SELECT id FROM daily_reports WHERE user_id = ?1)",
+        )
+        .bind(&id)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "DELETE FROM content_translations WHERE content_type = 'life_analysis'
+             AND content_id IN (SELECT id FROM life_analyses WHERE user_id = ?1)",
+        )
+        .bind(&id)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("DELETE FROM content_translations WHERE content_type = 'current_state' AND content_id LIKE ?1")
+            .bind(format!("{id}:%"))
+            .execute(&mut *tx)
+            .await?;
+
+        // Direct messages this account is part of, either side.
+        sqlx::query(
+            "DELETE FROM dm_messages WHERE thread_id IN
+             (SELECT id FROM dm_threads WHERE user_low = ?1 OR user_high = ?1)",
+        )
+        .bind(&id)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("DELETE FROM dm_threads WHERE user_low = ?1 OR user_high = ?1")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
+
+        sqlx::query("DELETE FROM follows WHERE follower_id = ?1 OR followee_id = ?1")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
+
+        // The account's own history and settings.
+        for table in [
+            "mood_entries",
+            "journal_entries",
+            "daily_reports",
+            "life_analyses",
+            "chat_messages",
+            "wellbeing_assessments",
+            "user_states",
+            "subscriptions",
+            "device_push_tokens",
+            "sessions",
+            "credentials",
+        ] {
+            sqlx::query(&format!("DELETE FROM {table} WHERE user_id = ?1")).bind(&id).execute(&mut *tx).await?;
+        }
+
+        sqlx::query("DELETE FROM users WHERE id = ?1").bind(&id).execute(&mut *tx).await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
 }
 
 pub struct SqliteMoodRepository {
