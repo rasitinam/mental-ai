@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../catalog/data/catalog_api.dart';
+import '../../catalog/domain/disorder_category.dart';
 import '../domain/life_story.dart';
 import 'stories_controller.dart';
+import 'story_detail_screen.dart';
 import 'story_submit_screen.dart';
 
 /// The author's own submissions, with the moderation status the public
-/// feed never shows. Its own route under Settings rather than a tab on
+/// feed never shows — as a grid of square previews (one tap opens the
+/// full text, see [StoryDetailScreen]), the same "post grid" shape as
+/// every photo-sharing app's own profile, adapted to text: each tile
+/// carries its diagnosis category's emoji and a few lines of the body
+/// instead of a photo. Its own route under Settings rather than a tab on
 /// the feed: once the feed became the app's landing screen, a segmented
 /// control at the top of it was one decision too many for the screen
 /// people open by reflex.
@@ -29,57 +36,35 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
     Future.microtask(() => ref.read(storiesControllerProvider.notifier).loadMine());
   }
 
-  Future<void> _confirmWithdraw(String id) async {
-    final l10n = AppLocalizations.of(context)!;
-    final palette = AppPalette.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: palette.glassFill,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(l10n.storiesWithdrawTitle,
-            style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17)),
-        content: Text(l10n.storiesWithdrawBody,
-            style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.commonCancel)),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.storiesWithdraw, style: TextStyle(color: palette.warning)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await ref.read(storiesControllerProvider.notifier).withdraw(id);
+  ({String emoji, String name})? _resolve(List<DisorderCategory> categories, String slug) {
+    for (final category in categories) {
+      for (final disorder in category.disorders) {
+        if (disorder.slug == slug) return (emoji: category.emoji, name: disorder.name);
+      }
     }
+    return null;
   }
-
-  Future<void> _edit(LifeStory story) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => StorySubmitScreen(editing: story)),
-    );
-  }
-
-  String _statusLabel(AppLocalizations l10n, StoryStatus status) => switch (status) {
-        StoryStatus.pending => l10n.storiesStatusPending,
-        StoryStatus.approved => l10n.storiesStatusApproved,
-        StoryStatus.rejected => l10n.storiesStatusRejected,
-      };
-
-  Color _statusColor(AppPalette palette, StoryStatus status) => switch (status) {
-        StoryStatus.pending => palette.textSecondary,
-        StoryStatus.approved => palette.accent,
-        StoryStatus.rejected => palette.textTertiary,
-      };
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
     final state = ref.watch(storiesControllerProvider);
+    final categories = ref.watch(categoriesProvider).valueOrNull ?? const <DisorderCategory>[];
 
     return Scaffold(
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 86),
+        child: FloatingActionButton(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const StorySubmitScreen()),
+          ),
+          backgroundColor: palette.accent,
+          elevation: 3,
+          tooltip: l10n.storiesWriteCta,
+          child: const Icon(Icons.add_rounded, color: Colors.white, size: 26),
+        ),
+      ),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -102,7 +87,7 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
               child: RefreshIndicator(
                 color: palette.accent,
                 onRefresh: ref.read(storiesControllerProvider.notifier).loadMine,
-                child: _buildList(state, palette, l10n),
+                child: _buildBody(state, palette, l10n, categories),
               ),
             ),
           ],
@@ -111,9 +96,23 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
     );
   }
 
-  Widget _buildList(StoriesState state, AppPalette palette, AppLocalizations l10n) {
+  Widget _buildBody(
+    StoriesState state,
+    AppPalette palette,
+    AppLocalizations l10n,
+    List<DisorderCategory> categories,
+  ) {
     if (state.loadingMine) {
-      return Center(child: CircularProgressIndicator(color: palette.accent));
+      return GridView.builder(
+        padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 3,
+          mainAxisSpacing: 3,
+        ),
+        itemCount: 6,
+        itemBuilder: (context, i) => SkeletonBox(radius: 8, height: double.infinity),
+      );
     }
     if (state.mine.isEmpty) {
       return ListView(
@@ -136,91 +135,92 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
       );
     }
 
-    return ListView.builder(
+    return GridView.builder(
       padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 3,
+        mainAxisSpacing: 3,
+      ),
       itemCount: state.mine.length,
       itemBuilder: (context, i) {
         final story = state.mine[i];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: GlassSurface(
-            radius: 18,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: palette.surfaceMuted,
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      child: Text(
-                        _statusLabel(l10n, story.status).toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          height: 1.2,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.44,
-                          color: _statusColor(palette, story.status),
-                        ),
-                      ),
-                    ),
-                    if (story.anonymous) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: palette.surfaceMuted,
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Text(
-                          l10n.storiesAnonymous.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            height: 1.2,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.44,
-                            color: palette.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                    const Spacer(),
-                    InkWell(
-                      onTap: () => _edit(story),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Icon(Icons.edit_outlined, size: 18, color: palette.textSecondary),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    InkWell(
-                      onTap: () => _confirmWithdraw(story.id),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Icon(Icons.delete_outline_rounded, size: 18, color: palette.warning),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(story.body,
-                    style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
-                const SizedBox(height: 8),
-                Text(
-                  DateFormat.MMMMd(Localizations.localeOf(context).languageCode)
-                      .format(story.createdAt),
-                  style: AppTypography.caption.copyWith(color: palette.textSecondary),
-                ),
-              ],
-            ),
+        return _StoryTile(
+          story: story,
+          tag: _resolve(categories, story.diagnosisSlug),
+          palette: palette,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => StoryDetailScreen(storyId: story.id)),
           ),
         );
       },
+    );
+  }
+}
+
+class _StoryTile extends StatelessWidget {
+  final LifeStory story;
+  final ({String emoji, String name})? tag;
+  final AppPalette palette;
+  final VoidCallback onTap;
+
+  const _StoryTile({required this.story, required this.tag, required this.palette, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: palette.glassFill,
+      borderRadius: BorderRadius.circular(8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (tag != null) Text(tag!.emoji, style: const TextStyle(fontSize: 14)),
+                      const Spacer(),
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: storyStatusColor(palette, story.status),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Expanded(
+                    child: Text(
+                      story.body,
+                      maxLines: 5,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        height: 1.35,
+                        fontWeight: FontWeight.w400,
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (story.anonymous)
+              Positioned(
+                right: 6,
+                bottom: 6,
+                child: Icon(Icons.visibility_off_rounded, size: 12, color: palette.textTertiary),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
