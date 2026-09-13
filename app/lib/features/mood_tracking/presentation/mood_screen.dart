@@ -28,12 +28,12 @@ class MoodScreen extends ConsumerStatefulWidget {
 }
 
 class _MoodScreenState extends ConsumerState<MoodScreen> {
-  String _formatRemaining(Duration d) {
+  String _formatRemaining(AppLocalizations l10n, Duration d) {
     final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60);
-    if (hours > 0) return '$hours sa $minutes dk';
+    if (hours > 0) return '$hours${l10n.timeUnitHour} $minutes${l10n.timeUnitMinute}';
     final seconds = d.inSeconds.remainder(60);
-    return '$minutes dk $seconds sn';
+    return '$minutes${l10n.timeUnitMinute} $seconds${l10n.timeUnitSecond}';
   }
 
   String _emotionLabel(AppLocalizations l10n, String key) => switch (key) {
@@ -160,7 +160,7 @@ class _MoodScreenState extends ConsumerState<MoodScreen> {
                 CountdownText(
                   until: state.cooldownUntil!,
                   onFinished: () => setState(() {}),
-                  format: (remaining) => l10n.moodNextIn(_formatRemaining(remaining)),
+                  format: (remaining) => l10n.moodNextIn(_formatRemaining(l10n, remaining)),
                   textAlign: TextAlign.center,
                   style: AppTypography.footnote
                       .copyWith(color: palette.textSecondary, fontSize: 12),

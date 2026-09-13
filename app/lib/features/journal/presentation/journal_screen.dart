@@ -42,11 +42,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     super.dispose();
   }
 
-  String _formatRemaining(Duration d) {
+  String _formatRemaining(AppLocalizations l10n, Duration d) {
     final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60);
-    if (hours > 0) return '$hours sa $minutes dk';
-    return '$minutes dk ${d.inSeconds.remainder(60)} sn';
+    if (hours > 0) return '$hours${l10n.timeUnitHour} $minutes${l10n.timeUnitMinute}';
+    return '$minutes${l10n.timeUnitMinute} ${d.inSeconds.remainder(60)}${l10n.timeUnitSecond}';
   }
 
   @override
@@ -119,7 +119,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                     if (onCooldown)
                       _CooldownCard(
                         until: state.cooldownUntil!,
-                        format: _formatRemaining,
+                        format: (remaining) => _formatRemaining(l10n, remaining),
                         palette: palette,
                         // One rebuild when the cooldown lapses, to swap the
                         // card back for the composer.

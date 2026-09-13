@@ -125,6 +125,7 @@ pub async fn generate_life_analysis(
         do_list,
         dont_list,
         generated_at: Utc::now(),
+        language: person.language.to_string(),
     })
 }
 

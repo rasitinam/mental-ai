@@ -16,7 +16,7 @@
          now" and "message arrives whenever the phone happens to wake up". -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <application
-        android:label="mental_ai"
+        android:label="Hearth"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

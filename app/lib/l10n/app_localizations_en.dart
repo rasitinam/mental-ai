@@ -10,7 +10,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Mental AI';
+  String get appTitle => 'Hearth';
 
   @override
   String get commonRetry => 'Try again';
@@ -266,7 +266,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLegalBody =>
-      'Mental AI is not a substitute for a licensed professional. In an emergency, call your local emergency number.';
+      'Hearth is not a substitute for a licensed professional. In an emergency, call your local emergency number.';
 
   @override
   String get settingsCommunity => 'Community';
@@ -394,7 +394,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authDisclaimer =>
-      'Mental AI is not a licensed psychologist, psychiatrist or medical device, and it does not diagnose. In a crisis, please call your local emergency number or reach a professional.';
+      'Hearth is not a licensed psychologist, psychiatrist or medical device, and it does not diagnose. In a crisis, please call your local emergency number or reach a professional.';
 
   @override
   String get authRegisterCta => 'Create account';
@@ -523,6 +523,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String journalNextIn(String time) {
     return 'Next entry opens in $time';
   }
+
+  @override
+  String get timeUnitHour => 'h';
+
+  @override
+  String get timeUnitMinute => 'm';
+
+  @override
+  String get timeUnitSecond => 's';
 
   @override
   String get chatEmptyPrompt => 'Want to share something?';

@@ -1,11 +1,11 @@
 {
-    "name": "mental_ai",
-    "short_name": "mental_ai",
+    "name": "Hearth: AI Mood & Community",
+    "short_name": "Hearth",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F5F6F2",
+    "theme_color": "#5E7A57",
+    "description": "AI-supported mood tracking and a mental-wellness community.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

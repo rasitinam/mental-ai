@@ -5,9 +5,12 @@ use axum::{
     Json, Router,
 };
 use chrono::{DateTime, Duration, Utc};
-use mental_analysis_engine::{generate_life_analysis, PersonContext};
+use mental_analysis_engine::{
+    generate_life_analysis, translate::translate_life_analysis, PersonContext,
+};
 use mental_domain::repository::{
-    ChatRepository, JournalRepository, LifeAnalysisRepository, MoodRepository, ReportRepository,
+    ChatRepository, ContentTranslationRepository, JournalRepository, LifeAnalysisRepository,
+    MoodRepository, ReportRepository,
 };
 use mental_domain::report::LifeAnalysis;
 use serde::Serialize;
@@ -39,17 +42,93 @@ struct CooldownError {
     retry_after: DateTime<Utc>,
 }
 
+const LIFE_ANALYSIS_CONTENT_TYPE: &str = "life_analysis";
+
+#[derive(Debug, Serialize, serde::Deserialize)]
+struct LifeAnalysisTranslationPayload {
+    narrative: String,
+    key_patterns: Vec<String>,
+    do_list: Vec<String>,
+    dont_list: Vec<String>,
+}
+
+/// Same idea as `reports::latest_report`: a life analysis is generated at
+/// most once a week, in whatever language the account was set to at that
+/// moment (`LifeAnalysis::language`) — switching the interface language in
+/// between regenerations used to leave the analysis stuck in the old one
+/// for up to a week. Translated on read and cached per (analysis,
+/// language) instead.
 async fn latest_analysis(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<Option<LifeAnalysis>>, (axum::http::StatusCode, String)> {
-    let analysis = state
+    let mut analysis = state
         .life_analyses
         .latest_for_user(auth.user_id)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
+    if let Some(analysis) = analysis.as_mut() {
+        let reader_language = user_for(&state, auth.user_id).await.map(|u| u.language);
+        if let Some(reader_language) = reader_language {
+            if reader_language != analysis.language {
+                match translated_analysis(&state, analysis, &reader_language).await {
+                    Ok(payload) => {
+                        analysis.narrative = payload.narrative;
+                        analysis.key_patterns = payload.key_patterns;
+                        analysis.do_list = payload.do_list;
+                        analysis.dont_list = payload.dont_list;
+                    }
+                    Err(err) => {
+                        tracing::warn!(error = %err, analysis_id = %analysis.id, "failed to translate life analysis");
+                    }
+                }
+            }
+        }
+    }
+
     Ok(Json(analysis))
+}
+
+async fn translated_analysis(
+    state: &AppState,
+    analysis: &LifeAnalysis,
+    target_language: &str,
+) -> anyhow::Result<LifeAnalysisTranslationPayload> {
+    let content_id = analysis.id.to_string();
+
+    if let Some(cached) = state
+        .content_translations
+        .get(LIFE_ANALYSIS_CONTENT_TYPE, &content_id, target_language)
+        .await?
+    {
+        if let Ok(payload) = serde_json::from_str(&cached) {
+            return Ok(payload);
+        }
+    }
+
+    let (narrative, key_patterns, do_list, dont_list) = translate_life_analysis(
+        &analysis.narrative,
+        &analysis.key_patterns,
+        &analysis.do_list,
+        &analysis.dont_list,
+        target_language,
+        state.llm.as_ref(),
+    )
+    .await?;
+    let payload = LifeAnalysisTranslationPayload { narrative, key_patterns, do_list, dont_list };
+
+    if let Ok(serialized) = serde_json::to_string(&payload) {
+        if let Err(err) = state
+            .content_translations
+            .save(LIFE_ANALYSIS_CONTENT_TYPE, &content_id, target_language, &serialized)
+            .await
+        {
+            tracing::warn!(error = %err, analysis_id = %analysis.id, "failed to cache life analysis translation");
+        }
+    }
+
+    Ok(payload)
 }
 
 /// Generates the whole-history narrative on demand, at most weekly. Unlike

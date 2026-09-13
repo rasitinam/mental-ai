@@ -1,7 +1,7 @@
 {
   "@@locale": "tr",
 
-  "appTitle": "Mental AI",
+  "appTitle": "Hearth",
   "commonRetry": "Tekrar dene",
   "commonSave": "Kaydet",
   "commonCancel": "Vazgeç",
@@ -90,7 +90,7 @@
   "settingsDataLocation": "Verilerin nerede duruyor",
   "settingsDataLocationBody": "Yalnızca kendi bilgisayarındaki yerel veritabanında saklanır.",
   "settingsLegal": "Yasal uyarı",
-  "settingsLegalBody": "Mental AI lisanslı bir sağlık uzmanının yerini tutmaz. Acil bir durumdaysan 112'yi ara.",
+  "settingsLegalBody": "Hearth lisanslı bir sağlık uzmanının yerini tutmaz. Acil bir durumdaysan 112'yi ara.",
   "settingsCommunity": "Topluluk",
   "settingsStories": "Hikayeler",
   "settingsModeration": "Moderasyon",
@@ -135,7 +135,7 @@
   "authHaveAccount": "Zaten hesabın var mı?",
   "authNoAccount": "Hesabın yok mu?",
   "authPassword": "Şifre (en az 8 karakter)",
-  "authDisclaimer": "Mental AI lisanslı bir psikolog, psikiyatrist ya da tıbbi bir cihaz değildir; tanı koymaz. Kriz anında lütfen 112'yi veya bir uzmanı ara.",
+  "authDisclaimer": "Hearth lisanslı bir psikolog, psikiyatrist ya da tıbbi bir cihaz değildir; tanı koymaz. Kriz anında lütfen 112'yi veya bir uzmanı ara.",
   "authRegisterCta": "Hesap oluştur",
   "authLoginCta": "Giriş yap",
   "authSwitchToLogin": "Zaten hesabın var mı? Giriş yap",
@@ -181,6 +181,9 @@
   "journalDoneToday": "Bugünkü günlüğün yazıldı",
   "journalNextIn": "Sonraki giriş {time} sonra açılıyor",
   "@journalNextIn": { "placeholders": { "time": { "type": "String" } } },
+  "timeUnitHour": "sa",
+  "timeUnitMinute": "dk",
+  "timeUnitSecond": "sn",
 
   "chatEmptyPrompt": "Bir şey paylaşmak ister misin?",
   "chatInputHint": "Bir şey yaz...",

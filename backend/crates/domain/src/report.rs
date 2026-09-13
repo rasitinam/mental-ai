@@ -19,6 +19,12 @@ pub struct DailyMentalReport {
     /// crisis-risk language was detected in the source journal/chat text.
     pub crisis_flag: bool,
     pub generated_at: DateTime<Utc>,
+    /// ISO-639-1 code the report text actually came back in — the account's
+    /// language at generation time, not necessarily its language now. Lets
+    /// a later reader (after switching the interface language) tell that
+    /// this stored copy needs translating rather than regenerating.
+    #[serde(default = "default_language")]
+    pub language: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,4 +42,11 @@ pub struct LifeAnalysis {
     /// reads as a lecture.
     pub dont_list: Vec<String>,
     pub generated_at: DateTime<Utc>,
+    /// Same purpose as [`DailyMentalReport::language`].
+    #[serde(default = "default_language")]
+    pub language: String,
+}
+
+fn default_language() -> String {
+    "tr".to_string()
 }

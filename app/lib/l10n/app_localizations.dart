@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In tr, this message translates to:
-  /// **'Mental AI'**
+  /// **'Hearth'**
   String get appTitle;
 
   /// No description provided for @commonRetry.
@@ -575,7 +575,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsLegalBody.
   ///
   /// In tr, this message translates to:
-  /// **'Mental AI lisanslı bir sağlık uzmanının yerini tutmaz. Acil bir durumdaysan 112\'yi ara.'**
+  /// **'Hearth lisanslı bir sağlık uzmanının yerini tutmaz. Acil bir durumdaysan 112\'yi ara.'**
   String get settingsLegalBody;
 
   /// No description provided for @settingsCommunity.
@@ -809,7 +809,7 @@ abstract class AppLocalizations {
   /// No description provided for @authDisclaimer.
   ///
   /// In tr, this message translates to:
-  /// **'Mental AI lisanslı bir psikolog, psikiyatrist ya da tıbbi bir cihaz değildir; tanı koymaz. Kriz anında lütfen 112\'yi veya bir uzmanı ara.'**
+  /// **'Hearth lisanslı bir psikolog, psikiyatrist ya da tıbbi bir cihaz değildir; tanı koymaz. Kriz anında lütfen 112\'yi veya bir uzmanı ara.'**
   String get authDisclaimer;
 
   /// No description provided for @authRegisterCta.
@@ -1051,6 +1051,24 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Sonraki giriş {time} sonra açılıyor'**
   String journalNextIn(String time);
+
+  /// No description provided for @timeUnitHour.
+  ///
+  /// In tr, this message translates to:
+  /// **'sa'**
+  String get timeUnitHour;
+
+  /// No description provided for @timeUnitMinute.
+  ///
+  /// In tr, this message translates to:
+  /// **'dk'**
+  String get timeUnitMinute;
+
+  /// No description provided for @timeUnitSecond.
+  ///
+  /// In tr, this message translates to:
+  /// **'sn'**
+  String get timeUnitSecond;
 
   /// No description provided for @chatEmptyPrompt.
   ///

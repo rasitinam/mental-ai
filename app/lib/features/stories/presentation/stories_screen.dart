@@ -11,6 +11,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
 import '../../insights/presentation/insights_screen.dart' show SearchField, CategoryStrip;
+import '../../social/presentation/user_profile_screen.dart' show UserAvatar;
 import '../data/life_stories_api.dart' show storyTranslationProvider;
 import '../domain/life_story.dart';
 import 'stories_controller.dart';
@@ -385,10 +386,26 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
               const SizedBox(width: 12),
               Expanded(
                 child: story.authorUserId == null
-                    ? Text(
-                        '${DateFormat.MMMMd(appLanguage).format(story.createdAt)}'
-                        ' · ${l10n.storiesAnonymous}',
-                        style: AppTypography.caption.copyWith(color: palette.textSecondary),
+                    ? Row(
+                        children: [
+                          // Same silhouette `UserAvatar` falls back to for a
+                          // signed author with no photo — an anonymous story
+                          // gets that placeholder too, rather than no
+                          // avatar at all, so every card lines up the same way.
+                          Container(
+                            width: 22,
+                            height: 22,
+                            decoration:
+                                BoxDecoration(shape: BoxShape.circle, color: palette.surfaceMuted),
+                            child: Icon(Icons.person_rounded, size: 13, color: palette.textTertiary),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${DateFormat.MMMMd(appLanguage).format(story.createdAt)}'
+                            ' · ${l10n.storiesAnonymous}',
+                            style: AppTypography.caption.copyWith(color: palette.textSecondary),
+                          ),
+                        ],
                       )
                     : InkWell(
                         // A signed story you wrote yourself: the profile
@@ -403,6 +420,12 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            UserAvatar(
+                              userId: story.authorUserId!,
+                              size: 22,
+                              hasAvatar: story.authorHasAvatar,
+                            ),
+                            const SizedBox(width: 8),
                             Text(
                               story.authorDisplayName ?? '',
                               style: AppTypography.caption.copyWith(

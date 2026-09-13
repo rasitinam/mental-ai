@@ -1,5 +1,5 @@
 name: mental_ai
-description: "A new Flutter project."
+description: "Hearth — AI-supported mood tracking and a mental-wellness community."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -73,6 +73,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -113,3 +114,23 @@ flutter:
     - family: Sora
       fonts:
         - asset: assets/fonts/Sora-Variable.ttf
+
+# Source art for the app icon lives in assets/icon/ — `icon.png` is the mark
+# on the light-theme canvas color (used as-is for iOS/web/legacy Android),
+# `icon_foreground.png` is the same mark alone on a transparent background,
+# scaled into Android's adaptive-icon safe zone so it isn't clipped by the
+# OS's own circular/squircle mask. Regenerate with:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#F5F6F2"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  web:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    background_color: "#F5F6F2"
+    theme_color: "#5E7A57"

@@ -59,7 +59,7 @@ pub async fn assess_current_state(
             .collect::<Vec<_>>()
             .join("\n");
         sections.push(format!("RECENT CONVERSATION (newest last):\n{transcript}"));
-        basis.push("sohbet");
+        basis.push(basis_label("chat", person.language));
     }
 
     if !inputs.moods.is_empty() {
@@ -80,7 +80,7 @@ pub async fn assess_current_state(
             .collect::<Vec<_>>()
             .join("\n");
         sections.push(format!("MOOD CHECK-INS (newest first):\n{moods}"));
-        basis.push("ruh hali");
+        basis.push(basis_label("mood", person.language));
     }
 
     if !inputs.journal.is_empty() {
@@ -92,7 +92,7 @@ pub async fn assess_current_state(
             .collect::<Vec<_>>()
             .join("\n---\n");
         sections.push(format!("JOURNAL ENTRIES (newest first):\n{entries}"));
-        basis.push("günlük");
+        basis.push(basis_label("journal", person.language));
     }
 
     if let Some(report) = inputs.report {
@@ -102,7 +102,7 @@ pub async fn assess_current_state(
             report.summary,
             report.mood_trend_note
         ));
-        basis.push("günlük rapor");
+        basis.push(basis_label("daily_report", person.language));
     }
 
     if let Some(analysis) = inputs.life_analysis {
@@ -112,7 +112,7 @@ pub async fn assess_current_state(
             analysis.narrative,
             analysis.key_patterns.join("; ")
         ));
-        basis.push("yaşam analizi");
+        basis.push(basis_label("life_analysis", person.language));
     }
 
     if sections.is_empty() {
@@ -153,7 +153,79 @@ pub async fn assess_current_state(
         note,
         basis: basis.into_iter().map(str::to_string).collect(),
         generated_at: now,
+        language: person.language.to_string(),
     })
+}
+
+/// `basis` names which signals fed the assessment (shown under the
+/// headline as "based on: ...") — these are fixed labels the app defines,
+/// not model output, so they're picked directly by language rather than
+/// routed through the LLM like `headline`/`note` are.
+pub fn basis_label(key: &str, language: &str) -> &'static str {
+    let english = language == "en";
+    match key {
+        "chat" => {
+            if english {
+                "conversation"
+            } else {
+                "sohbet"
+            }
+        }
+        "mood" => {
+            if english {
+                "mood"
+            } else {
+                "ruh hali"
+            }
+        }
+        "journal" => {
+            if english {
+                "journal"
+            } else {
+                "günlük"
+            }
+        }
+        "daily_report" => {
+            if english {
+                "daily report"
+            } else {
+                "günlük rapor"
+            }
+        }
+        _ => {
+            if english {
+                "life analysis"
+            } else {
+                "yaşam analizi"
+            }
+        }
+    }
+}
+
+/// Re-derives a stored `basis` list in `target_language` — a pure lookup,
+/// not an LLM call, so unlike `headline`/`note` this can just be redone on
+/// every read instead of translated-and-cached. Handles a snapshot stored
+/// in either supported language; anything unrecognized (there shouldn't be
+/// any) passes through unchanged rather than disappearing.
+pub fn relabel_basis(basis: &[String], target_language: &str) -> Vec<String> {
+    basis
+        .iter()
+        .map(|label| match basis_key(label) {
+            Some(key) => basis_label(key, target_language).to_string(),
+            None => label.clone(),
+        })
+        .collect()
+}
+
+fn basis_key(label: &str) -> Option<&'static str> {
+    match label {
+        "sohbet" | "conversation" => Some("chat"),
+        "ruh hali" | "mood" => Some("mood"),
+        "günlük" | "journal" => Some("journal"),
+        "günlük rapor" | "daily report" => Some("daily_report"),
+        "yaşam analizi" | "life analysis" => Some("life_analysis"),
+        _ => None,
+    }
 }
 
 /// Recency is the whole point of this assessment, so every signal carries how

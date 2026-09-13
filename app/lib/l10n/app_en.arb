@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "appTitle": "Mental AI",
+  "appTitle": "Hearth",
   "commonRetry": "Try again",
   "commonSave": "Save",
   "commonCancel": "Cancel",
@@ -90,7 +90,7 @@
   "settingsDataLocation": "Where your data lives",
   "settingsDataLocationBody": "Only in the local database on your own machine.",
   "settingsLegal": "Legal notice",
-  "settingsLegalBody": "Mental AI is not a substitute for a licensed professional. In an emergency, call your local emergency number.",
+  "settingsLegalBody": "Hearth is not a substitute for a licensed professional. In an emergency, call your local emergency number.",
   "settingsCommunity": "Community",
   "settingsStories": "Stories",
   "settingsModeration": "Moderation",
@@ -135,7 +135,7 @@
   "authHaveAccount": "Already have an account?",
   "authNoAccount": "No account yet?",
   "authPassword": "Password (at least 8 characters)",
-  "authDisclaimer": "Mental AI is not a licensed psychologist, psychiatrist or medical device, and it does not diagnose. In a crisis, please call your local emergency number or reach a professional.",
+  "authDisclaimer": "Hearth is not a licensed psychologist, psychiatrist or medical device, and it does not diagnose. In a crisis, please call your local emergency number or reach a professional.",
   "authRegisterCta": "Create account",
   "authLoginCta": "Sign in",
   "authSwitchToLogin": "Already have an account? Sign in",
@@ -181,6 +181,9 @@
   "journalDoneToday": "Today's entry is written",
   "journalNextIn": "Next entry opens in {time}",
   "@journalNextIn": { "placeholders": { "time": { "type": "String" } } },
+  "timeUnitHour": "h",
+  "timeUnitMinute": "m",
+  "timeUnitSecond": "s",
 
   "chatEmptyPrompt": "Want to share something?",
   "chatInputHint": "Write something...",

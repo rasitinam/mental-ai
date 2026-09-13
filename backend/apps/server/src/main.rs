@@ -11,11 +11,11 @@ use mental_llm_connector::openai_compatible::OpenAiCompatibleProvider;
 use mental_llm_connector::LlmProvider;
 use mental_storage::{
     init_pool, SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository,
-    SqliteChatRepository, SqliteDmRepository, SqliteExplainerRepository,
-    SqliteInsightRepository, SqliteJournalRepository, SqliteLifeAnalysisRepository,
-    SqliteLifeStoryRepository, SqliteMoodRepository, SqlitePushTokenRepository,
-    SqliteReportRepository, SqliteResearchRepository, SqliteSocialRepository,
-    SqliteUserRepository, SqliteUserStateRepository,
+    SqliteChatRepository, SqliteContentTranslationRepository, SqliteDmRepository,
+    SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
+    SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
+    SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
+    SqliteSocialRepository, SqliteUserRepository, SqliteUserStateRepository,
 };
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
@@ -72,6 +72,7 @@ async fn main() -> anyhow::Result<()> {
         // rather than the server failing to start over an optional
         // feature.
         push: mental_push::build_provider("firebase-service-account.json"),
+        content_translations: Arc::new(SqliteContentTranslationRepository::new(pool.clone())),
     };
 
     if config.research_ingest.enabled {

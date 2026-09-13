@@ -10,7 +10,7 @@ class AppLocalizationsTr extends AppLocalizations {
   AppLocalizationsTr([String locale = 'tr']) : super(locale);
 
   @override
-  String get appTitle => 'Mental AI';
+  String get appTitle => 'Hearth';
 
   @override
   String get commonRetry => 'Tekrar dene';
@@ -266,7 +266,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsLegalBody =>
-      'Mental AI lisanslı bir sağlık uzmanının yerini tutmaz. Acil bir durumdaysan 112\'yi ara.';
+      'Hearth lisanslı bir sağlık uzmanının yerini tutmaz. Acil bir durumdaysan 112\'yi ara.';
 
   @override
   String get settingsCommunity => 'Topluluk';
@@ -394,7 +394,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authDisclaimer =>
-      'Mental AI lisanslı bir psikolog, psikiyatrist ya da tıbbi bir cihaz değildir; tanı koymaz. Kriz anında lütfen 112\'yi veya bir uzmanı ara.';
+      'Hearth lisanslı bir psikolog, psikiyatrist ya da tıbbi bir cihaz değildir; tanı koymaz. Kriz anında lütfen 112\'yi veya bir uzmanı ara.';
 
   @override
   String get authRegisterCta => 'Hesap oluştur';
@@ -523,6 +523,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String journalNextIn(String time) {
     return 'Sonraki giriş $time sonra açılıyor';
   }
+
+  @override
+  String get timeUnitHour => 'sa';
+
+  @override
+  String get timeUnitMinute => 'dk';
+
+  @override
+  String get timeUnitSecond => 'sn';
 
   @override
   String get chatEmptyPrompt => 'Bir şey paylaşmak ister misin?';

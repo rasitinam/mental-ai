@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Every color the app uses, resolved for the current [Brightness]. Two
 /// distinct directions rather than one recolored twice: light is a cool
 /// off-white with a moss-green accent and Instrument Sans; dark is
-/// layered near-black surfaces with a periwinkle accent and Sora — see
+/// layered near-black surfaces with a sage-green accent and Sora — see
 /// `app/theme/app_theme.dart` for the font wiring. Both keep one warning
 /// tone reserved for genuine crisis moments (the chat/home crisis
 /// banners), separate from [surfaceMuted], which is for merely
@@ -77,8 +77,8 @@ class AppPalette {
     glassFill: Color(0xFF1D2126),
     glassBorder: Color(0x1AFFFFFF),
     glassShadow: Color(0x00000000),
-    accent: Color(0xFF93A2E6),
-    accentSoft: Color(0x2E93A2E6),
+    accent: Color(0xFF8FBF8A),
+    accentSoft: Color(0x2E8FBF8A),
     textPrimary: Color(0xFFECEDEF),
     textSecondary: Color(0xFF9AA0A8),
     textTertiary: Color(0xFF8B9198),

@@ -102,7 +102,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       ),
                       const SizedBox(width: 9),
                       Text(
-                        'mental',
+                        'Hearth',
                         style: AppTypography.label.copyWith(
                           color: palette.textPrimary,
                           fontWeight: FontWeight.w600,

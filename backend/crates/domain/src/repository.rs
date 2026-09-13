@@ -180,6 +180,30 @@ pub trait LifeAnalysisRepository: Send + Sync {
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<LifeAnalysis>>;
 }
 
+/// A cached translation of one piece of private per-user AI content
+/// (a daily report, a life analysis, a current-state snapshot) into a
+/// language other than the one it was generated in — same idea as
+/// `InsightRepository::get_translation`/`save_translation`, generalized
+/// across content types instead of repeated per feature, since each of
+/// these is a single JSON blob read back and deserialized by the caller
+/// rather than a fixed set of named columns.
+#[async_trait]
+pub trait ContentTranslationRepository: Send + Sync {
+    async fn get(
+        &self,
+        content_type: &str,
+        content_id: &str,
+        target_language: &str,
+    ) -> anyhow::Result<Option<String>>;
+    async fn save(
+        &self,
+        content_type: &str,
+        content_id: &str,
+        target_language: &str,
+        payload: &str,
+    ) -> anyhow::Result<()>;
+}
+
 #[async_trait]
 pub trait AssessmentRepository: Send + Sync {
     async fn save(&self, assessment: &WellbeingAssessment) -> anyhow::Result<()>;

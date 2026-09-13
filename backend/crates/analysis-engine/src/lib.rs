@@ -16,7 +16,7 @@ pub mod safety;
 pub mod translate;
 
 pub use chat_reply::generate_chat_reply;
-pub use current_state::{assess_current_state, StateInputs};
+pub use current_state::{assess_current_state, relabel_basis, StateInputs};
 pub use daily_report::generate_daily_report;
 pub use person::{AssessmentSummary, PersonContext};
 pub use explainer::generate_disorder_explainer;

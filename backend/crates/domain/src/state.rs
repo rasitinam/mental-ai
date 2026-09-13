@@ -28,6 +28,15 @@ pub struct UserState {
     #[serde(default)]
     pub basis: Vec<String>,
     pub generated_at: DateTime<Utc>,
+    /// ISO-639-1 code `headline`/`note` actually came back in — see
+    /// `DailyMentalReport::language` for why this is tracked per row
+    /// instead of assumed to match the account's language right now.
+    #[serde(default = "default_language")]
+    pub language: String,
+}
+
+fn default_language() -> String {
+    "tr".to_string()
 }
 
 impl UserState {

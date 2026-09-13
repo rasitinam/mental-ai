@@ -129,6 +129,7 @@ pub async fn generate_daily_report(
         cited_insight_ids: vec![],
         crisis_flag: crisis.flagged,
         generated_at: Utc::now(),
+        language: person.language.to_string(),
     })
 }
 

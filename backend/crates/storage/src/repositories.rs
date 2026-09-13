@@ -1,10 +1,11 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mental_domain::repository::{
-    ActivityRepository, AssessmentRepository, AuthRepository, ChatRepository, DmRepository,
-    ExplainerRepository, InsightRepository, JournalRepository, LifeAnalysisRepository,
-    LifeStoryRepository, MoodRepository, PushTokenRepository, ReportRepository,
-    ResearchRepository, SocialRepository, UserRepository, UserStateRepository,
+    ActivityRepository, AssessmentRepository, AuthRepository, ChatRepository,
+    ContentTranslationRepository, DmRepository, ExplainerRepository, InsightRepository,
+    JournalRepository, LifeAnalysisRepository, LifeStoryRepository, MoodRepository,
+    PushTokenRepository, ReportRepository, ResearchRepository, SocialRepository, UserRepository,
+    UserStateRepository,
 };
 use mental_domain::report::LifeAnalysis;
 use mental_domain::{
@@ -354,8 +355,8 @@ impl ReportRepository for SqliteReportRepository {
     async fn save(&self, report: &DailyMentalReport) -> anyhow::Result<()> {
         sqlx::query(
             "INSERT INTO daily_reports
-             (id, user_id, report_date, summary, mood_trend_note, recommendations, cited_insight_ids, crisis_flag, generated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+             (id, user_id, report_date, summary, mood_trend_note, recommendations, cited_insight_ids, crisis_flag, generated_at, language)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         )
         .bind(report.id.to_string())
         .bind(report.user_id.to_string())
@@ -366,6 +367,7 @@ impl ReportRepository for SqliteReportRepository {
         .bind(serde_json::to_string(&report.cited_insight_ids).unwrap_or_default())
         .bind(report.crisis_flag)
         .bind(report.generated_at)
+        .bind(&report.language)
         .execute(&self.pool)
         .await?;
 
@@ -373,8 +375,8 @@ impl ReportRepository for SqliteReportRepository {
     }
 
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<DailyMentalReport>> {
-        let row = sqlx::query_as::<_, (String, String, DateTime<Utc>, String, String, String, String, bool, DateTime<Utc>)>(
-            "SELECT id, user_id, report_date, summary, mood_trend_note, recommendations, cited_insight_ids, crisis_flag, generated_at
+        let row = sqlx::query_as::<_, (String, String, DateTime<Utc>, String, String, String, String, bool, DateTime<Utc>, String)>(
+            "SELECT id, user_id, report_date, summary, mood_trend_note, recommendations, cited_insight_ids, crisis_flag, generated_at, language
              FROM daily_reports WHERE user_id = ?1 ORDER BY report_date DESC LIMIT 1",
         )
         .bind(user_id.to_string())
@@ -382,7 +384,7 @@ impl ReportRepository for SqliteReportRepository {
         .await?;
 
         Ok(row.map(
-            |(id, user_id, report_date, summary, mood_trend_note, recommendations, cited, crisis_flag, generated_at)| {
+            |(id, user_id, report_date, summary, mood_trend_note, recommendations, cited, crisis_flag, generated_at, language)| {
                 DailyMentalReport {
                     id: Uuid::parse_str(&id).unwrap_or_default(),
                     user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
@@ -393,14 +395,15 @@ impl ReportRepository for SqliteReportRepository {
                     cited_insight_ids: serde_json::from_str(&cited).unwrap_or_default(),
                     crisis_flag,
                     generated_at,
+                    language,
                 }
             },
         ))
     }
 
     async fn list_recent(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<DailyMentalReport>> {
-        let rows = sqlx::query_as::<_, (String, String, DateTime<Utc>, String, String, String, String, bool, DateTime<Utc>)>(
-            "SELECT id, user_id, report_date, summary, mood_trend_note, recommendations, cited_insight_ids, crisis_flag, generated_at
+        let rows = sqlx::query_as::<_, (String, String, DateTime<Utc>, String, String, String, String, bool, DateTime<Utc>, String)>(
+            "SELECT id, user_id, report_date, summary, mood_trend_note, recommendations, cited_insight_ids, crisis_flag, generated_at, language
              FROM daily_reports WHERE user_id = ?1 ORDER BY report_date DESC LIMIT ?2",
         )
         .bind(user_id.to_string())
@@ -411,7 +414,7 @@ impl ReportRepository for SqliteReportRepository {
         Ok(rows
             .into_iter()
             .map(
-                |(id, user_id, report_date, summary, mood_trend_note, recommendations, cited, crisis_flag, generated_at)| {
+                |(id, user_id, report_date, summary, mood_trend_note, recommendations, cited, crisis_flag, generated_at, language)| {
                     DailyMentalReport {
                         id: Uuid::parse_str(&id).unwrap_or_default(),
                         user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
@@ -422,6 +425,7 @@ impl ReportRepository for SqliteReportRepository {
                         cited_insight_ids: serde_json::from_str(&cited).unwrap_or_default(),
                         crisis_flag,
                         generated_at,
+                        language,
                     }
                 },
             )
@@ -684,8 +688,8 @@ impl SqliteLifeAnalysisRepository {
 impl LifeAnalysisRepository for SqliteLifeAnalysisRepository {
     async fn save(&self, analysis: &LifeAnalysis) -> anyhow::Result<()> {
         sqlx::query(
-            "INSERT INTO life_analyses (id, user_id, period_start, period_end, narrative, key_patterns, do_list, dont_list, generated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            "INSERT INTO life_analyses (id, user_id, period_start, period_end, narrative, key_patterns, do_list, dont_list, generated_at, language)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         )
         .bind(analysis.id.to_string())
         .bind(analysis.user_id.to_string())
@@ -696,6 +700,7 @@ impl LifeAnalysisRepository for SqliteLifeAnalysisRepository {
         .bind(tags_to_json(&analysis.do_list))
         .bind(tags_to_json(&analysis.dont_list))
         .bind(analysis.generated_at)
+        .bind(&analysis.language)
         .execute(&self.pool)
         .await?;
 
@@ -703,8 +708,8 @@ impl LifeAnalysisRepository for SqliteLifeAnalysisRepository {
     }
 
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<LifeAnalysis>> {
-        let row = sqlx::query_as::<_, (String, String, DateTime<Utc>, DateTime<Utc>, String, String, String, String, DateTime<Utc>)>(
-            "SELECT id, user_id, period_start, period_end, narrative, key_patterns, do_list, dont_list, generated_at
+        let row = sqlx::query_as::<_, (String, String, DateTime<Utc>, DateTime<Utc>, String, String, String, String, DateTime<Utc>, String)>(
+            "SELECT id, user_id, period_start, period_end, narrative, key_patterns, do_list, dont_list, generated_at, language
              FROM life_analyses WHERE user_id = ?1 ORDER BY generated_at DESC LIMIT 1",
         )
         .bind(user_id.to_string())
@@ -712,7 +717,7 @@ impl LifeAnalysisRepository for SqliteLifeAnalysisRepository {
         .await?;
 
         Ok(row.map(
-            |(id, user_id, period_start, period_end, narrative, key_patterns, do_list, dont_list, generated_at)| {
+            |(id, user_id, period_start, period_end, narrative, key_patterns, do_list, dont_list, generated_at, language)| {
                 LifeAnalysis {
                     id: Uuid::parse_str(&id).unwrap_or_default(),
                     user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
@@ -723,6 +728,7 @@ impl LifeAnalysisRepository for SqliteLifeAnalysisRepository {
                     do_list: tags_from_json(&do_list),
                     dont_list: tags_from_json(&dont_list),
                     generated_at,
+                    language,
                 }
             },
         ))
@@ -840,8 +846,8 @@ impl SqliteUserStateRepository {
 #[async_trait]
 impl UserStateRepository for SqliteUserStateRepository {
     async fn get(&self, user_id: Uuid) -> anyhow::Result<Option<UserState>> {
-        let row = sqlx::query_as::<_, (String, f32, f32, String, String, String, DateTime<Utc>)>(
-            "SELECT user_id, valence, energy, headline, note, basis, generated_at
+        let row = sqlx::query_as::<_, (String, f32, f32, String, String, String, DateTime<Utc>, String)>(
+            "SELECT user_id, valence, energy, headline, note, basis, generated_at, language
              FROM user_states WHERE user_id = ?1",
         )
         .bind(user_id.to_string())
@@ -849,7 +855,7 @@ impl UserStateRepository for SqliteUserStateRepository {
         .await?;
 
         Ok(row.map(
-            |(user_id, valence, energy, headline, note, basis, generated_at)| UserState {
+            |(user_id, valence, energy, headline, note, basis, generated_at, language)| UserState {
                 user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
                 valence,
                 energy,
@@ -857,21 +863,23 @@ impl UserStateRepository for SqliteUserStateRepository {
                 note,
                 basis: tags_from_json(&basis),
                 generated_at,
+                language,
             },
         ))
     }
 
     async fn save(&self, state: &UserState) -> anyhow::Result<()> {
         sqlx::query(
-            "INSERT INTO user_states (user_id, valence, energy, headline, note, basis, generated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            "INSERT INTO user_states (user_id, valence, energy, headline, note, basis, generated_at, language)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
              ON CONFLICT(user_id) DO UPDATE SET
                 valence = excluded.valence,
                 energy = excluded.energy,
                 headline = excluded.headline,
                 note = excluded.note,
                 basis = excluded.basis,
-                generated_at = excluded.generated_at",
+                generated_at = excluded.generated_at,
+                language = excluded.language",
         )
         .bind(state.user_id.to_string())
         .bind(state.valence)
@@ -880,6 +888,7 @@ impl UserStateRepository for SqliteUserStateRepository {
         .bind(&state.note)
         .bind(tags_to_json(&state.basis))
         .bind(state.generated_at)
+        .bind(&state.language)
         .execute(&self.pool)
         .await?;
 
@@ -1803,5 +1812,62 @@ impl PushTokenRepository for SqlitePushTokenRepository {
                 .await?;
 
         Ok(rows.into_iter().map(|(token,)| token).collect())
+    }
+}
+
+pub struct SqliteContentTranslationRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteContentTranslationRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl ContentTranslationRepository for SqliteContentTranslationRepository {
+    async fn get(
+        &self,
+        content_type: &str,
+        content_id: &str,
+        target_language: &str,
+    ) -> anyhow::Result<Option<String>> {
+        let row: Option<(String,)> = sqlx::query_as(
+            "SELECT payload FROM content_translations
+             WHERE content_type = ?1 AND content_id = ?2 AND target_language = ?3",
+        )
+        .bind(content_type)
+        .bind(content_id)
+        .bind(target_language)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|(payload,)| payload))
+    }
+
+    async fn save(
+        &self,
+        content_type: &str,
+        content_id: &str,
+        target_language: &str,
+        payload: &str,
+    ) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO content_translations (content_type, content_id, target_language, payload, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT (content_type, content_id, target_language) DO UPDATE SET
+                payload = excluded.payload,
+                created_at = excluded.created_at",
+        )
+        .bind(content_type)
+        .bind(content_id)
+        .bind(target_language)
+        .bind(payload)
+        .bind(Utc::now())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
     }
 }
