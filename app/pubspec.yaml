@@ -66,6 +66,9 @@ dependencies:
   # share sheet (via an in-memory `XFile`, so no temp-file/path_provider
   # plumbing is needed and this works on web too).
   share_plus: ^10.1.2
+  # Wraps StoreKit (iOS) / Play Billing (Android) behind one API for the
+  # Hearth Plus subscription.
+  in_app_purchase: ^3.2.3
 
 dev_dependencies:
   flutter_test:

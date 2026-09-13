@@ -4,15 +4,15 @@ use mental_domain::repository::{
     ActivityRepository, AssessmentRepository, AuthRepository, ChatRepository,
     ContentTranslationRepository, DmRepository, ExplainerRepository, InsightRepository,
     JournalRepository, LifeAnalysisRepository, LifeStoryRepository, MoodRepository,
-    PushTokenRepository, ReportRepository, ResearchRepository, SocialRepository, UserRepository,
-    UserStateRepository,
+    PushTokenRepository, ReportRepository, ResearchRepository, SocialRepository,
+    SubscriptionRepository, UserRepository, UserStateRepository,
 };
 use mental_domain::life_story::REACTIONS;
 use mental_domain::report::LifeAnalysis;
 use mental_domain::{
     ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, DmMessage,
     DmPolicy, DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry,
-    PushToken, ResearchArticle, Session, StoryFeedItem, StoryStatus, User, UserState,
+    PushToken, ResearchArticle, Session, StoryFeedItem, StoryStatus, Subscription, User, UserState,
     WellbeingAssessment,
 };
 use sqlx::SqlitePool;
@@ -1910,5 +1910,56 @@ impl ContentTranslationRepository for SqliteContentTranslationRepository {
         .await?;
 
         Ok(())
+    }
+}
+
+pub struct SqliteSubscriptionRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteSubscriptionRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl SubscriptionRepository for SqliteSubscriptionRepository {
+    async fn upsert(&self, subscription: &Subscription) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO subscriptions
+                (user_id, platform, product_id, original_transaction_id, expires_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+             ON CONFLICT(user_id) DO UPDATE SET
+                platform = excluded.platform,
+                product_id = excluded.product_id,
+                original_transaction_id = excluded.original_transaction_id,
+                expires_at = excluded.expires_at,
+                updated_at = excluded.updated_at",
+        )
+        .bind(subscription.user_id.to_string())
+        .bind(&subscription.platform)
+        .bind(&subscription.product_id)
+        .bind(&subscription.original_transaction_id)
+        .bind(subscription.expires_at)
+        .bind(subscription.updated_at)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn for_user(&self, user_id: Uuid) -> anyhow::Result<Option<Subscription>> {
+        let row = sqlx::query_as::<_, (String, String, String, DateTime<Utc>, DateTime<Utc>)>(
+            "SELECT platform, product_id, original_transaction_id, expires_at, updated_at
+             FROM subscriptions WHERE user_id = ?1",
+        )
+        .bind(user_id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|(platform, product_id, original_transaction_id, expires_at, updated_at)| {
+            Subscription { user_id, platform, product_id, original_transaction_id, expires_at, updated_at }
+        }))
     }
 }

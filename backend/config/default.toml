@@ -35,3 +35,10 @@ sources = [
     "pubmed_schizophrenia",
     "pubmed_recovery",
 ]
+
+[apple_iap]
+bundle_id = "com.rasitinam.hearth"
+# Name of the environment variable holding the App-Specific Shared Secret
+# (App Store Connect -> Hearth -> Subscriptions -> App-Specific Shared
+# Secret). Never put the secret itself in this file.
+shared_secret_env = "MENTAL_AI_APPLE_SHARED_SECRET"

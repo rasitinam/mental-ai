@@ -1314,4 +1314,57 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storiesHighlightsTitle => 'Highlights';
+
+  @override
+  String get settingsPremiumRow => 'Hearth Plus';
+
+  @override
+  String get premiumTitle => 'Hearth Plus';
+
+  @override
+  String get premiumPitch => 'For anyone who wants to go deeper with Hearth.';
+
+  @override
+  String get premiumFeatureChat => 'Unlimited AI chat';
+
+  @override
+  String get premiumFeatureAnalysis => 'More frequent life analysis';
+
+  @override
+  String get premiumFeatureInsights => 'Deeper, more personalized insights';
+
+  @override
+  String premiumPricePerMonth(String price) {
+    return '$price / month';
+  }
+
+  @override
+  String get premiumSubscribe => 'Subscribe';
+
+  @override
+  String get premiumRestore => 'Restore Purchases';
+
+  @override
+  String premiumActiveUntil(String date) {
+    return 'Your subscription is active until $date.';
+  }
+
+  @override
+  String get premiumAlreadyActive => 'Hearth Plus is already active';
+
+  @override
+  String get premiumTerms =>
+      'Subscription renews automatically. You\'ll be charged unless you cancel at least 24 hours before the current period ends. Cancel anytime in App Store > Settings.';
+
+  @override
+  String get premiumUnavailable => 'Purchases aren\'t available right now.';
+
+  @override
+  String get premiumRestored => 'Your purchases have been restored.';
+
+  @override
+  String get premiumPrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get premiumTermsOfUse => 'Terms of Use';
 }

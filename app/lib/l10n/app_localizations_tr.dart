@@ -1310,4 +1310,58 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get storiesHighlightsTitle => 'Öne Çıkanlar';
+
+  @override
+  String get settingsPremiumRow => 'Hearth Plus';
+
+  @override
+  String get premiumTitle => 'Hearth Plus';
+
+  @override
+  String get premiumPitch =>
+      'Hearth\'i daha derinlemesine kullanmak isteyenler için.';
+
+  @override
+  String get premiumFeatureChat => 'Sınırsız AI sohbet';
+
+  @override
+  String get premiumFeatureAnalysis => 'Daha sık yaşam analizi';
+
+  @override
+  String get premiumFeatureInsights => 'Gelişmiş, kişiselleştirilmiş içgörüler';
+
+  @override
+  String premiumPricePerMonth(String price) {
+    return '$price / ay';
+  }
+
+  @override
+  String get premiumSubscribe => 'Abone Ol';
+
+  @override
+  String get premiumRestore => 'Satın Almaları Geri Yükle';
+
+  @override
+  String premiumActiveUntil(String date) {
+    return 'Aboneliğin $date tarihine kadar aktif.';
+  }
+
+  @override
+  String get premiumAlreadyActive => 'Hearth Plus zaten aktif';
+
+  @override
+  String get premiumTerms =>
+      'Abonelik otomatik olarak yenilenir; mevcut dönem bitmeden en az 24 saat önce iptal etmezsen ücret otomatik tahsil edilir. Aboneliği istediğin zaman App Store > Ayarlar üzerinden iptal edebilirsin.';
+
+  @override
+  String get premiumUnavailable => 'Satın alma şu anda kullanılamıyor.';
+
+  @override
+  String get premiumRestored => 'Satın almaların geri yüklendi.';
+
+  @override
+  String get premiumPrivacyPolicy => 'Gizlilik Politikası';
+
+  @override
+  String get premiumTermsOfUse => 'Kullanım Koşulları';
 }

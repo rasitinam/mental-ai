@@ -9,7 +9,8 @@ use mental_storage::{
     SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
-    SqliteSocialRepository, SqliteUserRepository, SqliteUserStateRepository,
+    SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
+    SqliteUserStateRepository,
 };
 
 /// Composition root: the one place that knows every concrete
@@ -41,4 +42,16 @@ pub struct AppState {
     pub push_tokens: Arc<SqlitePushTokenRepository>,
     pub push: Arc<dyn PushProvider>,
     pub content_translations: Arc<SqliteContentTranslationRepository>,
+    pub subscriptions: Arc<SqliteSubscriptionRepository>,
+    /// App Store receipt validation config — the shared secret (empty when
+    /// unconfigured, in which case `routes::purchases` rejects verification
+    /// attempts outright rather than calling Apple with no password) and
+    /// this app's own bundle id, checked against every verified receipt.
+    pub apple_iap: AppleIapState,
+}
+
+#[derive(Clone)]
+pub struct AppleIapState {
+    pub shared_secret: String,
+    pub bundle_id: String,
 }

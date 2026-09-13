@@ -19,6 +19,7 @@ pub mod research;
 pub mod social;
 pub mod state;
 pub mod streak;
+pub mod subscription;
 pub mod user;
 
 pub use assessment::WellbeingAssessment;
@@ -36,4 +37,5 @@ pub use research::ResearchArticle;
 pub use social::{DmMessage, DmPolicy, DmStatus, DmThread, PublicProfile};
 pub use state::UserState;
 pub use streak::StreakSummary;
+pub use subscription::Subscription;
 pub use user::User;

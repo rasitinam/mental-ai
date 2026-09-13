@@ -15,6 +15,7 @@ import '../features/insights/presentation/insights_screen.dart';
 import '../features/journal/presentation/journal_screen.dart';
 import '../features/life_analysis/presentation/life_analysis_screen.dart';
 import '../features/mood_tracking/presentation/mood_screen.dart';
+import '../features/premium/presentation/premium_screen.dart';
 import '../features/profile/presentation/diagnoses_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/recap/presentation/recap_screen.dart';
@@ -193,6 +194,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/recap',
         builder: (context, state) => const RecapScreen(),
+      ),
+      GoRoute(
+        path: '/premium',
+        builder: (context, state) => const PremiumScreen(),
       ),
       // Social surfaces sit outside the shell: they're pushed over
       // whatever tab you were on (from a story author or a DM row) and

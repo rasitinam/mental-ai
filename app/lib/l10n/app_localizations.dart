@@ -2521,6 +2521,102 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Öne Çıkanlar'**
   String get storiesHighlightsTitle;
+
+  /// No description provided for @settingsPremiumRow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth Plus'**
+  String get settingsPremiumRow;
+
+  /// No description provided for @premiumTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth Plus'**
+  String get premiumTitle;
+
+  /// No description provided for @premiumPitch.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth\'i daha derinlemesine kullanmak isteyenler için.'**
+  String get premiumPitch;
+
+  /// No description provided for @premiumFeatureChat.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sınırsız AI sohbet'**
+  String get premiumFeatureChat;
+
+  /// No description provided for @premiumFeatureAnalysis.
+  ///
+  /// In tr, this message translates to:
+  /// **'Daha sık yaşam analizi'**
+  String get premiumFeatureAnalysis;
+
+  /// No description provided for @premiumFeatureInsights.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gelişmiş, kişiselleştirilmiş içgörüler'**
+  String get premiumFeatureInsights;
+
+  /// No description provided for @premiumPricePerMonth.
+  ///
+  /// In tr, this message translates to:
+  /// **'{price} / ay'**
+  String premiumPricePerMonth(String price);
+
+  /// No description provided for @premiumSubscribe.
+  ///
+  /// In tr, this message translates to:
+  /// **'Abone Ol'**
+  String get premiumSubscribe;
+
+  /// No description provided for @premiumRestore.
+  ///
+  /// In tr, this message translates to:
+  /// **'Satın Almaları Geri Yükle'**
+  String get premiumRestore;
+
+  /// No description provided for @premiumActiveUntil.
+  ///
+  /// In tr, this message translates to:
+  /// **'Aboneliğin {date} tarihine kadar aktif.'**
+  String premiumActiveUntil(String date);
+
+  /// No description provided for @premiumAlreadyActive.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth Plus zaten aktif'**
+  String get premiumAlreadyActive;
+
+  /// No description provided for @premiumTerms.
+  ///
+  /// In tr, this message translates to:
+  /// **'Abonelik otomatik olarak yenilenir; mevcut dönem bitmeden en az 24 saat önce iptal etmezsen ücret otomatik tahsil edilir. Aboneliği istediğin zaman App Store > Ayarlar üzerinden iptal edebilirsin.'**
+  String get premiumTerms;
+
+  /// No description provided for @premiumUnavailable.
+  ///
+  /// In tr, this message translates to:
+  /// **'Satın alma şu anda kullanılamıyor.'**
+  String get premiumUnavailable;
+
+  /// No description provided for @premiumRestored.
+  ///
+  /// In tr, this message translates to:
+  /// **'Satın almaların geri yüklendi.'**
+  String get premiumRestored;
+
+  /// No description provided for @premiumPrivacyPolicy.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gizlilik Politikası'**
+  String get premiumPrivacyPolicy;
+
+  /// No description provided for @premiumTermsOfUse.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kullanım Koşulları'**
+  String get premiumTermsOfUse;
 }
 
 class _AppLocalizationsDelegate

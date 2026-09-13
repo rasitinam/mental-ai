@@ -12,7 +12,8 @@ use crate::report::LifeAnalysis;
 use crate::{
     ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, DmMessage, DmPolicy,
     DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry, PushToken,
-    ResearchArticle, Session, StoryFeedItem, StoryStatus, User, UserState, WellbeingAssessment,
+    ResearchArticle, Session, StoryFeedItem, StoryStatus, Subscription, User, UserState,
+    WellbeingAssessment,
 };
 
 #[async_trait]
@@ -334,4 +335,13 @@ pub trait PushTokenRepository: Send + Sync {
     /// candidate list the daily check-in nudge iterates, so it never has
     /// to touch a full user table just to find who can receive a push.
     async fn all_user_ids(&self) -> anyhow::Result<Vec<Uuid>>;
+}
+
+/// One row per account's current entitlement. `upsert` is the only write —
+/// every successful receipt validation replaces whatever was there, since
+/// the store's receipt is always the newer, more authoritative answer.
+#[async_trait]
+pub trait SubscriptionRepository: Send + Sync {
+    async fn upsert(&self, subscription: &Subscription) -> anyhow::Result<()>;
+    async fn for_user(&self, user_id: Uuid) -> anyhow::Result<Option<Subscription>>;
 }

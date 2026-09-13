@@ -6,6 +6,7 @@ pub struct AppConfig {
     pub database: DatabaseConfig,
     pub llm: LlmConfig,
     pub research_ingest: ResearchIngestConfig,
+    pub apple_iap: AppleIapConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -40,6 +41,19 @@ pub struct ResearchIngestConfig {
     pub enabled: bool,
     pub interval_hours: u64,
     pub sources: Vec<String>,
+}
+
+/// Apple App Store receipt validation. `shared_secret_env` names the
+/// environment variable holding the app's "App-Specific Shared Secret"
+/// (App Store Connect → the app → Subscriptions → App-Specific Shared
+/// Secret) — required by `verifyReceipt` for auto-renewable subscriptions,
+/// never put in this file directly. `bundle_id` guards against a receipt
+/// minted for a different app being replayed against this one.
+#[derive(Debug, Clone, Deserialize)]
+pub struct AppleIapConfig {
+    #[serde(default)]
+    pub shared_secret_env: String,
+    pub bundle_id: String,
 }
 
 impl AppConfig {

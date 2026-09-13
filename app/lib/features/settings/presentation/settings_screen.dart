@@ -52,6 +52,16 @@ class SettingsScreen extends ConsumerWidget {
                 style: AppTypography.title2.copyWith(color: palette.textPrimary)),
             const SizedBox(height: 20),
             _Group(
+              children: [
+                _Row(
+                  label: l10n.settingsPremiumRow,
+                  labelColor: palette.accent,
+                  onTap: () => context.push('/premium'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _Group(
               title: l10n.settingsAccount,
               children: [
                 _Row(label: l10n.settingsProfile, onTap: () => context.go('/settings/profile')),

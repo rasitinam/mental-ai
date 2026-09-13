@@ -454,5 +454,24 @@
   "storiesReactionDestek": "Yalnız değilsin",
   "storiesReactionGuclusun": "Güçlüsün",
   "storiesReactionAnliyorum": "Anlıyorum",
-  "storiesHighlightsTitle": "Öne Çıkanlar"
+  "storiesHighlightsTitle": "Öne Çıkanlar",
+
+  "settingsPremiumRow": "Hearth Plus",
+  "premiumTitle": "Hearth Plus",
+  "premiumPitch": "Hearth'i daha derinlemesine kullanmak isteyenler için.",
+  "premiumFeatureChat": "Sınırsız AI sohbet",
+  "premiumFeatureAnalysis": "Daha sık yaşam analizi",
+  "premiumFeatureInsights": "Gelişmiş, kişiselleştirilmiş içgörüler",
+  "premiumPricePerMonth": "{price} / ay",
+  "@premiumPricePerMonth": { "placeholders": { "price": { "type": "String" } } },
+  "premiumSubscribe": "Abone Ol",
+  "premiumRestore": "Satın Almaları Geri Yükle",
+  "premiumActiveUntil": "Aboneliğin {date} tarihine kadar aktif.",
+  "@premiumActiveUntil": { "placeholders": { "date": { "type": "String" } } },
+  "premiumAlreadyActive": "Hearth Plus zaten aktif",
+  "premiumTerms": "Abonelik otomatik olarak yenilenir; mevcut dönem bitmeden en az 24 saat önce iptal etmezsen ücret otomatik tahsil edilir. Aboneliği istediğin zaman App Store > Ayarlar üzerinden iptal edebilirsin.",
+  "premiumUnavailable": "Satın alma şu anda kullanılamıyor.",
+  "premiumRestored": "Satın almaların geri yüklendi.",
+  "premiumPrivacyPolicy": "Gizlilik Politikası",
+  "premiumTermsOfUse": "Kullanım Koşulları"
 }

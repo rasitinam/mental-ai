@@ -454,5 +454,24 @@
   "storiesReactionDestek": "You're not alone",
   "storiesReactionGuclusun": "You're strong",
   "storiesReactionAnliyorum": "I understand",
-  "storiesHighlightsTitle": "Highlights"
+  "storiesHighlightsTitle": "Highlights",
+
+  "settingsPremiumRow": "Hearth Plus",
+  "premiumTitle": "Hearth Plus",
+  "premiumPitch": "For anyone who wants to go deeper with Hearth.",
+  "premiumFeatureChat": "Unlimited AI chat",
+  "premiumFeatureAnalysis": "More frequent life analysis",
+  "premiumFeatureInsights": "Deeper, more personalized insights",
+  "premiumPricePerMonth": "{price} / month",
+  "@premiumPricePerMonth": { "placeholders": { "price": { "type": "String" } } },
+  "premiumSubscribe": "Subscribe",
+  "premiumRestore": "Restore Purchases",
+  "premiumActiveUntil": "Your subscription is active until {date}.",
+  "@premiumActiveUntil": { "placeholders": { "date": { "type": "String" } } },
+  "premiumAlreadyActive": "Hearth Plus is already active",
+  "premiumTerms": "Subscription renews automatically. You'll be charged unless you cancel at least 24 hours before the current period ends. Cancel anytime in App Store > Settings.",
+  "premiumUnavailable": "Purchases aren't available right now.",
+  "premiumRestored": "Your purchases have been restored.",
+  "premiumPrivacyPolicy": "Privacy Policy",
+  "premiumTermsOfUse": "Terms of Use"
 }

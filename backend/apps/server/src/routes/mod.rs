@@ -9,6 +9,7 @@ mod journal;
 mod life_analysis;
 mod mood;
 pub(crate) mod profile;
+mod purchases;
 mod reports;
 pub(crate) mod social;
 mod state;
@@ -42,6 +43,7 @@ pub fn build_router(app_state: AppState) -> Router {
         .merge(social::router())
         .merge(dm::router())
         .merge(streak::router())
+        .merge(purchases::router())
         .with_state(app_state)
 }
 

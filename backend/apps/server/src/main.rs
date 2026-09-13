@@ -15,11 +15,12 @@ use mental_storage::{
     SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
-    SqliteSocialRepository, SqliteUserRepository, SqliteUserStateRepository,
+    SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
+    SqliteUserStateRepository,
 };
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
-use state::AppState;
+use state::{AppState, AppleIapState};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -44,6 +45,14 @@ async fn main() -> anyhow::Result<()> {
         config.llm.chat_model.clone(),
         config.llm.embedding_model.clone(),
     ));
+
+    let apple_shared_secret = std::env::var(&config.apple_iap.shared_secret_env).unwrap_or_default();
+    if apple_shared_secret.is_empty() {
+        tracing::warn!(
+            "no Apple shared secret found in ${}; receipt verification will fail until it is set",
+            config.apple_iap.shared_secret_env
+        );
+    }
 
     let state = AppState {
         users: Arc::new(SqliteUserRepository::new(pool.clone())),
@@ -73,6 +82,11 @@ async fn main() -> anyhow::Result<()> {
         // feature.
         push: mental_push::build_provider("firebase-service-account.json"),
         content_translations: Arc::new(SqliteContentTranslationRepository::new(pool.clone())),
+        subscriptions: Arc::new(SqliteSubscriptionRepository::new(pool.clone())),
+        apple_iap: AppleIapState {
+            shared_secret: apple_shared_secret,
+            bundle_id: config.apple_iap.bundle_id.clone(),
+        },
     };
 
     if config.research_ingest.enabled {

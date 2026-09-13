@@ -13,6 +13,6 @@ pub use repositories::{
     SqliteContentTranslationRepository, SqliteDmRepository, SqliteExplainerRepository,
     SqliteInsightRepository, SqliteJournalRepository, SqliteLifeAnalysisRepository,
     SqliteLifeStoryRepository, SqliteMoodRepository, SqlitePushTokenRepository,
-    SqliteReportRepository, SqliteResearchRepository, SqliteSocialRepository, SqliteUserRepository,
-    SqliteUserStateRepository,
+    SqliteReportRepository, SqliteResearchRepository, SqliteSocialRepository,
+    SqliteSubscriptionRepository, SqliteUserRepository, SqliteUserStateRepository,
 };
