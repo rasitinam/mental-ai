@@ -2,6 +2,9 @@
 /backend/target/
 /backend/data/
 /backend/config/local.toml
+# A `flutter build web` copy, placed here so the server can optionally
+# serve it (see [server].web_root in config) — built output, not source.
+/backend/web_dist/
 **/*.rs.bk
 Cargo.lock.bak
 *.log

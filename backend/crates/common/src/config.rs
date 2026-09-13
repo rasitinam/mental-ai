@@ -13,6 +13,13 @@ pub struct AppConfig {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+    /// Directory holding a built `flutter build web` output (`index.html`
+    /// plus its assets), served for any request that isn't one of the API
+    /// routes below — so the API and the web app can share one origin
+    /// (and, in dev, one ngrok tunnel) instead of needing two. Unset skips
+    /// static serving entirely; nothing about the API changes either way.
+    #[serde(default)]
+    pub web_root: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

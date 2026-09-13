@@ -18,7 +18,11 @@ use mental_storage::{
     SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
     SqliteUserStateRepository,
 };
-use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use tower_http::{
+    cors::CorsLayer,
+    services::{ServeDir, ServeFile},
+    trace::TraceLayer,
+};
 
 use state::{AppState, AppleIapState};
 
@@ -96,9 +100,21 @@ async fn main() -> anyhow::Result<()> {
     scheduler::spawn_explainer_warmup_job(state.clone());
     scheduler::spawn_checkin_nudge_job(state.clone());
 
-    let app = routes::build_router(state)
-        .layer(CorsLayer::permissive())
-        .layer(TraceLayer::new_for_http());
+    let mut app = routes::build_router(state);
+
+    // Optional: serve a `flutter build web` output for any request that
+    // isn't one of the API routes above, so the web app and its API share
+    // one origin — one dev tunnel (see codemagic.yaml's sibling, the
+    // ngrok setup this is meant for) instead of needing two, and no
+    // separate static host for a real deployment either. Falls back to
+    // `index.html` for any unmatched path so Flutter's own client-side
+    // routing (e.g. a direct link to `/stories`) still resolves.
+    if let Some(web_root) = &config.server.web_root {
+        let index = format!("{web_root}/index.html");
+        app = app.fallback_service(ServeDir::new(web_root).not_found_service(ServeFile::new(index)));
+    }
+
+    let app = app.layer(CorsLayer::permissive()).layer(TraceLayer::new_for_http());
 
     let addr = format!("{}:{}", config.server.host, config.server.port);
     tracing::info!("listening on {addr}");
