@@ -50,6 +50,10 @@ pub struct ChatRequest {
 pub struct ChatResponse {
     pub message: ChatMessage,
     pub tool_calls: Vec<ToolCall>,
+    /// The provider's own `usage.total_tokens` for this call, when it sends
+    /// one — the real cost of the turn (prompt + completion), not an
+    /// estimate. `None` for a provider that doesn't report it.
+    pub usage_tokens: Option<u32>,
 }
 
 #[async_trait]

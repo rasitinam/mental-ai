@@ -5,7 +5,7 @@
 //! `research-ingest` unit-testable with in-memory fakes.
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use uuid::Uuid;
 
 use crate::report::LifeAnalysis;
@@ -351,4 +351,13 @@ pub trait PushTokenRepository: Send + Sync {
 pub trait SubscriptionRepository: Send + Sync {
     async fn upsert(&self, subscription: &Subscription) -> anyhow::Result<()>;
     async fn for_user(&self, user_id: Uuid) -> anyhow::Result<Option<Subscription>>;
+}
+
+/// Backs the free-tier daily chat budget (see `routes/chat.rs`): one
+/// counter per account per calendar day, incremented by the real token
+/// cost the LLM reports for each turn.
+#[async_trait]
+pub trait ChatUsageRepository: Send + Sync {
+    async fn add_tokens(&self, user_id: Uuid, date: NaiveDate, tokens: i64) -> anyhow::Result<()>;
+    async fn tokens_used(&self, user_id: Uuid, date: NaiveDate) -> anyhow::Result<i64>;
 }

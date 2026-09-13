@@ -9,12 +9,18 @@ class ChatState {
   final bool sending;
   final bool loadingHistory;
   final Object? error;
+  /// Bumped every time a turn comes back with the free daily chat quota
+  /// exhausted, so the screen can `ref.listen` for a change (not just a
+  /// truthy value — two quota hits in a row still need to fire twice) and
+  /// push the paywall.
+  final int quotaExceededTick;
 
   const ChatState({
     this.messages = const [],
     this.sending = false,
     this.loadingHistory = true,
     this.error,
+    this.quotaExceededTick = 0,
   });
 
   ChatState copyWith({
@@ -22,12 +28,14 @@ class ChatState {
     bool? sending,
     bool? loadingHistory,
     Object? error,
+    int? quotaExceededTick,
   }) =>
       ChatState(
         messages: messages ?? this.messages,
         sending: sending ?? this.sending,
         loadingHistory: loadingHistory ?? this.loadingHistory,
         error: error,
+        quotaExceededTick: quotaExceededTick ?? this.quotaExceededTick,
       );
 }
 
@@ -78,6 +86,11 @@ class ChatController extends Notifier<ChatState> {
         crisisFlag: reply.crisisFlag,
       );
       state = state.copyWith(messages: [...state.messages, assistantMessage], sending: false);
+    } on PremiumRequiredException {
+      // The user's own message stays in the transcript (they did send it —
+      // the backend just declined to answer it), so nothing is silently
+      // dropped when they come back from the paywall.
+      state = state.copyWith(sending: false, quotaExceededTick: state.quotaExceededTick + 1);
     } catch (e) {
       state = state.copyWith(sending: false, error: e);
     }

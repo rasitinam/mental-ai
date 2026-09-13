@@ -1386,4 +1386,8 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get premiumTermsOfUse => 'Kullanım Koşulları';
+
+  @override
+  String get chatQuotaExceeded =>
+      'Bugünkü ücretsiz sohbet hakkın doldu. Hearth Plus ile sınırsız sohbet edebilirsin.';
 }

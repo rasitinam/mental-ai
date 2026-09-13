@@ -1389,4 +1389,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumTermsOfUse => 'Terms of Use';
+
+  @override
+  String get chatQuotaExceeded =>
+      'You\'ve used today\'s free chat limit. Get Hearth Plus for unlimited chat.';
 }

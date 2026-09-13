@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme/app_colors.dart';
@@ -54,6 +55,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(chatControllerProvider);
     final palette = AppPalette.of(context);
+
+    // Free daily chat budget hit (see `PremiumRequiredException`): tell the
+    // person why, then send them straight to the paywall instead of
+    // leaving them stuck in front of a chat that just stopped replying.
+    ref.listen(chatControllerProvider.select((s) => s.quotaExceededTick), (previous, next) {
+      if (previous == null || next <= previous) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.chatQuotaExceeded)));
+      context.push('/premium');
+    });
 
     if (state.messages.length != _lastMessageCount) {
       _lastMessageCount = state.messages.length;

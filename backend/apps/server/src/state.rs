@@ -3,10 +3,12 @@ use std::sync::Arc;
 use mental_knowledge_base::{Embedder, SqliteVectorStore};
 use mental_llm_connector::LlmProvider;
 use mental_push::PushProvider;
+
+use crate::rate_limit::LoginRateLimiter;
 use mental_storage::{
     SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository,
-    SqliteChatRepository, SqliteContentTranslationRepository, SqliteDmRepository,
-    SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
+    SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
+    SqliteDmRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
     SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
@@ -43,6 +45,10 @@ pub struct AppState {
     pub push: Arc<dyn PushProvider>,
     pub content_translations: Arc<SqliteContentTranslationRepository>,
     pub subscriptions: Arc<SqliteSubscriptionRepository>,
+    /// Free-tier daily chat token budget tracking — see `routes::chat`.
+    pub chat_usage: Arc<SqliteChatUsageRepository>,
+    /// Login brute-force guard — see `rate_limit::LoginRateLimiter`.
+    pub login_rate_limiter: Arc<LoginRateLimiter>,
     /// App Store receipt validation config — the shared secret (empty when
     /// unconfigured, in which case `routes::purchases` rejects verification
     /// attempts outright rather than calling Apple with no password) and

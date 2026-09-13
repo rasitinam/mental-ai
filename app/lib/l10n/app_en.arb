@@ -481,5 +481,6 @@
   "premiumUnavailable": "Purchases aren't available right now.",
   "premiumRestored": "Your purchases have been restored.",
   "premiumPrivacyPolicy": "Privacy Policy",
-  "premiumTermsOfUse": "Terms of Use"
+  "premiumTermsOfUse": "Terms of Use",
+  "chatQuotaExceeded": "You've used today's free chat limit. Get Hearth Plus for unlimited chat."
 }

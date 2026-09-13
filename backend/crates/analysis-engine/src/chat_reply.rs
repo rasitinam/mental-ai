@@ -9,6 +9,7 @@ use crate::safety::screen_for_crisis_language;
 pub struct ChatReplyResult {
     pub reply: String,
     pub crisis_flag: bool,
+    pub usage_tokens: Option<u32>,
 }
 
 /// Answers one chat turn, personalized with the user's recent mood/
@@ -85,5 +86,9 @@ pub async fn generate_chat_reply(
 
     let response = llm.chat(ChatRequest { messages, tools: vec![], temperature: None }).await?;
 
-    Ok(ChatReplyResult { reply: response.message.content, crisis_flag: crisis.flagged })
+    Ok(ChatReplyResult {
+        reply: response.message.content,
+        crisis_flag: crisis.flagged,
+        usage_tokens: response.usage_tokens,
+    })
 }

@@ -1,11 +1,14 @@
 use axum::{
     extract::State,
+    http::StatusCode,
     routing::{get, post},
     Json, Router,
 };
 use chrono::{Duration, Utc};
 use mental_analysis_engine::{generate_chat_reply, PersonContext};
-use mental_domain::repository::{ChatRepository, JournalRepository, MoodRepository};
+use mental_domain::repository::{
+    ChatRepository, ChatUsageRepository, JournalRepository, MoodRepository, SubscriptionRepository,
+};
 use mental_domain::{ChatMessageRecord, ChatRole};
 use mental_llm_connector::ChatMessage;
 use serde::{Deserialize, Serialize};
@@ -51,6 +54,22 @@ struct ChatTurnResponse {
 /// long-lived conversations.
 const MAX_HISTORY_MESSAGES: usize = 16;
 
+/// Free-tier daily chat budget, in tokens. Rough estimate, not a measured
+/// figure yet: a turn's prompt (safety + instruction system messages, the
+/// person's mood/journal/research context, and the growing history window)
+/// plus a warm, non-terse reply tends to run ~1.5-2k tokens once a
+/// conversation has some back-and-forth, and someone actively chatting
+/// sends roughly a message a minute or two — so ~10 turns, i.e. about 15
+/// minutes of real conversation, lands around 20k tokens. Tune this once
+/// real usage data says otherwise; it only needs to be in the right
+/// neighborhood, since going over it just means an upsell, not an outage.
+const FREE_DAILY_CHAT_TOKEN_BUDGET: i64 = 20_000;
+
+/// The client (`ChatApi.sendMessage`) matches on this exact status code to
+/// route to the paywall instead of showing a generic error — see
+/// `PremiumRequiredException` on the Flutter side.
+const QUOTA_EXCEEDED_STATUS: StatusCode = StatusCode::PAYMENT_REQUIRED;
+
 /// Chat with the wellness companion, personalized with the last few days
 /// of the user's own mood/journal history, grounded with research
 /// relevant to their message, and now with real conversational memory —
@@ -68,6 +87,26 @@ async fn send_message(
     Json(req): Json<ChatTurnRequest>,
 ) -> Result<Json<ChatTurnResponse>, (axum::http::StatusCode, String)> {
     let now = Utc::now();
+    let today = now.date_naive();
+
+    // Hearth Plus subscribers chat without a cap; everyone else draws down
+    // a daily token budget (see `FREE_DAILY_CHAT_TOKEN_BUDGET`) and gets
+    // sent to the paywall once it's gone for the day.
+    let is_premium = state
+        .subscriptions
+        .for_user(auth.user_id)
+        .await
+        .ok()
+        .flatten()
+        .is_some_and(|sub| sub.is_active());
+
+    if !is_premium {
+        let used_today = state.chat_usage.tokens_used(auth.user_id, today).await.unwrap_or(0);
+        if used_today >= FREE_DAILY_CHAT_TOKEN_BUDGET {
+            return Err((QUOTA_EXCEEDED_STATUS, "daily chat limit reached".to_string()));
+        }
+    }
+
     let since = now - Duration::days(3);
 
     let recent_moods = state
@@ -107,6 +146,15 @@ async fn send_message(
 
     persist_turn(&state, auth.user_id, ChatRole::User, &req.message, false).await;
     persist_turn(&state, auth.user_id, ChatRole::Assistant, &result.reply, result.crisis_flag).await;
+
+    // Recorded regardless of `is_premium`, so the counter is already
+    // accurate if a subscription lapses mid-day instead of undercounting
+    // the day it expires.
+    if let Some(tokens) = result.usage_tokens {
+        if let Err(err) = state.chat_usage.add_tokens(auth.user_id, today, tokens as i64).await {
+            tracing::warn!(error = %err, "failed to record chat token usage");
+        }
+    }
 
     Ok(Json(ChatTurnResponse { reply: result.reply, crisis_flag: result.crisis_flag }))
 }

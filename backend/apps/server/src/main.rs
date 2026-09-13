@@ -1,4 +1,5 @@
 mod auth;
+mod rate_limit;
 mod routes;
 mod scheduler;
 mod state;
@@ -11,13 +12,14 @@ use mental_llm_connector::openai_compatible::OpenAiCompatibleProvider;
 use mental_llm_connector::LlmProvider;
 use mental_storage::{
     init_pool, SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository,
-    SqliteChatRepository, SqliteContentTranslationRepository, SqliteDmRepository,
-    SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
+    SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
+    SqliteDmRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
     SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
     SqliteUserStateRepository,
 };
+use axum::http::{header, HeaderValue};
 use tower_http::{
     cors::CorsLayer,
     services::{ServeDir, ServeFile},
@@ -25,6 +27,29 @@ use tower_http::{
 };
 
 use state::{AppState, AppleIapState};
+
+/// A handful of response headers that cost nothing and close off a few
+/// classes of browser-side attack on the web build now served alongside
+/// the API (see `web_root` below) — none of this affects the native
+/// mobile clients, which never look at them.
+async fn security_headers(
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let mut response = next.run(req).await;
+    let headers = response.headers_mut();
+    // Stop a browser from guessing its way past a declared content type
+    // (e.g. treating an uploaded avatar as HTML instead of an image).
+    headers.insert(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
+    // Nothing in this app is meant to be framed by another site.
+    headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
+    headers.insert(header::REFERRER_POLICY, HeaderValue::from_static("strict-origin-when-cross-origin"));
+    // Ignored by a plain-HTTP response (browsers only honor this over
+    // HTTPS), so it's harmless to send unconditionally here even though
+    // this process itself doesn't terminate TLS.
+    headers.insert(header::STRICT_TRANSPORT_SECURITY, HeaderValue::from_static("max-age=15552000"));
+    response
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -87,6 +112,8 @@ async fn main() -> anyhow::Result<()> {
         push: mental_push::build_provider("firebase-service-account.json"),
         content_translations: Arc::new(SqliteContentTranslationRepository::new(pool.clone())),
         subscriptions: Arc::new(SqliteSubscriptionRepository::new(pool.clone())),
+        chat_usage: Arc::new(SqliteChatUsageRepository::new(pool.clone())),
+        login_rate_limiter: Arc::new(rate_limit::LoginRateLimiter::new()),
         apple_iap: AppleIapState {
             shared_secret: apple_shared_secret,
             bundle_id: config.apple_iap.bundle_id.clone(),
@@ -114,7 +141,10 @@ async fn main() -> anyhow::Result<()> {
         app = app.fallback_service(ServeDir::new(web_root).not_found_service(ServeFile::new(index)));
     }
 
-    let app = app.layer(CorsLayer::permissive()).layer(TraceLayer::new_for_http());
+    let app = app
+        .layer(CorsLayer::permissive())
+        .layer(TraceLayer::new_for_http())
+        .layer(axum::middleware::from_fn(security_headers));
 
     let addr = format!("{}:{}", config.server.host, config.server.port);
     tracing::info!("listening on {addr}");

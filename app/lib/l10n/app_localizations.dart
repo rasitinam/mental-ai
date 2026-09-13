@@ -2659,6 +2659,12 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Kullanım Koşulları'**
   String get premiumTermsOfUse;
+
+  /// No description provided for @chatQuotaExceeded.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bugünkü ücretsiz sohbet hakkın doldu. Hearth Plus ile sınırsız sohbet edebilirsin.'**
+  String get chatQuotaExceeded;
 }
 
 class _AppLocalizationsDelegate

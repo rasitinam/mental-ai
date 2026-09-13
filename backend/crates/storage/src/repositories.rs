@@ -1,7 +1,7 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use mental_domain::repository::{
-    ActivityRepository, AssessmentRepository, AuthRepository, ChatRepository,
+    ActivityRepository, AssessmentRepository, AuthRepository, ChatRepository, ChatUsageRepository,
     ContentTranslationRepository, DmRepository, ExplainerRepository, InsightRepository,
     JournalRepository, LifeAnalysisRepository, LifeStoryRepository, MoodRepository,
     PushTokenRepository, ReportRepository, ResearchRepository, SocialRepository,
@@ -2068,5 +2068,46 @@ impl SubscriptionRepository for SqliteSubscriptionRepository {
         Ok(row.map(|(platform, product_id, original_transaction_id, expires_at, updated_at)| {
             Subscription { user_id, platform, product_id, original_transaction_id, expires_at, updated_at }
         }))
+    }
+}
+
+pub struct SqliteChatUsageRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteChatUsageRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl ChatUsageRepository for SqliteChatUsageRepository {
+    async fn add_tokens(&self, user_id: Uuid, date: NaiveDate, tokens: i64) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO chat_token_usage (user_id, usage_date, tokens_used)
+             VALUES (?1, ?2, ?3)
+             ON CONFLICT(user_id, usage_date) DO UPDATE SET
+                tokens_used = tokens_used + excluded.tokens_used",
+        )
+        .bind(user_id.to_string())
+        .bind(date.to_string())
+        .bind(tokens)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn tokens_used(&self, user_id: Uuid, date: NaiveDate) -> anyhow::Result<i64> {
+        let used: Option<i64> = sqlx::query_scalar(
+            "SELECT tokens_used FROM chat_token_usage WHERE user_id = ?1 AND usage_date = ?2",
+        )
+        .bind(user_id.to_string())
+        .bind(date.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(used.unwrap_or(0))
     }
 }

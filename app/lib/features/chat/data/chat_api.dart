@@ -12,6 +12,14 @@ class ChatReply {
   const ChatReply({required this.reply, required this.crisisFlag});
 }
 
+/// Thrown when `/chat` answers 402 — the account (not on Hearth Plus) has
+/// used its free daily chat budget. Kept as its own type, not just another
+/// caught [DioException], so the controller can route to the paywall
+/// instead of showing a generic error bubble.
+class PremiumRequiredException implements Exception {
+  const PremiumRequiredException();
+}
+
 class ChatApi {
   final Dio _dio;
   ChatApi(this._dio);
@@ -27,18 +35,23 @@ class ChatApi {
   }) async {
     final trimmed = history.length > 16 ? history.sublist(history.length - 16) : history;
 
-    final response = await _dio.post('/chat', data: {
-      'message': message,
-      'history': [
-        for (final m in trimmed)
-          {'role': m.sender == ChatSender.user ? 'user' : 'assistant', 'content': m.text},
-      ],
-    });
+    try {
+      final response = await _dio.post('/chat', data: {
+        'message': message,
+        'history': [
+          for (final m in trimmed)
+            {'role': m.sender == ChatSender.user ? 'user' : 'assistant', 'content': m.text},
+        ],
+      });
 
-    return ChatReply(
-      reply: response.data['reply'] as String,
-      crisisFlag: response.data['crisis_flag'] as bool? ?? false,
-    );
+      return ChatReply(
+        reply: response.data['reply'] as String,
+        crisisFlag: response.data['crisis_flag'] as bool? ?? false,
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 402) throw const PremiumRequiredException();
+      rethrow;
+    }
   }
 
   /// The full durable transcript for the signed-in account, oldest first —

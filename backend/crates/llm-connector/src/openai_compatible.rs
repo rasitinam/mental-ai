@@ -115,12 +115,15 @@ impl LlmProvider for OpenAiCompatibleProvider {
             })
             .unwrap_or_default();
 
+        let usage_tokens = payload["usage"]["total_tokens"].as_u64().map(|n| n as u32);
+
         Ok(ChatResponse {
             message: ChatMessage {
                 role: Role::Assistant,
                 content,
             },
             tool_calls,
+            usage_tokens,
         })
     }
 

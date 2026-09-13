@@ -481,5 +481,6 @@
   "premiumUnavailable": "Satın alma şu anda kullanılamıyor.",
   "premiumRestored": "Satın almaların geri yüklendi.",
   "premiumPrivacyPolicy": "Gizlilik Politikası",
-  "premiumTermsOfUse": "Kullanım Koşulları"
+  "premiumTermsOfUse": "Kullanım Koşulları",
+  "chatQuotaExceeded": "Bugünkü ücretsiz sohbet hakkın doldu. Hearth Plus ile sınırsız sohbet edebilirsin."
 }
