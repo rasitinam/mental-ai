@@ -71,13 +71,16 @@ class MoodHeatmap extends StatelessWidget {
                 Text(l10n.lifeMoodHistoryLegendLow,
                     style: AppTypography.caption.copyWith(color: palette.textTertiary)),
                 const SizedBox(width: 6),
-                for (var i = 0; i < 4; i++)
+                // -1..1 across five swatches, through the same mapping the
+                // cells use, so the legend is an honest key rather than a
+                // decorative gradient.
+                for (final sample in const [-1.0, -0.5, 0.0, 0.5, 1.0])
                   Container(
                     width: 10,
                     height: 10,
                     margin: const EdgeInsets.only(right: 3),
                     decoration: BoxDecoration(
-                      color: palette.accent.withValues(alpha: 0.18 + (i / 3) * 0.72),
+                      color: moodCellColor(palette, sample),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -90,6 +93,20 @@ class MoodHeatmap extends StatelessWidget {
       },
     );
   }
+}
+
+/// A day with no check-in stays [AppPalette.separator] (the grid's own
+/// "empty" gray/black, not a mood reading) — everything else runs on a
+/// diverging scale from [AppPalette.warning] at the worst valence through
+/// to [AppPalette.accent] at the best, so "zorlu" and "keyifli" read as two
+/// different colors, not two intensities of the same one.
+Color moodCellColor(AppPalette palette, double? valence) {
+  if (valence == null) return palette.separator;
+
+  final magnitude = valence.abs().clamp(0.0, 1.0);
+  final alpha = 0.18 + magnitude * 0.72;
+  final base = valence >= 0 ? palette.accent : palette.warning;
+  return base.withValues(alpha: alpha);
 }
 
 class _Cell extends StatelessWidget {
@@ -107,13 +124,7 @@ class _Cell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isFuture
-        ? Colors.transparent
-        : valence == null
-            ? palette.separator
-            // -1..1 mapped to 0..1 so a bad day still shows the coolest
-            // shade of the accent rather than reading as "no data".
-            : palette.accent.withValues(alpha: 0.18 + ((valence! + 1) / 2) * 0.72);
+    final color = isFuture ? Colors.transparent : moodCellColor(palette, valence);
 
     return Container(
       width: size,
