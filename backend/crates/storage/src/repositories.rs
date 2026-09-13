@@ -7,6 +7,7 @@ use mental_domain::repository::{
     PushTokenRepository, ReportRepository, ResearchRepository, SocialRepository, UserRepository,
     UserStateRepository,
 };
+use mental_domain::life_story::REACTIONS;
 use mental_domain::report::LifeAnalysis;
 use mental_domain::{
     ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, DmMessage,
@@ -23,6 +24,25 @@ fn tags_to_json(tags: &[String]) -> String {
 
 fn tags_from_json(raw: &str) -> Vec<String> {
     serde_json::from_str(raw).unwrap_or_default()
+}
+
+/// Unpacks the `"destek:2,anliyorum:1"`-shaped string `feed_for`'s
+/// `group_concat` produces back into counts ordered like [`REACTIONS`].
+/// An unrecognized name (there shouldn't be one — `react` validates against
+/// the same constant) is silently dropped rather than failing the whole
+/// feed row over one bad count.
+fn parse_reaction_counts(summary: Option<String>) -> [u32; 3] {
+    let mut counts = [0u32; REACTIONS.len()];
+    let Some(summary) = summary else { return counts };
+
+    for part in summary.split(',') {
+        let Some((name, count)) = part.split_once(':') else { continue };
+        if let Some(idx) = REACTIONS.iter().position(|r| *r == name) {
+            counts[idx] = count.parse().unwrap_or(0);
+        }
+    }
+
+    counts
 }
 
 pub struct SqliteUserRepository {
@@ -1163,7 +1183,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
     }
 
     async fn delete(&self, id: Uuid, user_id: Uuid) -> anyhow::Result<()> {
-        // None of `story_upvotes`, `life_story_reports` or
+        // None of `story_reactions`, `life_story_reports` or
         // `story_translations` cascade on delete (SQLite foreign keys
         // don't unless declared `ON DELETE CASCADE`, and these weren't),
         // so a story with any of the three attached would otherwise fail
@@ -1171,7 +1191,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
         // so a withdrawal is still all-or-nothing.
         let mut tx = self.pool.begin().await?;
 
-        sqlx::query("DELETE FROM story_upvotes WHERE story_id = ?1")
+        sqlx::query("DELETE FROM story_reactions WHERE story_id = ?1")
             .bind(id.to_string())
             .execute(&mut *tx)
             .await?;
@@ -1234,17 +1254,26 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
         // layer for anonymous rows — keeping the "don't leak the name"
         // decision in one place (`routes/stories.rs`) rather than half in
         // SQL and half in Rust.
+        // Reaction counts come back as one `name:count,name:count` string
+        // rather than a column per reaction type — sqlx's tuple `FromRow`
+        // only goes up to 16 columns, and three more scalar subqueries
+        // would have pushed this past that. Parsed by
+        // `parse_reaction_counts` below.
         let rows = sqlx::query_as::<
             _,
             (
                 String, String, String, String, String, bool, DateTime<Utc>, bool,
-                Option<DateTime<Utc>>, DateTime<Utc>, String, i64, i64, String, Option<String>,
+                Option<DateTime<Utc>>, DateTime<Utc>, String, Option<String>, Option<String>, String,
+                Option<String>,
             ),
         >(
             "SELECT s.id, s.user_id, s.body, s.diagnosis_slug, s.status, s.crisis_flag,
                     s.consented_at, s.anonymous, s.reviewed_at, s.created_at, s.language,
-                    (SELECT COUNT(*) FROM story_upvotes v WHERE v.story_id = s.id) AS upvotes,
-                    (SELECT COUNT(*) FROM story_upvotes v WHERE v.story_id = s.id AND v.user_id = ?1) AS mine,
+                    (SELECT group_concat(reaction || ':' || cnt) FROM (
+                        SELECT reaction, COUNT(*) AS cnt FROM story_reactions
+                        WHERE story_id = s.id GROUP BY reaction
+                    )) AS reaction_summary,
+                    (SELECT r.reaction FROM story_reactions r WHERE r.story_id = s.id AND r.user_id = ?1) AS mine,
                     u.display_name, u.avatar_content_type
              FROM life_stories s JOIN users u ON u.id = s.user_id
              WHERE s.status = 'approved'
@@ -1258,14 +1287,15 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
         Ok(rows
             .into_iter()
             .map(|(id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at,
-                   anonymous, reviewed_at, created_at, language, upvotes, mine, display_name, avatar)| {
+                   anonymous, reviewed_at, created_at, language, reaction_summary, mine,
+                   display_name, avatar)| {
                 StoryFeedItem {
                     story: story_from_row((
                         id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at,
                         anonymous, reviewed_at, created_at, language,
                     )),
-                    upvotes: upvotes.max(0) as u32,
-                    viewer_upvoted: mine > 0,
+                    reaction_counts: parse_reaction_counts(reaction_summary),
+                    viewer_reaction: mine,
                     author_display_name: display_name,
                     author_has_avatar: avatar.is_some(),
                 }
@@ -1412,13 +1442,15 @@ impl SocialRepository for SqliteSocialRepository {
         Ok(rows.into_iter().map(|(id,)| Uuid::parse_str(&id).unwrap_or_default()).collect())
     }
 
-    async fn upvote(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()> {
+    async fn react(&self, story_id: Uuid, user_id: Uuid, reaction: &str) -> anyhow::Result<()> {
         sqlx::query(
-            "INSERT INTO story_upvotes (story_id, user_id, created_at) VALUES (?1, ?2, ?3)
-             ON CONFLICT(story_id, user_id) DO NOTHING",
+            "INSERT INTO story_reactions (story_id, user_id, reaction, created_at) VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(story_id, user_id) DO UPDATE SET
+                reaction = excluded.reaction, created_at = excluded.created_at",
         )
         .bind(story_id.to_string())
         .bind(user_id.to_string())
+        .bind(reaction)
         .bind(Utc::now())
         .execute(&self.pool)
         .await?;
@@ -1426,8 +1458,8 @@ impl SocialRepository for SqliteSocialRepository {
         Ok(())
     }
 
-    async fn remove_upvote(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()> {
-        sqlx::query("DELETE FROM story_upvotes WHERE story_id = ?1 AND user_id = ?2")
+    async fn remove_reaction(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()> {
+        sqlx::query("DELETE FROM story_reactions WHERE story_id = ?1 AND user_id = ?2")
             .bind(story_id.to_string())
             .bind(user_id.to_string())
             .execute(&self.pool)
@@ -1812,6 +1844,15 @@ impl PushTokenRepository for SqlitePushTokenRepository {
                 .await?;
 
         Ok(rows.into_iter().map(|(token,)| token).collect())
+    }
+
+    async fn all_user_ids(&self) -> anyhow::Result<Vec<Uuid>> {
+        let rows: Vec<(String,)> =
+            sqlx::query_as("SELECT DISTINCT user_id FROM device_push_tokens")
+                .fetch_all(&self.pool)
+                .await?;
+
+        Ok(rows.into_iter().filter_map(|(id,)| Uuid::parse_str(&id).ok()).collect())
     }
 }
 

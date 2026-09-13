@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -6,11 +7,13 @@ use chrono::{Duration as ChronoDuration, Utc};
 use mental_analysis_engine::{generate_disorder_explainer, synthesize_insights};
 use mental_common::config::ResearchIngestConfig;
 use mental_domain::catalog;
-use mental_domain::repository::{ExplainerRepository, InsightRepository};
+use mental_domain::repository::{ActivityRepository, ExplainerRepository, InsightRepository, PushTokenRepository};
+use mental_push::PushRequest;
 use mental_research_ingest::sources::{PubMedSource, WhoRssSource};
 use mental_research_ingest::{run_ingest_cycle, ResearchSource};
 use tokio_cron_scheduler::{Job, JobScheduler};
 
+use crate::routes::user_for;
 use crate::state::AppState;
 
 /// Caps how many newly-ingested articles get turned into insight cards
@@ -261,4 +264,115 @@ fn pubmed(label: &'static str, query: &str, tags: Vec<&str>) -> Arc<dyn Research
         15,
         tags.into_iter().map(str::to_string).collect(),
     ))
+}
+
+/// UTC hour the daily check-in nudge fires — 16:00 UTC lands around 19:00
+/// in Turkey (UTC+3), an evening slot most accounts are actually holding
+/// their phone for without being late enough to feel intrusive.
+const CHECKIN_NUDGE_HOUR_UTC: u32 = 16;
+
+/// How far back "today" reaches for this check, in place of midnight-to-now
+/// day math: a day-old gap in activity is the same signal whether or not it
+/// happens to straddle UTC midnight, and this needs no extra date handling.
+const CHECKIN_NUDGE_WINDOW_HOURS: i64 = 20;
+
+/// Once a day, nudges anyone with a registered device who hasn't logged a
+/// mood check-in, journal entry or chat message in the last
+/// [`CHECKIN_NUDGE_WINDOW_HOURS`] hours. Deliberately narrow: this is a
+/// gentle reminder for someone who quietly stopped showing up today, not a
+/// re-engagement campaign, so it only ever reaches people it would
+/// actually help and never more than once in that window.
+pub fn spawn_checkin_nudge_job(state: AppState) {
+    tokio::spawn(async move {
+        let scheduler = match JobScheduler::new().await {
+            Ok(scheduler) => scheduler,
+            Err(err) => {
+                tracing::warn!(error = %err, "check-in nudge: failed to create scheduler");
+                return;
+            }
+        };
+
+        let schedule = format!("0 0 {CHECKIN_NUDGE_HOUR_UTC} * * *");
+        let job = match Job::new_async(schedule.as_str(), move |_uuid, _lock| {
+            let state = state.clone();
+            Box::pin(async move { run_checkin_nudge(&state).await })
+        }) {
+            Ok(job) => job,
+            Err(err) => {
+                tracing::warn!(error = %err, "check-in nudge: failed to build job");
+                return;
+            }
+        };
+
+        if let Err(err) = scheduler.add(job).await {
+            tracing::warn!(error = %err, "check-in nudge: failed to schedule job");
+            return;
+        }
+        if let Err(err) = scheduler.start().await {
+            tracing::warn!(error = %err, "check-in nudge: failed to start scheduler");
+        }
+    });
+}
+
+async fn run_checkin_nudge(state: &AppState) {
+    let user_ids = match state.push_tokens.all_user_ids().await {
+        Ok(ids) => ids,
+        Err(err) => {
+            tracing::warn!(error = %err, "check-in nudge: failed to list candidates");
+            return;
+        }
+    };
+
+    let since = Utc::now() - ChronoDuration::hours(CHECKIN_NUDGE_WINDOW_HOURS);
+    let mut nudged = 0u32;
+
+    for user_id in user_ids {
+        // A failed lookup should never nag someone twice by mistake, so
+        // treat "couldn't tell" the same as "already active".
+        let active_recently = state
+            .activity
+            .daily_counts(user_id, since)
+            .await
+            .map(|counts| !counts.is_empty())
+            .unwrap_or(true);
+        if active_recently {
+            continue;
+        }
+
+        let tokens = state.push_tokens.tokens_for_user(user_id).await.unwrap_or_default();
+        if tokens.is_empty() {
+            continue;
+        }
+
+        let language = user_for(state, user_id).await.map(|u| u.language).unwrap_or_else(|| "tr".to_string());
+        let (title, body) = checkin_nudge_text(&language);
+
+        let mut data = HashMap::new();
+        data.insert("type".to_string(), "checkin_nudge".to_string());
+
+        for token in tokens {
+            let request =
+                PushRequest { token, title: title.clone(), body: body.clone(), data: data.clone() };
+            if let Err(err) = state.push.send(request).await {
+                tracing::warn!(error = %err, "check-in nudge: send failed");
+            }
+        }
+        nudged += 1;
+    }
+
+    tracing::info!(nudged, "check-in nudge cycle complete");
+}
+
+fn checkin_nudge_text(language: &str) -> (String, String) {
+    match language {
+        "en" => (
+            "Hearth".to_string(),
+            "You haven't checked in today. Take a few seconds to share how you're feeling.".to_string(),
+        ),
+        _ => (
+            "Hearth".to_string(),
+            "Bugün henüz check-in yapmadın. Birkaç saniyeni ayırıp ruh halini paylaşmak ister misin?"
+                .to_string(),
+        ),
+    }
 }

@@ -7,6 +7,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/storage/local_prefs.dart';
+import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
@@ -133,6 +134,13 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
           (resolved?.category.name.toLowerCase().contains(query) ?? false);
     }).toList();
 
+    // The feed's own most-reacted-to stories — a discovery surface for
+    // "what's landing with people right now" rather than a similarity
+    // engine, computed from the page already in memory instead of a
+    // second request.
+    final highlights = [...state.feed.where((s) => s.reactionCount > 0)]
+      ..sort((a, b) => b.reactionCount.compareTo(a.reactionCount));
+
     return Scaffold(
       // The floating bottom nav bar (see `HomeShell`) is painted above this
       // screen's own body, so the default FAB position would sit right
@@ -187,6 +195,14 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
                   onSelect: (slug) => setState(() => _selectedCategory = slug),
                 ),
               ),
+            if (highlights.isNotEmpty && _query.isEmpty)
+              _HighlightsStrip(
+                stories: highlights.take(5).toList(),
+                categories: categories,
+                palette: palette,
+                l10n: l10n,
+                onSelectCategory: (slug) => setState(() => _selectedCategory = slug),
+              ),
             Expanded(
               child: RefreshIndicator(
                 color: palette.accent,
@@ -199,7 +215,7 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
                   l10n: l10n,
                   myUserId: myUserId,
                   onReport: (id) => _report(context, ref, id),
-                  onUpvote: controller.toggleUpvote,
+                  onReact: controller.setReaction,
                 ),
               ),
             ),
@@ -218,7 +234,7 @@ class _FeedList extends StatelessWidget {
   final AppLocalizations l10n;
   final String? myUserId;
   final ValueChanged<String> onReport;
-  final ValueChanged<String> onUpvote;
+  final void Function(String id, String reaction) onReact;
 
   const _FeedList({
     required this.stories,
@@ -228,13 +244,16 @@ class _FeedList extends StatelessWidget {
     required this.l10n,
     required this.myUserId,
     required this.onReport,
-    required this.onUpvote,
+    required this.onReact,
   });
 
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return Center(child: CircularProgressIndicator(color: palette.accent));
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+        children: const [_StoryCardSkeleton(), _StoryCardSkeleton(), _StoryCardSkeleton()],
+      );
     }
     if (stories.isEmpty) {
       return ListView(
@@ -272,10 +291,41 @@ class _FeedList extends StatelessWidget {
             palette: palette,
             l10n: l10n,
             onReport: onReport,
-            onUpvote: onUpvote,
+            onReact: onReact,
           ),
         );
       },
+    );
+  }
+}
+
+/// Stands in for a feed card while the first page loads — a category
+/// pill, a couple of body lines, and the reaction-row's width, so the
+/// list doesn't visibly reflow once real stories arrive.
+class _StoryCardSkeleton extends StatelessWidget {
+  const _StoryCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GlassSurface(
+        radius: 18,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            SkeletonBox(width: 90, height: 20, radius: 100),
+            SizedBox(height: 12),
+            SkeletonBox(height: 13),
+            SizedBox(height: 7),
+            SkeletonBox(height: 13),
+            SizedBox(height: 7),
+            SkeletonBox(width: 180, height: 13),
+            SizedBox(height: 14),
+            SkeletonBox(width: 140, height: 24, radius: 100),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -293,7 +343,7 @@ class _StoryCard extends ConsumerStatefulWidget {
   final AppPalette palette;
   final AppLocalizations l10n;
   final ValueChanged<String> onReport;
-  final ValueChanged<String> onUpvote;
+  final void Function(String id, String reaction) onReact;
 
   const _StoryCard({
     required this.story,
@@ -302,7 +352,7 @@ class _StoryCard extends ConsumerStatefulWidget {
     required this.palette,
     required this.l10n,
     required this.onReport,
-    required this.onUpvote,
+    required this.onReact,
   });
 
   @override
@@ -375,15 +425,16 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
             ),
           ],
           const SizedBox(height: 12),
+          _ReactionBar(
+            reactions: story.reactions,
+            viewerReaction: story.viewerReaction,
+            palette: palette,
+            l10n: l10n,
+            onTap: (reaction) => widget.onReact(story.id, reaction),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
-              _UpvoteButton(
-                count: story.upvotes,
-                voted: story.viewerUpvoted,
-                palette: palette,
-                onTap: () => widget.onUpvote(story.id),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: story.authorUserId == null
                     ? Row(
@@ -459,55 +510,191 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
 }
 
 
-/// The Reddit-shaped affordance the feed uses: an arrow and a count, no
-/// paired downvote. Filled when the reader has voted, so the state is
-/// legible without reading the number.
-class _UpvoteButton extends StatelessWidget {
-  final int count;
-  final bool voted;
-  final AppPalette palette;
-  final VoidCallback onTap;
+/// One reaction's emoji and label — kept next to [storyReactions] in
+/// spirit (same three keys, same order) but as display data, since the
+/// domain layer shouldn't know about emoji.
+const _reactionEmoji = {'destek': '🤍', 'guclusun': '💪', 'anliyorum': '🙏'};
 
-  const _UpvoteButton({
-    required this.count,
-    required this.voted,
+String _reactionLabel(AppLocalizations l10n, String reaction) => switch (reaction) {
+      'destek' => l10n.storiesReactionDestek,
+      'guclusun' => l10n.storiesReactionGuclusun,
+      'anliyorum' => l10n.storiesReactionAnliyorum,
+      _ => reaction,
+    };
+
+/// Three small reaction chips, replacing the single up/down vote — a
+/// reader picks the one that fits (or none), and picking a different one
+/// swaps rather than stacks. Filled when it's the reader's own pick, so
+/// the state reads without needing to compare counts.
+class _ReactionBar extends StatelessWidget {
+  final Map<String, int> reactions;
+  final String? viewerReaction;
+  final AppPalette palette;
+  final AppLocalizations l10n;
+  final ValueChanged<String> onTap;
+
+  const _ReactionBar({
+    required this.reactions,
+    required this.viewerReaction,
     required this.palette,
+    required this.l10n,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: voted ? palette.accentSoft : Colors.transparent,
-      borderRadius: BorderRadius.circular(100),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(100),
-            border: Border.all(color: voted ? palette.accent : palette.separator),
+    return Row(
+      children: [
+        for (final reaction in storyReactions) ...[
+          if (reaction != storyReactions.first) const SizedBox(width: 8),
+          _ReactionChip(
+            reaction: reaction,
+            count: reactions[reaction] ?? 0,
+            selected: viewerReaction == reaction,
+            palette: palette,
+            tooltip: _reactionLabel(l10n, reaction),
+            onTap: () => onTap(reaction),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                voted ? Icons.arrow_upward_rounded : Icons.arrow_upward_outlined,
-                size: 15,
-                color: voted ? palette.accent : palette.textSecondary,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                '$count',
-                style: AppTypography.caption.copyWith(
-                  color: voted ? palette.accent : palette.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+        ],
+      ],
+    );
+  }
+}
+
+class _ReactionChip extends StatelessWidget {
+  final String reaction;
+  final int count;
+  final bool selected;
+  final AppPalette palette;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _ReactionChip({
+    required this.reaction,
+    required this.count,
+    required this.selected,
+    required this.palette,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: selected ? palette.accentSoft : Colors.transparent,
+        borderRadius: BorderRadius.circular(100),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(100),
+              border: Border.all(color: selected ? palette.accent : palette.separator),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_reactionEmoji[reaction] ?? '', style: const TextStyle(fontSize: 13)),
+                if (count > 0) ...[
+                  const SizedBox(width: 5),
+                  Text(
+                    '$count',
+                    style: AppTypography.caption.copyWith(
+                      color: selected ? palette.accent : palette.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A horizontal strip of the feed's own most-reacted-to stories. Tapping
+/// one filters the main feed to its condition instead of opening a detail
+/// screen — there isn't one — which turns "what's landing with people" into
+/// "show me more like this", a real next action rather than a dead end.
+class _HighlightsStrip extends StatelessWidget {
+  final List<LifeStory> stories;
+  final List<DisorderCategory> categories;
+  final AppPalette palette;
+  final AppLocalizations l10n;
+  final ValueChanged<String> onSelectCategory;
+
+  const _HighlightsStrip({
+    required this.stories,
+    required this.categories,
+    required this.palette,
+    required this.l10n,
+    required this.onSelectCategory,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 22, bottom: 8),
+            child: SectionLabel(l10n.storiesHighlightsTitle),
+          ),
+          SizedBox(
+            height: 96,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              itemCount: stories.length,
+              itemBuilder: (context, i) {
+                final story = stories[i];
+                final resolved = _resolve(categories, story.diagnosisSlug);
+                return Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: Material(
+                    color: palette.glassFill,
+                    borderRadius: BorderRadius.circular(16),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: resolved == null ? null : () => onSelectCategory(resolved.category.slug),
+                      child: Container(
+                        width: 200,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(border: Border.all(color: palette.glassBorder)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (resolved != null)
+                              Text('${resolved.category.emoji} ${resolved.disorder.name}',
+                                  style: AppTypography.caption.copyWith(color: palette.accent)),
+                            const SizedBox(height: 4),
+                            Expanded(
+                              child: Text(
+                                story.body,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.caption.copyWith(color: palette.textPrimary, height: 1.35),
+                              ),
+                            ),
+                            Text('${story.reactionCount} ❤',
+                                style: AppTypography.caption.copyWith(color: palette.textTertiary)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

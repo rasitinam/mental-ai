@@ -8,6 +8,7 @@ import '../../../app/theme/glass.dart';
 import '../../../core/network/error_messages.dart';
 import '../../../core/storage/local_prefs.dart';
 import '../../../core/widgets/countdown_text.dart';
+import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../streak/data/streak_api.dart';
 import '../domain/journal_entry.dart';
@@ -162,10 +163,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                     SectionLabel(l10n.journalPast),
                     const SizedBox(height: 10),
                     if (state.loading)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 20),
-                        child: Center(child: CircularProgressIndicator(color: palette.accent)),
-                      )
+                      const _JournalEntrySkeleton()
                     else if (state.entries.isEmpty)
                       Text(
                         l10n.journalEmpty,
@@ -288,6 +286,38 @@ class _CooldownCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Stands in for the archive list while it loads — shaped like
+/// [_JournalEntryCard] itself (a date line over a couple of body lines) so
+/// the list doesn't visibly jump once the real entries arrive.
+class _JournalEntrySkeleton extends StatelessWidget {
+  const _JournalEntrySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < 3; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: GlassSurface(
+              radius: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  SkeletonBox(width: 110, height: 11),
+                  SizedBox(height: 10),
+                  SkeletonBox(height: 13),
+                  SizedBox(height: 7),
+                  SkeletonBox(width: 220, height: 13),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

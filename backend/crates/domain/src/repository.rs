@@ -288,10 +288,13 @@ pub trait SocialRepository: Send + Sync {
     async fn followers(&self, user_id: Uuid) -> anyhow::Result<Vec<Uuid>>;
     /// Accounts `user_id` follows, newest follow first.
     async fn following(&self, user_id: Uuid) -> anyhow::Result<Vec<Uuid>>;
-    /// Idempotent: voting twice is the same as voting once, so a
-    /// double-tap can't inflate a tally.
-    async fn upvote(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()>;
-    async fn remove_upvote(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()>;
+    /// Sets the caller's reaction on a story to one of
+    /// [`crate::life_story::REACTIONS`], replacing whichever one (if any)
+    /// they'd picked before — idempotent the same way the old single
+    /// upvote was, so a double-tap can't inflate a tally.
+    async fn react(&self, story_id: Uuid, user_id: Uuid, reaction: &str) -> anyhow::Result<()>;
+    /// Clears the caller's reaction on a story, if they had one.
+    async fn remove_reaction(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()>;
 }
 
 /// Direct messages, with the request gate built into the thread's own
@@ -327,4 +330,8 @@ pub trait PushTokenRepository: Send + Sync {
     /// of them — someone signed in on two phones expects a message
     /// request to notify both.
     async fn tokens_for_user(&self, user_id: Uuid) -> anyhow::Result<Vec<String>>;
+    /// Every distinct account with at least one registered device — the
+    /// candidate list the daily check-in nudge iterates, so it never has
+    /// to touch a full user table just to find who can receive a push.
+    async fn all_user_ids(&self) -> anyhow::Result<Vec<Uuid>>;
 }

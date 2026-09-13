@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -7,7 +9,7 @@ use axum::{
 use chrono::{DateTime, Utc};
 use mental_analysis_engine::{screen_for_crisis_language, translate_text};
 use mental_domain::catalog;
-use mental_domain::life_story::detect_language;
+use mental_domain::life_story::{detect_language, REACTIONS};
 use mental_domain::repository::{LifeStoryRepository, SocialRepository};
 use mental_domain::{LifeStory, LifeStoryReport, StoryFeedItem, StoryStatus};
 use serde::{Deserialize, Serialize};
@@ -23,7 +25,7 @@ pub fn router() -> Router<AppState> {
         .route("/stories/mine", get(mine))
         .route("/stories/:id", axum::routing::delete(withdraw))
         .route("/stories/:id/report", post(report))
-        .route("/stories/:id/upvote", post(upvote).delete(remove_upvote))
+        .route("/stories/:id/react", post(react).delete(remove_reaction))
         .route("/stories/:id/translate", get(translate))
         .route("/stories/pending", get(pending))
         .route("/stories/reports", get(reports))
@@ -65,8 +67,10 @@ struct PublicStory {
     language: String,
     diagnosis_slug: String,
     created_at: DateTime<Utc>,
-    upvotes: u32,
-    viewer_upvoted: bool,
+    /// Count per [`REACTIONS`] entry, keyed by name so the client doesn't
+    /// need to hardcode the same ordering the backend does.
+    reactions: HashMap<String, u32>,
+    viewer_reaction: Option<String>,
     anonymous: bool,
     author_user_id: Option<String>,
     author_display_name: Option<String>,
@@ -76,14 +80,19 @@ struct PublicStory {
 impl From<&StoryFeedItem> for PublicStory {
     fn from(item: &StoryFeedItem) -> Self {
         let signed = !item.story.anonymous;
+        let reactions = REACTIONS
+            .iter()
+            .zip(item.reaction_counts)
+            .map(|(name, count)| (name.to_string(), count))
+            .collect();
         Self {
             id: item.story.id.to_string(),
             body: item.story.body.clone(),
             language: item.story.language.clone(),
             diagnosis_slug: item.story.diagnosis_slug.clone(),
             created_at: item.story.created_at,
-            upvotes: item.upvotes,
-            viewer_upvoted: item.viewer_upvoted,
+            reactions,
+            viewer_reaction: item.viewer_reaction.clone(),
             anonymous: item.story.anonymous,
             author_user_id: signed.then(|| item.story.user_id.to_string()),
             author_display_name: signed.then(|| item.author_display_name.clone()),
@@ -217,28 +226,38 @@ async fn public_feed(
 
 const FEED_LIMIT: u32 = 200;
 
-async fn upvote(
+#[derive(Debug, Deserialize)]
+struct ReactRequest {
+    reaction: String,
+}
+
+async fn react(
     State(state): State<AppState>,
     auth: AuthUser,
     Path(id): Path<Uuid>,
+    Json(req): Json<ReactRequest>,
 ) -> Result<StatusCode, (StatusCode, String)> {
+    if !REACTIONS.contains(&req.reaction.as_str()) {
+        return Err((StatusCode::BAD_REQUEST, format!("unknown reaction: {}", req.reaction)));
+    }
+
     state
         .social
-        .upvote(id, auth.user_id)
+        .react(id, auth.user_id, &req.reaction)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn remove_upvote(
+async fn remove_reaction(
     State(state): State<AppState>,
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     state
         .social
-        .remove_upvote(id, auth.user_id)
+        .remove_reaction(id, auth.user_id)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 

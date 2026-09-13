@@ -7,6 +7,8 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/network/error_messages.dart';
+import '../../../core/widgets/hearth_flame.dart';
+import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
@@ -84,6 +86,8 @@ class DailyReportScreen extends ConsumerWidget {
               _StateCard(data: home, palette: palette, l10n: l10n),
               const SizedBox(height: 16),
               const _StreakCard(),
+              const SizedBox(height: 16),
+              const _RecapCard(),
               // Reads the profile itself, so saving a diagnosis rebuilds
               // this strip instead of the whole landing screen.
               _DiagnosesStrip(palette: palette, title: l10n.homeDiagnosesTitle),
@@ -95,10 +99,7 @@ class DailyReportScreen extends ConsumerWidget {
                       style: TextStyle(color: palette.warning)),
                 ),
               if (report.loading)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: CircularProgressIndicator(color: palette.accent)),
-                )
+                const _ReportSkeleton()
               else if (report.report == null && report.error == null)
                 _EmptyState(onGenerate: reportController.generateNow, palette: palette, l10n: l10n)
               else if (report.report != null) ...[
@@ -302,23 +303,30 @@ class _StreakCard extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              SectionLabel(l10n.streakLabel),
-              const SizedBox(height: 2),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
+              HearthFlame(streak: streak.current, size: 36),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '${streak.current}',
-                    style: AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 20),
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    l10n.streakDays,
-                    style: AppTypography.footnote.copyWith(color: palette.textSecondary),
+                  SectionLabel(l10n.streakLabel),
+                  const SizedBox(height: 2),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '${streak.current}',
+                        style:
+                            AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 20),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        l10n.streakDays,
+                        style: AppTypography.footnote.copyWith(color: palette.textSecondary),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -361,6 +369,82 @@ class _Sparkline extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Stands in for today's note and recommendations while the report loads.
+class _ReportSkeleton extends StatelessWidget {
+  const _ReportSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          SkeletonBox(width: 90, height: 11),
+          SizedBox(height: 10),
+          SkeletonBox(height: 13),
+          SizedBox(height: 7),
+          SkeletonBox(height: 13),
+          SizedBox(height: 7),
+          SkeletonBox(width: 200, height: 13),
+        ],
+      ),
+    );
+  }
+}
+
+/// Entry point into the weekly recap (`RecapScreen`, pushed rather than a
+/// tab — it's a destination someone visits, not one they live on). Reads
+/// its own localizations rather than taking them as a parameter, the same
+/// as `_StreakCard`.
+class _RecapCard extends StatelessWidget {
+  const _RecapCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/recap'),
+        child: GlassSurface(
+          radius: 18,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: palette.accentSoft, shape: BoxShape.circle),
+                alignment: Alignment.center,
+                child: Icon(Icons.auto_awesome_rounded, size: 18, color: palette.accent),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.recapEntryTitle,
+                        style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 15)),
+                    const SizedBox(height: 2),
+                    Text(l10n.recapEntrySubtitle,
+                        style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: palette.textTertiary),
+            ],
+          ),
+        ),
       ),
     );
   }

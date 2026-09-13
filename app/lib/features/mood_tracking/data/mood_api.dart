@@ -48,6 +48,16 @@ class MoodApi {
     if (response.data == null) return null;
     return MoodEntry.fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// Every check-in ever recorded, oldest first — backs the mood heatmap
+  /// and the weekly recap, both of which need the actual history rather
+  /// than just today's reading.
+  Future<List<MoodEntry>> history() async {
+    final response = await _dio.get('/mood/history');
+    return (response.data as List<dynamic>)
+        .map((e) => MoodEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }
 
 /// The most recent check-in, for screens that only need a quick read of
@@ -55,4 +65,11 @@ class MoodApi {
 /// than the full cooldown-aware submit flow in [moodControllerProvider].
 final latestMoodProvider = FutureProvider<MoodEntry?>((ref) async {
   return ref.watch(moodApiProvider).latest();
+});
+
+/// The full check-in history, for the heatmap and the recap card. Neither
+/// screen is on the tab bar, so this stays `autoDispose` rather than
+/// living for the app's whole lifetime like [latestMoodProvider].
+final moodHistoryProvider = FutureProvider.autoDispose<List<MoodEntry>>((ref) async {
+  return ref.watch(moodApiProvider).history();
 });

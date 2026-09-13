@@ -428,5 +428,31 @@
   "dmWaiting": "Waiting",
   "dmNewRequest": "New request",
   "dmWaitingBody": "Request sent. You can write once it's accepted.",
-  "dmLeave": "Leave conversation"
+  "dmLeave": "Leave conversation",
+
+  "recapEntryTitle": "Your Weekly Recap",
+  "recapEntrySubtitle": "See and share your week",
+  "recapTitle": "Weekly Recap",
+  "recapCheckins": "Mood check-ins",
+  "recapJournalEntries": "Journal entries",
+  "recapActiveDays": "Active days",
+  "recapMoodVeryPositive": "You had a great week.",
+  "recapMoodPositive": "This week was mostly good.",
+  "recapMoodNeutral": "This week was steady.",
+  "recapMoodMixed": "This week had its ups and downs.",
+  "recapMoodHard": "This week was tough. Be gentle with yourself.",
+  "recapMoodEmpty": "No check-ins yet this week.",
+  "recapShare": "Share",
+  "recapShareText": "I logged {checkins} mood check-ins on Hearth this week, and I'm on a {streak}-day streak.",
+  "@recapShareText": { "placeholders": { "checkins": { "type": "int" }, "streak": { "type": "int" } } },
+
+  "lifeMoodHistoryTitle": "Your Mood History",
+  "lifeMoodHistoryEmpty": "No check-ins yet",
+  "lifeMoodHistoryLegendLow": "Hard",
+  "lifeMoodHistoryLegendHigh": "Good",
+
+  "storiesReactionDestek": "You're not alone",
+  "storiesReactionGuclusun": "You're strong",
+  "storiesReactionAnliyorum": "I understand",
+  "storiesHighlightsTitle": "Highlights"
 }

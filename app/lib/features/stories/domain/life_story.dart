@@ -6,6 +6,12 @@ StoryStatus _statusFromJson(String raw) => switch (raw) {
       _ => StoryStatus.pending,
     };
 
+/// The small, fixed set of ways a reader can react to a story — mirrors
+/// the backend's `mental_domain::life_story::REACTIONS`. Deliberately
+/// emotional labels rather than a generic "like": a bare thumbs-up reads
+/// oddly next to someone's account of their own mental illness.
+const storyReactions = ['destek', 'guclusun', 'anliyorum'];
+
 /// One person's own account of their mental-health journey, submitted for
 /// the public guide. Mirrors the backend's `LifeStory` — see
 /// `mental_domain::life_story` for why there's no separate medication
@@ -22,8 +28,9 @@ class LifeStory {
   final bool crisisFlag;
   final DateTime createdAt;
   final bool anonymous;
-  final int upvotes;
-  final bool viewerUpvoted;
+  /// Count per [storyReactions] entry, keyed by name.
+  final Map<String, int> reactions;
+  final String? viewerReaction;
 
   /// Null for an anonymous story — the backend doesn't send an id to
   /// click through to, not just no name to render.
@@ -40,14 +47,19 @@ class LifeStory {
     required this.crisisFlag,
     required this.createdAt,
     this.anonymous = true,
-    this.upvotes = 0,
-    this.viewerUpvoted = false,
+    this.reactions = const {},
+    this.viewerReaction,
     this.authorUserId,
     this.authorDisplayName,
     this.authorHasAvatar = false,
   });
 
-  /// `/stories` (the feed) adds the vote tally and, when the author
+  /// Total reactions of any kind — the single number the highlights strip
+  /// sorts by, so "most reacted to" doesn't have to pick a favorite among
+  /// the three.
+  int get reactionCount => reactions.values.fold(0, (a, b) => a + b);
+
+  /// `/stories` (the feed) adds the reaction tallies and, when the author
   /// signed it, their identity. No status or crisis flag: every entry
   /// there is already approved.
   factory LifeStory.fromPublicJson(Map<String, dynamic> json) => LifeStory(
@@ -59,8 +71,9 @@ class LifeStory {
         crisisFlag: false,
         createdAt: DateTime.parse(json['created_at'] as String),
         anonymous: json['anonymous'] as bool? ?? true,
-        upvotes: json['upvotes'] as int? ?? 0,
-        viewerUpvoted: json['viewer_upvoted'] as bool? ?? false,
+        reactions: (json['reactions'] as Map<String, dynamic>? ?? {})
+            .map((key, value) => MapEntry(key, value as int)),
+        viewerReaction: json['viewer_reaction'] as String?,
         authorUserId: json['author_user_id'] as String?,
         authorDisplayName: json['author_display_name'] as String?,
         authorHasAvatar: json['author_has_avatar'] as bool? ?? false,
@@ -77,23 +90,33 @@ class LifeStory {
         anonymous: json['anonymous'] as bool? ?? true,
       );
 
-  /// Local echo of a vote, so the row updates on tap instead of waiting
-  /// for the feed to be refetched.
-  LifeStory withVote({required bool upvoted}) => LifeStory(
-        id: id,
-        body: body,
-        language: language,
-        diagnosisSlug: diagnosisSlug,
-        status: status,
-        crisisFlag: crisisFlag,
-        createdAt: createdAt,
-        anonymous: anonymous,
-        upvotes: upvotes + (upvoted ? 1 : -1),
-        viewerUpvoted: upvoted,
-        authorUserId: authorUserId,
-        authorDisplayName: authorDisplayName,
-        authorHasAvatar: authorHasAvatar,
-      );
+  /// Local echo of a reaction change, so the row updates on tap instead of
+  /// waiting for the feed to be refetched. `reaction: null` clears it.
+  LifeStory withReaction(String? reaction) {
+    final next = Map<String, int>.from(reactions);
+    if (viewerReaction != null) {
+      next[viewerReaction!] = (next[viewerReaction!] ?? 1) - 1;
+    }
+    if (reaction != null) {
+      next[reaction] = (next[reaction] ?? 0) + 1;
+    }
+
+    return LifeStory(
+      id: id,
+      body: body,
+      language: language,
+      diagnosisSlug: diagnosisSlug,
+      status: status,
+      crisisFlag: crisisFlag,
+      createdAt: createdAt,
+      anonymous: anonymous,
+      reactions: next,
+      viewerReaction: reaction,
+      authorUserId: authorUserId,
+      authorDisplayName: authorDisplayName,
+      authorHasAvatar: authorHasAvatar,
+    );
+  }
 }
 
 /// A submission as an admin sees it while moderating — identity included.

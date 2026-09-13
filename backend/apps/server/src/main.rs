@@ -80,6 +80,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     scheduler::spawn_explainer_warmup_job(state.clone());
+    scheduler::spawn_checkin_nudge_job(state.clone());
 
     let app = routes::build_router(state)
         .layer(CorsLayer::permissive())

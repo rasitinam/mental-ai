@@ -116,15 +116,23 @@ pub fn detect_language(text: &str) -> String {
     }
 }
 
+/// The small, fixed set of ways a reader can react to a story — deliberately
+/// emotional labels rather than a generic "like", since a bare thumbs-up
+/// reads oddly next to someone's account of their own mental illness. One
+/// active reaction per (story, user); picking a different one replaces the
+/// last rather than stacking (see `migrations/0018_story_reactions.sql`).
+pub const REACTIONS: [&str; 3] = ["destek", "guclusun", "anliyorum"];
+
 /// A feed row: the story plus everything the reader's copy of it needs —
-/// vote tally, whether *they* voted, and the author's identity when the
-/// story isn't anonymous. Assembled in one query rather than a lookup
-/// per story.
+/// reaction tallies, which one *they* picked (if any), and the author's
+/// identity when the story isn't anonymous. Assembled in one query rather
+/// than a lookup per story.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoryFeedItem {
     pub story: LifeStory,
-    pub upvotes: u32,
-    pub viewer_upvoted: bool,
+    /// Count per entry of [`REACTIONS`], in that order.
+    pub reaction_counts: [u32; 3],
+    pub viewer_reaction: Option<String>,
     pub author_display_name: String,
     pub author_has_avatar: bool,
 }

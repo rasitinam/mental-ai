@@ -1246,4 +1246,72 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dmLeave => 'Leave conversation';
+
+  @override
+  String get recapEntryTitle => 'Your Weekly Recap';
+
+  @override
+  String get recapEntrySubtitle => 'See and share your week';
+
+  @override
+  String get recapTitle => 'Weekly Recap';
+
+  @override
+  String get recapCheckins => 'Mood check-ins';
+
+  @override
+  String get recapJournalEntries => 'Journal entries';
+
+  @override
+  String get recapActiveDays => 'Active days';
+
+  @override
+  String get recapMoodVeryPositive => 'You had a great week.';
+
+  @override
+  String get recapMoodPositive => 'This week was mostly good.';
+
+  @override
+  String get recapMoodNeutral => 'This week was steady.';
+
+  @override
+  String get recapMoodMixed => 'This week had its ups and downs.';
+
+  @override
+  String get recapMoodHard => 'This week was tough. Be gentle with yourself.';
+
+  @override
+  String get recapMoodEmpty => 'No check-ins yet this week.';
+
+  @override
+  String get recapShare => 'Share';
+
+  @override
+  String recapShareText(int checkins, int streak) {
+    return 'I logged $checkins mood check-ins on Hearth this week, and I\'m on a $streak-day streak.';
+  }
+
+  @override
+  String get lifeMoodHistoryTitle => 'Your Mood History';
+
+  @override
+  String get lifeMoodHistoryEmpty => 'No check-ins yet';
+
+  @override
+  String get lifeMoodHistoryLegendLow => 'Hard';
+
+  @override
+  String get lifeMoodHistoryLegendHigh => 'Good';
+
+  @override
+  String get storiesReactionDestek => 'You\'re not alone';
+
+  @override
+  String get storiesReactionGuclusun => 'You\'re strong';
+
+  @override
+  String get storiesReactionAnliyorum => 'I understand';
+
+  @override
+  String get storiesHighlightsTitle => 'Highlights';
 }

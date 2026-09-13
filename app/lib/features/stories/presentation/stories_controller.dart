@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/life_stories_api.dart';
@@ -73,22 +74,24 @@ class StoriesController extends Notifier<StoriesState> {
     }
   }
 
-  /// Votes optimistically: the row flips on tap and only rolls back if
+  /// Reacts optimistically: the row flips on tap and only rolls back if
   /// the request fails, because waiting on a round-trip to acknowledge a
-  /// vote is the kind of lag that makes a feed feel broken.
-  Future<void> toggleUpvote(String id) async {
+  /// tap is the kind of lag that makes a feed feel broken. Tapping the
+  /// reaction that's already picked clears it instead of re-sending it.
+  Future<void> setReaction(String id, String reaction) async {
     final index = state.feed.indexWhere((s) => s.id == id);
     if (index < 0) return;
 
     final original = state.feed[index];
-    final target = !original.viewerUpvoted;
+    final target = original.viewerReaction == reaction ? null : reaction;
 
+    HapticFeedback.selectionClick();
     final optimistic = [...state.feed];
-    optimistic[index] = original.withVote(upvoted: target);
+    optimistic[index] = original.withReaction(target);
     state = state.copyWith(feed: optimistic);
 
     try {
-      await ref.read(lifeStoriesApiProvider).setUpvote(id, upvoted: target);
+      await ref.read(lifeStoriesApiProvider).setReaction(id, reaction: target);
     } catch (_) {
       final rolledBack = [...state.feed];
       final current = rolledBack.indexWhere((s) => s.id == id);

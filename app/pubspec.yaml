@@ -62,6 +62,10 @@ dependencies:
   firebase_core: ^3.8.0
   firebase_messaging: ^15.1.6
   flutter_local_notifications: ^18.0.1
+  # Renders the weekly recap card to an image and hands it to the native
+  # share sheet (via an in-memory `XFile`, so no temp-file/path_provider
+  # plumbing is needed and this works on web too).
+  share_plus: ^10.1.2
 
 dev_dependencies:
   flutter_test:

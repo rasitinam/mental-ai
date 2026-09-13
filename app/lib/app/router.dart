@@ -17,6 +17,7 @@ import '../features/life_analysis/presentation/life_analysis_screen.dart';
 import '../features/mood_tracking/presentation/mood_screen.dart';
 import '../features/profile/presentation/diagnoses_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/recap/presentation/recap_screen.dart';
 import '../features/settings/presentation/privacy_settings_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/social/presentation/dm_inbox_screen.dart';
@@ -183,6 +184,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             GoRoute(path: '/journal', builder: (context, state) => const JournalScreen()),
           ]),
         ],
+      ),
+      // The weekly recap sits outside the shell for the same reason the
+      // social surfaces below do: it's pushed over whatever tab you were
+      // on (from the report screen's recap card) and carries its own back
+      // button, so the tab bar would only be a second, contradictory way
+      // out.
+      GoRoute(
+        path: '/recap',
+        builder: (context, state) => const RecapScreen(),
       ),
       // Social surfaces sit outside the shell: they're pushed over
       // whatever tab you were on (from a story author or a DM row) and

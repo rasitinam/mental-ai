@@ -1242,4 +1242,72 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get dmLeave => 'Sohbetten çık';
+
+  @override
+  String get recapEntryTitle => 'Haftalık Özetin';
+
+  @override
+  String get recapEntrySubtitle => 'Bu haftanı gör ve paylaş';
+
+  @override
+  String get recapTitle => 'Haftalık Özet';
+
+  @override
+  String get recapCheckins => 'Ruh hali girişi';
+
+  @override
+  String get recapJournalEntries => 'Günlük yazısı';
+
+  @override
+  String get recapActiveDays => 'Aktif gün';
+
+  @override
+  String get recapMoodVeryPositive => 'Bu hafta oldukça keyifliydin.';
+
+  @override
+  String get recapMoodPositive => 'Bu hafta genelde iyiydin.';
+
+  @override
+  String get recapMoodNeutral => 'Bu hafta dengeliydin.';
+
+  @override
+  String get recapMoodMixed => 'Bu hafta inişli çıkışlıydı.';
+
+  @override
+  String get recapMoodHard => 'Bu hafta zorlu geçti. Kendine nazik davran.';
+
+  @override
+  String get recapMoodEmpty => 'Bu hafta henüz check-in yapmadın.';
+
+  @override
+  String get recapShare => 'Paylaş';
+
+  @override
+  String recapShareText(int checkins, int streak) {
+    return 'Hearth\'te bu hafta $checkins ruh hali girişi yaptım, $streak günlük serim var.';
+  }
+
+  @override
+  String get lifeMoodHistoryTitle => 'Ruh Hali Geçmişin';
+
+  @override
+  String get lifeMoodHistoryEmpty => 'Henüz check-in yok';
+
+  @override
+  String get lifeMoodHistoryLegendLow => 'Zorlu';
+
+  @override
+  String get lifeMoodHistoryLegendHigh => 'Keyifli';
+
+  @override
+  String get storiesReactionDestek => 'Yalnız değilsin';
+
+  @override
+  String get storiesReactionGuclusun => 'Güçlüsün';
+
+  @override
+  String get storiesReactionAnliyorum => 'Anlıyorum';
+
+  @override
+  String get storiesHighlightsTitle => 'Öne Çıkanlar';
 }

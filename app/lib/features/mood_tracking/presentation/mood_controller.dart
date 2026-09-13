@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/local_prefs.dart';
@@ -92,6 +93,7 @@ class MoodController extends Notifier<MoodState> {
   /// afterwards still wins — [setMood] doesn't clear the words, so the
   /// selection stays visible as the reason the dot started where it did.
   void toggleEmotion(String key) {
+    HapticFeedback.selectionClick();
     final next = Set<String>.from(state.emotions);
     if (!next.remove(key)) next.add(key);
 
@@ -112,6 +114,7 @@ class MoodController extends Notifier<MoodState> {
             arousal: state.arousal,
             note: note,
           );
+      HapticFeedback.mediumImpact();
       state = state.copyWith(
         submitting: false,
         submitted: true,

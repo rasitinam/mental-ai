@@ -6,7 +6,10 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/network/error_messages.dart';
+import '../../../core/widgets/mood_heatmap.dart';
+import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../mood_tracking/data/mood_api.dart';
 import '../../streak/data/streak_api.dart';
 import 'life_analysis_controller.dart';
 
@@ -40,7 +43,10 @@ class LifeAnalysisScreen extends ConsumerWidget {
           color: palette.accent,
           onRefresh: controller.loadLatest,
           child: state.loading
-              ? Center(child: CircularProgressIndicator(color: palette.accent))
+              ? ListView(
+                  padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
+                  children: const [_LifeAnalysisSkeleton()],
+                )
               : ListView(
                   padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
                   children: [
@@ -75,6 +81,7 @@ class LifeAnalysisScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     const _PeriodStreakCard(),
+                    const _MoodHistoryCard(),
                     if (state.error != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
@@ -174,6 +181,65 @@ class _PeriodStreakCard extends ConsumerWidget {
                 ],
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Stands in for the header, streak card and narrative while the first
+/// load is in flight.
+class _LifeAnalysisSkeleton extends StatelessWidget {
+  const _LifeAnalysisSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        SkeletonBox(width: 160, height: 22),
+        SizedBox(height: 8),
+        SkeletonBox(width: 120, height: 13),
+        SizedBox(height: 22),
+        SkeletonBox(height: 60, radius: 18),
+        SizedBox(height: 22),
+        SkeletonBox(width: 90, height: 11),
+        SizedBox(height: 10),
+        SkeletonBox(height: 13),
+        SizedBox(height: 7),
+        SkeletonBox(height: 13),
+        SizedBox(height: 7),
+        SkeletonBox(width: 200, height: 13),
+      ],
+    );
+  }
+}
+
+/// The mood heatmap, wrapped the same self-padded way as
+/// [_PeriodStreakCard] above it. Reads its own provider (rather than
+/// taking history as a parameter) so a slow request never holds up the
+/// narrative text above it, and hides itself entirely once there's
+/// nothing to shade a grid with.
+class _MoodHistoryCard extends ConsumerWidget {
+  const _MoodHistoryCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final history = ref.watch(moodHistoryProvider).valueOrNull;
+    if (history == null || history.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: GlassSurface(
+        radius: 18,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SectionLabel(l10n.lifeMoodHistoryTitle),
+            const SizedBox(height: 14),
+            MoodHeatmap(entries: history),
           ],
         ),
       ),

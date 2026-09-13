@@ -64,11 +64,14 @@ class LifeStoriesApi {
     return (response.data as Map<String, dynamic>)['body'] as String;
   }
 
-  Future<void> setUpvote(String id, {required bool upvoted}) async {
-    if (upvoted) {
-      await _dio.post('/stories/$id/upvote');
+  /// Sets the caller's reaction to one of [storyReactions], or clears it
+  /// (`reaction: null`) — one active reaction per story, so picking a new
+  /// one replaces rather than stacks.
+  Future<void> setReaction(String id, {String? reaction}) async {
+    if (reaction != null) {
+      await _dio.post('/stories/$id/react', data: {'reaction': reaction});
     } else {
-      await _dio.delete('/stories/$id/upvote');
+      await _dio.delete('/stories/$id/react');
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/local_prefs.dart';
@@ -79,6 +80,7 @@ class JournalController extends Notifier<JournalState> {
     try {
       await ref.read(journalApiProvider).addEntry(body: body.trim());
       await load();
+      HapticFeedback.mediumImpact();
       state = state.copyWith(submitting: false, submitted: true);
     } on JournalCooldownException catch (e) {
       state = state.copyWith(submitting: false, cooldownUntil: e.retryAfter);

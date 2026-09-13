@@ -17,6 +17,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/mood", post(add_mood))
         .route("/mood/latest", get(latest_mood))
+        .route("/mood/history", get(history))
 }
 
 /// Once-per-day check-ins are the product's intent ("günlük ruh hali") —
@@ -91,4 +92,21 @@ async fn latest_mood(
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(Json(entry))
+}
+
+/// Every check-in ever recorded, oldest first — feeds the mood heatmap and
+/// the weekly recap, both of which need the actual history rather than
+/// just today's reading. Once-a-day check-ins keep this small even over a
+/// year of use, so there's no pagination here yet.
+async fn history(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Json<Vec<MoodEntry>>, (axum::http::StatusCode, String)> {
+    let entries = state
+        .moods
+        .list_all(auth.user_id)
+        .await
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(entries))
 }

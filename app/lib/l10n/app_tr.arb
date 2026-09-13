@@ -428,5 +428,31 @@
   "dmWaiting": "Bekliyor",
   "dmNewRequest": "Yeni istek",
   "dmWaitingBody": "İsteğin gönderildi. Kabul edilince yazabilirsin.",
-  "dmLeave": "Sohbetten çık"
+  "dmLeave": "Sohbetten çık",
+
+  "recapEntryTitle": "Haftalık Özetin",
+  "recapEntrySubtitle": "Bu haftanı gör ve paylaş",
+  "recapTitle": "Haftalık Özet",
+  "recapCheckins": "Ruh hali girişi",
+  "recapJournalEntries": "Günlük yazısı",
+  "recapActiveDays": "Aktif gün",
+  "recapMoodVeryPositive": "Bu hafta oldukça keyifliydin.",
+  "recapMoodPositive": "Bu hafta genelde iyiydin.",
+  "recapMoodNeutral": "Bu hafta dengeliydin.",
+  "recapMoodMixed": "Bu hafta inişli çıkışlıydı.",
+  "recapMoodHard": "Bu hafta zorlu geçti. Kendine nazik davran.",
+  "recapMoodEmpty": "Bu hafta henüz check-in yapmadın.",
+  "recapShare": "Paylaş",
+  "recapShareText": "Hearth'te bu hafta {checkins} ruh hali girişi yaptım, {streak} günlük serim var.",
+  "@recapShareText": { "placeholders": { "checkins": { "type": "int" }, "streak": { "type": "int" } } },
+
+  "lifeMoodHistoryTitle": "Ruh Hali Geçmişin",
+  "lifeMoodHistoryEmpty": "Henüz check-in yok",
+  "lifeMoodHistoryLegendLow": "Zorlu",
+  "lifeMoodHistoryLegendHigh": "Keyifli",
+
+  "storiesReactionDestek": "Yalnız değilsin",
+  "storiesReactionGuclusun": "Güçlüsün",
+  "storiesReactionAnliyorum": "Anlıyorum",
+  "storiesHighlightsTitle": "Öne Çıkanlar"
 }

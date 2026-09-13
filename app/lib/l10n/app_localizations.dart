@@ -2389,6 +2389,138 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Sohbetten çık'**
   String get dmLeave;
+
+  /// No description provided for @recapEntryTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Haftalık Özetin'**
+  String get recapEntryTitle;
+
+  /// No description provided for @recapEntrySubtitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu haftanı gör ve paylaş'**
+  String get recapEntrySubtitle;
+
+  /// No description provided for @recapTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Haftalık Özet'**
+  String get recapTitle;
+
+  /// No description provided for @recapCheckins.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh hali girişi'**
+  String get recapCheckins;
+
+  /// No description provided for @recapJournalEntries.
+  ///
+  /// In tr, this message translates to:
+  /// **'Günlük yazısı'**
+  String get recapJournalEntries;
+
+  /// No description provided for @recapActiveDays.
+  ///
+  /// In tr, this message translates to:
+  /// **'Aktif gün'**
+  String get recapActiveDays;
+
+  /// No description provided for @recapMoodVeryPositive.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu hafta oldukça keyifliydin.'**
+  String get recapMoodVeryPositive;
+
+  /// No description provided for @recapMoodPositive.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu hafta genelde iyiydin.'**
+  String get recapMoodPositive;
+
+  /// No description provided for @recapMoodNeutral.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu hafta dengeliydin.'**
+  String get recapMoodNeutral;
+
+  /// No description provided for @recapMoodMixed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu hafta inişli çıkışlıydı.'**
+  String get recapMoodMixed;
+
+  /// No description provided for @recapMoodHard.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu hafta zorlu geçti. Kendine nazik davran.'**
+  String get recapMoodHard;
+
+  /// No description provided for @recapMoodEmpty.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu hafta henüz check-in yapmadın.'**
+  String get recapMoodEmpty;
+
+  /// No description provided for @recapShare.
+  ///
+  /// In tr, this message translates to:
+  /// **'Paylaş'**
+  String get recapShare;
+
+  /// No description provided for @recapShareText.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth\'te bu hafta {checkins} ruh hali girişi yaptım, {streak} günlük serim var.'**
+  String recapShareText(int checkins, int streak);
+
+  /// No description provided for @lifeMoodHistoryTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh Hali Geçmişin'**
+  String get lifeMoodHistoryTitle;
+
+  /// No description provided for @lifeMoodHistoryEmpty.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz check-in yok'**
+  String get lifeMoodHistoryEmpty;
+
+  /// No description provided for @lifeMoodHistoryLegendLow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Zorlu'**
+  String get lifeMoodHistoryLegendLow;
+
+  /// No description provided for @lifeMoodHistoryLegendHigh.
+  ///
+  /// In tr, this message translates to:
+  /// **'Keyifli'**
+  String get lifeMoodHistoryLegendHigh;
+
+  /// No description provided for @storiesReactionDestek.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yalnız değilsin'**
+  String get storiesReactionDestek;
+
+  /// No description provided for @storiesReactionGuclusun.
+  ///
+  /// In tr, this message translates to:
+  /// **'Güçlüsün'**
+  String get storiesReactionGuclusun;
+
+  /// No description provided for @storiesReactionAnliyorum.
+  ///
+  /// In tr, this message translates to:
+  /// **'Anlıyorum'**
+  String get storiesReactionAnliyorum;
+
+  /// No description provided for @storiesHighlightsTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Öne Çıkanlar'**
+  String get storiesHighlightsTitle;
 }
 
 class _AppLocalizationsDelegate

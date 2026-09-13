@@ -140,7 +140,16 @@ class PushService {
 
   void _openThread(Map<String, dynamic> data) {
     final threadId = data['thread_id'] as String?;
-    if (threadId == null) return;
-    _ref.read(appRouterProvider).push('/dm/$threadId');
+    if (threadId != null) {
+      _ref.read(appRouterProvider).push('/dm/$threadId');
+      return;
+    }
+
+    // The daily check-in nudge (`scheduler::spawn_checkin_nudge_job` on the
+    // backend) carries no thread — tapping it goes straight to the mood
+    // form it's reminding someone about.
+    if (data['type'] == 'checkin_nudge') {
+      _ref.read(appRouterProvider).push('/mood');
+    }
   }
 }
