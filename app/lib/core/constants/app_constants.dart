@@ -11,12 +11,20 @@ class AppConstants {
   );
 
   // Apple requires the Hearth Plus paywall to link to a real, hosted
-  // Privacy Policy and Terms of Use (App Store Review Guideline 3.1.2) —
-  // both still need to be written and published before submission. Set
-  // via --dart-define once they exist; the paywall hides a link rather
+  // Privacy Policy and Terms of Use (App Store Review Guideline 3.1.2).
+  // This draft must be shared publicly (the artifact's own Share menu)
+  // before a real submission — Apple's reviewer opens it without being
+  // signed into claude.ai. Override with --dart-define if it moves to a
+  // permanent, self-hosted URL later; the paywall hides a link rather
   // than opening a blank page while either is empty.
-  static const String privacyPolicyUrl = String.fromEnvironment('PRIVACY_POLICY_URL');
-  static const String termsOfUseUrl = String.fromEnvironment('TERMS_OF_USE_URL');
+  static const String privacyPolicyUrl = String.fromEnvironment(
+    'PRIVACY_POLICY_URL',
+    defaultValue: 'https://claude.ai/code/artifact/2658cf1d-f5f7-4aee-b646-4c0ab1b9649e',
+  );
+  static const String termsOfUseUrl = String.fromEnvironment(
+    'TERMS_OF_USE_URL',
+    defaultValue: 'https://claude.ai/code/artifact/2658cf1d-f5f7-4aee-b646-4c0ab1b9649e',
+  );
 
 
   static const String prefsUserIdKey = 'mental_ai.user_id';

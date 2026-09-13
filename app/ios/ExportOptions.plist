@@ -9,8 +9,13 @@
 	     committed since it carries no secret, only your public team ID. -->
 	<key>teamID</key>
 	<string>REPLACE_WITH_YOUR_APPLE_TEAM_ID</string>
+	<!-- "automatic" so Codemagic's `xcode-project use-profiles` step (see
+	     ../../codemagic.yaml) can fetch/generate the right provisioning
+	     profile itself via its App Store Connect API key integration,
+	     rather than needing a manually-created and -downloaded profile
+	     from someone sitting at a Mac. -->
 	<key>signingStyle</key>
-	<string>manual</string>
+	<string>automatic</string>
 	<key>uploadBitcode</key>
 	<false/>
 	<key>uploadSymbols</key>
