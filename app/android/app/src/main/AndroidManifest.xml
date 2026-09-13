@@ -18,8 +18,7 @@
     <application
         android:label="Hearth"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
+        android:icon="@mipmap/ic_launcher">
         <!-- The channel a background/terminated notification posts to when
              the OS displays it without any app code running — must match
              `channel_id` in the FCM payload (see

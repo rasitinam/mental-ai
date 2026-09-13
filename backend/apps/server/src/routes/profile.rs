@@ -211,6 +211,18 @@ async fn upload_avatar(
     if bytes.len() > MAX_AVATAR_BYTES {
         return Err((StatusCode::BAD_REQUEST, "image too large".to_string()));
     }
+    // The multipart `Content-Type` is whatever the client claims, not a
+    // verified fact — trusting it alone would let someone upload
+    // arbitrary bytes (an HTML/SVG payload, say) labeled as an image and
+    // have it served back under that label. Checking the file's own
+    // magic bytes against the declared type closes that off regardless
+    // of whether a viewer's browser ever MIME-sniffs the response.
+    if sniff_image_type(&bytes) != Some(content_type.as_str()) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "file content does not match the declared image type".to_string(),
+        ));
+    }
 
     tokio::fs::create_dir_all(AVATAR_DIR)
         .await
@@ -249,6 +261,23 @@ async fn get_avatar(State(state): State<AppState>, auth: AuthUser) -> Result<Res
 
 pub(crate) fn avatar_path(user_id: uuid::Uuid) -> std::path::PathBuf {
     std::path::Path::new(AVATAR_DIR).join(user_id.to_string())
+}
+
+/// Identifies a file by its own magic bytes rather than trusting a
+/// caller-supplied label — see `upload_avatar`. Only the three types the
+/// upload endpoint accepts are recognized; anything else (including a
+/// well-formed image type not in that allowlist) returns `None`.
+fn sniff_image_type(bytes: &[u8]) -> Option<&'static str> {
+    if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) {
+        return Some("image/png");
+    }
+    if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        return Some("image/jpeg");
+    }
+    if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
+        return Some("image/webp");
+    }
+    None
 }
 
 #[derive(Debug, Deserialize)]

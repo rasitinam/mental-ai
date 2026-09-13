@@ -120,16 +120,34 @@ async fn login(
 ) -> Result<Json<SessionResponse>, (axum::http::StatusCode, String)> {
     let email = normalize_email(&req.email);
 
-    let credentials = state
-        .auth
-        .find_credentials_by_email(&email)
-        .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-        .ok_or((axum::http::StatusCode::UNAUTHORIZED, "incorrect email or password".to_string()))?;
+    // Checked before touching the database or Argon2, so a lockout costs
+    // an attacker nothing to keep probing against — see
+    // `rate_limit::LoginRateLimiter`.
+    if !state.login_rate_limiter.allow(&email) {
+        return Err((
+            axum::http::StatusCode::TOO_MANY_REQUESTS,
+            "too many attempts, try again later".to_string(),
+        ));
+    }
+
+    // A missing account counts as a failed attempt too (not just a wrong
+    // password) — otherwise the limiter itself would leak whether an
+    // email is registered, by letting non-existent ones probe forever.
+    let credentials = match state.auth.find_credentials_by_email(&email).await {
+        Ok(Some(c)) => c,
+        Ok(None) => {
+            state.login_rate_limiter.record_failure(&email);
+            return Err((axum::http::StatusCode::UNAUTHORIZED, "incorrect email or password".to_string()));
+        }
+        Err(e) => return Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
+    };
 
     if !verify_password(&req.password, &credentials.password_hash) {
+        state.login_rate_limiter.record_failure(&email);
         return Err((axum::http::StatusCode::UNAUTHORIZED, "incorrect email or password".to_string()));
     }
+
+    state.login_rate_limiter.record_success(&email);
 
     let session = issue_session(&state, credentials.user_id)
         .await

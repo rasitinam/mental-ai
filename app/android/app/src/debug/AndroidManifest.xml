@@ -4,4 +4,11 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Debug-only: lets `flutter run` point at a plain-http://<LAN IP>
+         backend on a dev machine without a tunnel. Deliberately not in
+         the main manifest — a release build should only ever talk to the
+         real (HTTPS) backend, and Android blocks cleartext traffic by
+         default from API 28 on, which is the behavior a release build
+         should keep. -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>
