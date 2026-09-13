@@ -1320,6 +1320,37 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
         Ok(())
     }
 
+    async fn update(&self, story: &LifeStory) -> anyhow::Result<()> {
+        // A translation cached against the old body would now be wrong —
+        // dropped rather than left to be served as if it still matched.
+        let mut tx = self.pool.begin().await?;
+
+        sqlx::query("DELETE FROM story_translations WHERE story_id = ?1")
+            .bind(story.id.to_string())
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "UPDATE life_stories SET
+                body = ?1, diagnosis_slug = ?2, status = ?3, crisis_flag = ?4,
+                anonymous = ?5, language = ?6, reviewed_at = ?7
+             WHERE id = ?8 AND user_id = ?9",
+        )
+        .bind(&story.body)
+        .bind(&story.diagnosis_slug)
+        .bind(story.status.as_str())
+        .bind(story.crisis_flag)
+        .bind(story.anonymous)
+        .bind(&story.language)
+        .bind(story.reviewed_at)
+        .bind(story.id.to_string())
+        .bind(story.user_id.to_string())
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
     async fn add_report(&self, report: &LifeStoryReport) -> anyhow::Result<()> {
         sqlx::query(
             "INSERT INTO life_story_reports (id, story_id, reporter_user_id, note, created_at)

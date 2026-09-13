@@ -8,6 +8,7 @@ import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
 import '../domain/life_story.dart';
 import 'stories_controller.dart';
+import 'story_submit_screen.dart';
 
 /// The author's own submissions, with the moderation status the public
 /// feed never shows. Its own route under Settings rather than a tab on
@@ -52,6 +53,12 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
     if (confirmed == true) {
       await ref.read(storiesControllerProvider.notifier).withdraw(id);
     }
+  }
+
+  Future<void> _edit(LifeStory story) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => StorySubmitScreen(editing: story)),
+    );
   }
 
   String _statusLabel(AppLocalizations l10n, StoryStatus status) => switch (status) {
@@ -181,6 +188,15 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
                       ),
                     ],
                     const Spacer(),
+                    InkWell(
+                      onTap: () => _edit(story),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(Icons.edit_outlined, size: 18, color: palette.textSecondary),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
                     InkWell(
                       onTap: () => _confirmWithdraw(story.id),
                       borderRadius: BorderRadius.circular(8),

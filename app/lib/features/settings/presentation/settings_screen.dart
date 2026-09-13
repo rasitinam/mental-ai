@@ -131,8 +131,17 @@ class SettingsScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
           children: [
-            Text(l10n.settingsTitle,
-                style: AppTypography.title2.copyWith(color: palette.textPrimary)),
+            Row(
+              children: [
+                SquareIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  onPressed: () => Navigator.of(context).maybePop(),
+                ),
+                const SizedBox(width: 14),
+                Text(l10n.settingsTitle,
+                    style: AppTypography.title3.copyWith(color: palette.textPrimary)),
+              ],
+            ),
             const SizedBox(height: 20),
             _Group(
               children: [

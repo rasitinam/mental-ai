@@ -37,14 +37,13 @@ class HomeShell extends ConsumerWidget {
         (icon: Icons.mail_outline_rounded, activeIcon: Icons.mail_rounded, tooltip: l10n.navMessages),
         (icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, tooltip: l10n.navGuide),
         (icon: Icons.insights_outlined, activeIcon: Icons.insights, tooltip: l10n.navLife),
-        (icon: Icons.tune_outlined, activeIcon: Icons.tune, tooltip: l10n.navSettings),
+        (icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, tooltip: l10n.navProfile),
       ];
 
   // Indices into both `_destinations` and the branch list in
   // `app/router.dart` — the two must stay in the same order.
   static const _storiesIndex = 2;
   static const _messagesIndex = 3;
-  static const _settingsIndex = 6;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,14 +61,20 @@ class HomeShell extends ConsumerWidget {
       canPop: !onMessagesRoot,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        // Reached from Settings' "Mesajlar" row → back goes back to
-        // Settings. Reached straight from this tab bar → back falls
-        // through to Stories, the app's landing tab, rather than
-        // exiting — Messages sits right next to Stories for exactly
-        // this reason.
+        // Reached from Settings' "Mesajlar" row → back goes back to the
+        // settings list specifically (`context.go`, not `goBranch`,
+        // since that tab's own root is now the profile view — see
+        // `MyProfileScreen` — not the list this back should land on).
+        // Reached straight from this tab bar → back falls through to
+        // Stories, the app's landing tab, rather than exiting —
+        // Messages sits right next to Stories for exactly this reason.
         final fromSettings = ref.read(dmEnteredFromSettingsProvider);
         ref.read(dmEnteredFromSettingsProvider.notifier).state = false;
-        navigationShell.goBranch(fromSettings ? _settingsIndex : _storiesIndex);
+        if (fromSettings) {
+          context.go('/settings/list');
+        } else {
+          navigationShell.goBranch(_storiesIndex);
+        }
       },
       child: Scaffold(
         extendBody: true,

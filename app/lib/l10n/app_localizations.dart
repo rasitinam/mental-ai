@@ -230,6 +230,12 @@ abstract class AppLocalizations {
   /// **'Ayarlar'**
   String get navSettings;
 
+  /// No description provided for @navProfile.
+  ///
+  /// In tr, this message translates to:
+  /// **'Profilim'**
+  String get navProfile;
+
   /// No description provided for @greetingNight.
   ///
   /// In tr, this message translates to:
@@ -611,7 +617,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsProfile.
   ///
   /// In tr, this message translates to:
-  /// **'Profilim'**
+  /// **'Profili Düzenle'**
   String get settingsProfile;
 
   /// No description provided for @settingsPrivacyRow.
@@ -629,7 +635,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileTitle.
   ///
   /// In tr, this message translates to:
-  /// **'Profilim'**
+  /// **'Profili Düzenle'**
   String get profileTitle;
 
   /// No description provided for @profileEmail.
@@ -1381,6 +1387,36 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Hikayen incelemeye gönderildi.'**
   String get storiesSubmitSuccess;
+
+  /// No description provided for @storiesEditTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayeni Düzenle'**
+  String get storiesEditTitle;
+
+  /// No description provided for @storiesSaveChanges.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaydet'**
+  String get storiesSaveChanges;
+
+  /// No description provided for @storiesEditSuccess.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayen güncellendi ve yeniden incelemeye gönderildi.'**
+  String get storiesEditSuccess;
+
+  /// No description provided for @storiesEditNotice.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaydettiğinde bu hikaye yeniden incelemeye gönderilir; onaylanana kadar akışta görünmez.'**
+  String get storiesEditNotice;
+
+  /// No description provided for @storiesEdit.
+  ///
+  /// In tr, this message translates to:
+  /// **'Düzenle'**
+  String get storiesEdit;
 
   /// No description provided for @storiesModerationTitle.
   ///
@@ -2239,6 +2275,30 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Henüz kimse yok'**
   String get profileNobodyYet;
+
+  /// No description provided for @myProfileEdit.
+  ///
+  /// In tr, this message translates to:
+  /// **'Profili Düzenle'**
+  String get myProfileEdit;
+
+  /// No description provided for @myProfileStories.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayelerim'**
+  String get myProfileStories;
+
+  /// No description provided for @myProfileStoriesSeeAll.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tümünü gör'**
+  String get myProfileStoriesSeeAll;
+
+  /// No description provided for @myProfileStoriesAdd.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeni'**
+  String get myProfileStoriesAdd;
 
   /// No description provided for @settingsDmPrivacy.
   ///

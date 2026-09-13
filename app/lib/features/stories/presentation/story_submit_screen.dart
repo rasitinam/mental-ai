@@ -8,15 +8,21 @@ import '../../../core/network/error_messages.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
+import '../domain/life_story.dart';
 import 'stories_controller.dart';
 
-/// The write flow for a life story. Free text plus one required
+/// The write flow for a life story — also the edit flow: pass [editing]
+/// and the form prefills from it, the button reads "save" instead of
+/// "send", and the consent/moderation-notice block (already agreed to,
+/// the first time this story was submitted) is replaced by a short note
+/// that saving sends it back for re-review. Free text plus one required
 /// diagnosis tag — no structured "medication" field, deliberately. See
 /// `mental_domain::life_story` on the backend for why: this is meant to
 /// read as one person's own account, not a searchable directory of who
 /// recommends which drug.
 class StorySubmitScreen extends ConsumerStatefulWidget {
-  const StorySubmitScreen({super.key});
+  final LifeStory? editing;
+  const StorySubmitScreen({super.key, this.editing});
 
   @override
   ConsumerState<StorySubmitScreen> createState() => _StorySubmitScreenState();
@@ -30,6 +36,39 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
   /// turn off.
   bool _anonymous = true;
   Disorder? _diagnosis;
+  bool _resolvingDiagnosis = false;
+
+  bool get _editing => widget.editing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final editing = widget.editing;
+    if (editing != null) {
+      _controller.text = editing.body;
+      _anonymous = editing.anonymous;
+      _resolvingDiagnosis = true;
+      // The form works with a full `Disorder` (for its name and picker
+      // state), but a story only carries its slug — resolved once
+      // against the already-cached catalog rather than added as a new
+      // field on `LifeStory` just for this screen.
+      ref.read(categoriesProvider.future).then((categories) {
+        if (!mounted) return;
+        for (final category in categories) {
+          for (final disorder in category.disorders) {
+            if (disorder.slug == editing.diagnosisSlug) {
+              setState(() {
+                _diagnosis = disorder;
+                _resolvingDiagnosis = false;
+              });
+              return;
+            }
+          }
+        }
+        setState(() => _resolvingDiagnosis = false);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -53,15 +92,25 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
     final l10n = AppLocalizations.of(context)!;
     final diagnosis = _diagnosis;
     if (diagnosis == null) return;
-    final ok = await ref.read(storiesControllerProvider.notifier).submit(
-          body: _controller.text.trim(),
-          diagnosisSlug: diagnosis.slug,
-          consent: _consent,
-          anonymous: _anonymous,
-        );
+    final controller = ref.read(storiesControllerProvider.notifier);
+    final ok = _editing
+        ? await controller.update(
+            widget.editing!.id,
+            body: _controller.text.trim(),
+            diagnosisSlug: diagnosis.slug,
+            anonymous: _anonymous,
+          )
+        : await controller.submit(
+            body: _controller.text.trim(),
+            diagnosisSlug: diagnosis.slug,
+            consent: _consent,
+            anonymous: _anonymous,
+          );
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.storiesSubmitSuccess)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_editing ? l10n.storiesEditSuccess : l10n.storiesSubmitSuccess)),
+      );
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.commonError)));
@@ -73,8 +122,11 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
     final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
     final state = ref.watch(storiesControllerProvider);
-    final canSubmit =
-        _consent && _diagnosis != null && _controller.text.trim().isNotEmpty && !state.submitting;
+    final canSubmit = (_editing || _consent) &&
+        _diagnosis != null &&
+        _controller.text.trim().isNotEmpty &&
+        !state.submitting &&
+        !_resolvingDiagnosis;
 
     return Scaffold(
       body: SafeArea(
@@ -94,7 +146,7 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
                   const SizedBox(width: 14),
-                  Text(l10n.storiesSubmitTitle,
+                  Text(_editing ? l10n.storiesEditTitle : l10n.storiesSubmitTitle,
                       style: AppTypography.title3.copyWith(color: palette.textPrimary)),
                 ],
               ),
@@ -206,44 +258,72 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              InkWell(
-                onTap: () => setState(() => _consent = !_consent),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
+              if (_editing) ...[
+                // Consent was already given the first time this story was
+                // submitted — edited text is still the same account of
+                // the same person's life, so this doesn't ask again. It
+                // does need a new moderation pass, though, since the text
+                // an admin reviewed no longer exists once it's changed.
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: palette.surfaceMuted,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: _consent ? palette.accent : Colors.transparent,
-                          borderRadius: BorderRadius.circular(7),
-                          border:
-                              _consent ? null : Border.all(color: palette.textTertiary, width: 1.5),
-                        ),
-                        child: _consent
-                            ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
-                            : null,
-                      ),
+                      Icon(Icons.refresh_rounded, size: 18, color: palette.textSecondary),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          l10n.storiesConsentLabel,
-                          style: AppTypography.footnote
-                              .copyWith(color: palette.textPrimary, fontSize: 13.5),
+                          l10n.storiesEditNotice,
+                          style: AppTypography.footnote.copyWith(color: palette.textSecondary),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                l10n.storiesModerationNotice,
-                style: AppTypography.footnote.copyWith(color: palette.textSecondary, fontSize: 12),
-              ),
+              ] else ...[
+                InkWell(
+                  onTap: () => setState(() => _consent = !_consent),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: _consent ? palette.accent : Colors.transparent,
+                            borderRadius: BorderRadius.circular(7),
+                            border: _consent
+                                ? null
+                                : Border.all(color: palette.textTertiary, width: 1.5),
+                          ),
+                          child: _consent
+                              ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            l10n.storiesConsentLabel,
+                            style: AppTypography.footnote
+                                .copyWith(color: palette.textPrimary, fontSize: 13.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  l10n.storiesModerationNotice,
+                  style: AppTypography.footnote.copyWith(color: palette.textSecondary, fontSize: 12),
+                ),
+              ],
               const SizedBox(height: 22),
               if (state.error != null) ...[
                 Text(friendlyErrorMessage(l10n, state.error!),
@@ -251,7 +331,7 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
                 const SizedBox(height: 12),
               ],
               AppPrimaryButton(
-                label: l10n.storiesSubmit,
+                label: _editing ? l10n.storiesSaveChanges : l10n.storiesSubmit,
                 loading: state.submitting,
                 onPressed: canSubmit ? _submit : null,
               ),

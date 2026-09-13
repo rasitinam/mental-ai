@@ -125,6 +125,33 @@ class StoriesController extends Notifier<StoriesState> {
     }
   }
 
+  /// Edits an owned story. The backend always sends it back to `pending`
+  /// on a successful edit, so the refreshed `mine` list is what tells the
+  /// screen that happened — no separate "submitted" flag needed here, the
+  /// updated status in the list says it.
+  Future<bool> update(
+    String id, {
+    required String body,
+    required String diagnosisSlug,
+    required bool anonymous,
+  }) async {
+    state = state.copyWith(submitting: true, error: null);
+    try {
+      await ref.read(lifeStoriesApiProvider).update(
+            id,
+            body: body,
+            diagnosisSlug: diagnosisSlug,
+            anonymous: anonymous,
+          );
+      state = state.copyWith(submitting: false);
+      await loadMine();
+      return true;
+    } catch (e) {
+      state = state.copyWith(submitting: false, error: e);
+      return false;
+    }
+  }
+
   Future<void> withdraw(String id) async {
     try {
       await ref.read(lifeStoriesApiProvider).withdraw(id);

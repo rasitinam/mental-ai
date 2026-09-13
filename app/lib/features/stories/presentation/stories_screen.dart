@@ -459,13 +459,13 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
                         ],
                       )
                     : InkWell(
-                        // A signed story you wrote yourself: the profile
-                        // route always shows "someone else's account"
-                        // chrome (follow button included), which reads as
-                        // broken pointed at your own name — send it to
-                        // the real profile screen instead.
+                        // A signed story you wrote yourself: `/users/:id`
+                        // always shows "someone else's account" chrome
+                        // (follow button included), which reads as broken
+                        // pointed at your own name — send it to your own
+                        // profile tab instead (see `MyProfileScreen`).
                         onTap: () => story.authorUserId == widget.myUserId
-                            ? context.push('/settings/profile')
+                            ? context.push('/settings')
                             : context.push('/users/${story.authorUserId}'),
                         borderRadius: BorderRadius.circular(8),
                         child: Row(

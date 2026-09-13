@@ -79,6 +79,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSettings => 'Settings';
 
   @override
+  String get navProfile => 'Profile';
+
+  @override
   String get greetingNight => 'Good night';
 
   @override
@@ -284,7 +287,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAccount => 'Account';
 
   @override
-  String get settingsProfile => 'My profile';
+  String get settingsProfile => 'Edit Profile';
 
   @override
   String get settingsPrivacyRow => 'Privacy';
@@ -293,7 +296,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLogout => 'Log out';
 
   @override
-  String get profileTitle => 'My profile';
+  String get profileTitle => 'Edit Profile';
 
   @override
   String get profileEmail => 'Email';
@@ -701,6 +704,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storiesSubmitSuccess => 'Your story has been sent for review.';
+
+  @override
+  String get storiesEditTitle => 'Edit Your Story';
+
+  @override
+  String get storiesSaveChanges => 'Save';
+
+  @override
+  String get storiesEditSuccess =>
+      'Your story was updated and sent for re-review.';
+
+  @override
+  String get storiesEditNotice =>
+      'Saving sends this story back for review; it won\'t show in the feed until it\'s approved again.';
+
+  @override
+  String get storiesEdit => 'Edit';
 
   @override
   String get storiesModerationTitle => 'Story Moderation';
@@ -1166,6 +1186,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileNobodyYet => 'Nobody yet';
+
+  @override
+  String get myProfileEdit => 'Edit Profile';
+
+  @override
+  String get myProfileStories => 'My Stories';
+
+  @override
+  String get myProfileStoriesSeeAll => 'See all';
+
+  @override
+  String get myProfileStoriesAdd => 'New';
 
   @override
   String get settingsDmPrivacy => 'Message privacy';

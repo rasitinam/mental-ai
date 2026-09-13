@@ -23,7 +23,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/stories", post(submit).get(public_feed))
         .route("/stories/mine", get(mine))
-        .route("/stories/:id", axum::routing::delete(withdraw))
+        .route("/stories/:id", axum::routing::delete(withdraw).put(update_story))
         .route("/stories/:id/report", post(report))
         .route("/stories/:id/react", post(react).delete(remove_reaction))
         .route("/stories/:id/translate", get(translate))
@@ -350,6 +350,71 @@ async fn withdraw(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Debug, Deserialize)]
+struct UpdateStoryRequest {
+    body: String,
+    diagnosis_slug: String,
+    #[serde(default = "yes")]
+    anonymous: bool,
+}
+
+/// Edits the caller's own story. Always sends it back to `Pending` (and
+/// clears `reviewed_at`) regardless of its prior status — whatever an
+/// admin reviewed no longer exists once the text changes, approved or
+/// rejected alike, so the new version needs its own look before it's
+/// public again. Re-runs the same crisis screen and language detection as
+/// a fresh submission, since both are about the text, which just changed.
+async fn update_story(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<UpdateStoryRequest>,
+) -> Result<Json<LifeStory>, (StatusCode, String)> {
+    let existing = state
+        .life_stories
+        .get(id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "story not found".to_string()))?;
+
+    if existing.user_id != auth.user_id {
+        return Err((StatusCode::FORBIDDEN, "not your story".to_string()));
+    }
+
+    let body = req.body.trim().to_string();
+    if body.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "story cannot be empty".to_string()));
+    }
+    if catalog::disorder(&req.diagnosis_slug).is_none() {
+        return Err((StatusCode::BAD_REQUEST, format!("unknown diagnosis slug: {}", req.diagnosis_slug)));
+    }
+
+    let crisis = screen_for_crisis_language(&body);
+    let language = detect_language(&body);
+
+    let updated = LifeStory {
+        id,
+        user_id: auth.user_id,
+        body,
+        diagnosis_slug: req.diagnosis_slug,
+        status: StoryStatus::Pending,
+        crisis_flag: crisis.flagged,
+        consented_at: existing.consented_at,
+        anonymous: req.anonymous,
+        language,
+        reviewed_at: None,
+        created_at: existing.created_at,
+    };
+
+    state
+        .life_stories
+        .update(&updated)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(updated))
 }
 
 /// Sends an already-published story back for re-review. The admin's

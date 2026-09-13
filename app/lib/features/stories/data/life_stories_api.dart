@@ -79,6 +79,24 @@ class LifeStoriesApi {
     await _dio.delete('/stories/$id');
   }
 
+  /// Edits an owned story. The backend always sends it back to `pending`
+  /// on edit, approved or rejected alike — what was reviewed no longer
+  /// exists once the text changes, so the returned [LifeStory] reflects
+  /// that rather than whatever status the story had before this call.
+  Future<LifeStory> update(
+    String id, {
+    required String body,
+    required String diagnosisSlug,
+    required bool anonymous,
+  }) async {
+    final response = await _dio.put('/stories/$id', data: {
+      'body': body,
+      'diagnosis_slug': diagnosisSlug,
+      'anonymous': anonymous,
+    });
+    return LifeStory.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<void> report(String id, {String? note}) async {
     await _dio.post('/stories/$id/report', data: {'note': ?note});
   }

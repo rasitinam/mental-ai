@@ -17,6 +17,7 @@ import '../features/life_analysis/presentation/life_analysis_screen.dart';
 import '../features/mood_tracking/presentation/mood_screen.dart';
 import '../features/premium/presentation/premium_screen.dart';
 import '../features/profile/presentation/diagnoses_screen.dart';
+import '../features/profile/presentation/my_profile_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/recap/presentation/recap_screen.dart';
 import '../features/settings/presentation/privacy_settings_screen.dart';
@@ -149,9 +150,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
+              // The tab's own root is now the Instagram-style profile
+              // view (see `MyProfileScreen`) rather than the settings
+              // list — the list moved to `list` below, one tap away
+              // behind the gear icon, so every existing `/settings/...`
+              // child route (profile edit, diagnoses, my stories,
+              // privacy) keeps working unchanged.
               path: '/settings',
-              builder: (context, state) => const SettingsScreen(),
+              builder: (context, state) => const MyProfileScreen(),
               routes: [
+                GoRoute(path: 'list', builder: (context, state) => const SettingsScreen()),
                 GoRoute(path: 'profile', builder: (context, state) => const ProfileScreen()),
                 GoRoute(path: 'diagnoses', builder: (context, state) => const DiagnosesScreen()),
                 GoRoute(

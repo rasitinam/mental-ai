@@ -255,6 +255,13 @@ pub trait LifeStoryRepository: Send + Sync {
     /// else's story by id is a no-op rather than something the caller
     /// has to check for separately.
     async fn delete(&self, id: Uuid, user_id: Uuid) -> anyhow::Result<()>;
+    /// Replaces an owned story's editable fields in place (`status` and
+    /// `reviewed_at` included — the caller decides whether an edit sends
+    /// an already-approved story back to `Pending`, see
+    /// `routes::stories::update_story`). Scoped to `user_id` the same way
+    /// `delete` is. Any cached translation is dropped too, since it would
+    /// now describe text that no longer exists.
+    async fn update(&self, story: &LifeStory) -> anyhow::Result<()>;
     async fn add_report(&self, report: &LifeStoryReport) -> anyhow::Result<()>;
     /// Every open report, newest first — the admin queue for
     /// already-published stories a reader flagged.

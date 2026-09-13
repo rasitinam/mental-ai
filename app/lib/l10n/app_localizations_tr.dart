@@ -79,6 +79,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get navSettings => 'Ayarlar';
 
   @override
+  String get navProfile => 'Profilim';
+
+  @override
   String get greetingNight => 'İyi geceler';
 
   @override
@@ -284,7 +287,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsAccount => 'Hesap';
 
   @override
-  String get settingsProfile => 'Profilim';
+  String get settingsProfile => 'Profili Düzenle';
 
   @override
   String get settingsPrivacyRow => 'Gizlilik';
@@ -293,7 +296,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsLogout => 'Çıkış yap';
 
   @override
-  String get profileTitle => 'Profilim';
+  String get profileTitle => 'Profili Düzenle';
 
   @override
   String get profileEmail => 'E-posta';
@@ -701,6 +704,23 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get storiesSubmitSuccess => 'Hikayen incelemeye gönderildi.';
+
+  @override
+  String get storiesEditTitle => 'Hikayeni Düzenle';
+
+  @override
+  String get storiesSaveChanges => 'Kaydet';
+
+  @override
+  String get storiesEditSuccess =>
+      'Hikayen güncellendi ve yeniden incelemeye gönderildi.';
+
+  @override
+  String get storiesEditNotice =>
+      'Kaydettiğinde bu hikaye yeniden incelemeye gönderilir; onaylanana kadar akışta görünmez.';
+
+  @override
+  String get storiesEdit => 'Düzenle';
 
   @override
   String get storiesModerationTitle => 'Hikaye Moderasyonu';
@@ -1162,6 +1182,18 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileNobodyYet => 'Henüz kimse yok';
+
+  @override
+  String get myProfileEdit => 'Profili Düzenle';
+
+  @override
+  String get myProfileStories => 'Hikayelerim';
+
+  @override
+  String get myProfileStoriesSeeAll => 'Tümünü gör';
+
+  @override
+  String get myProfileStoriesAdd => 'Yeni';
 
   @override
   String get settingsDmPrivacy => 'Mesaj gizliliği';
