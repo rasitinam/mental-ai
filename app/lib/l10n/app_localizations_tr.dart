@@ -776,6 +776,28 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingSkipStep => 'Bu adımı atla';
 
   @override
+  String get introGreeting =>
+      'Merhaba, ben Hearth. Her şeyden önce sana tek bir şey sormak istiyorum.';
+
+  @override
+  String get introQuestion =>
+      'Bu sohbetlerde sana nasıl davranmamı istersin — ve neyi kesinlikle yapmamamı istersin? Kendi cümlelerinle yaz. Bundan sonra söyleyeceğim her şey, şimdi bana anlattığına göre şekillenecek.';
+
+  @override
+  String get introExamples =>
+      'Örneğin: \"Bana akıl verme, sadece dinle.\" · \"Kısa yaz.\" · \"Terapiste git deme.\" · \"Bana karşı dürüst ol, yumuşatma.\"';
+
+  @override
+  String get introInputHint => 'Kendi cümlelerinle yaz…';
+
+  @override
+  String get introContinue => 'Devam et';
+
+  @override
+  String get introChangeLater =>
+      'Kaydedildi. İstediğin zaman Ayarlar > Sohbet tercihlerim\'den değiştirebilirsin.';
+
+  @override
   String get tourNext => 'Devam';
 
   @override
@@ -786,14 +808,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get tourWelcomeBody =>
-      'Hearth, ruh haline zamanla eşlik eden bir alan. Ne kadar çok şey paylaşırsan, sana o kadar özel cevaplar verir. Terapistin yerini tutmaz — ama arada geçen günlerde yanında olur.\n\nBirkaç adımda neler yapabileceğini göstereyim; istediğin an atlayabilirsin.';
+      'Hearth, ruh haline zamanla eşlik eden bir alan. Ne kadar çok şey paylaşırsan, sana o kadar özel cevaplar verir. Terapistin yerini tutmaz — ama arada geçen günlerde yanında olur.\n\nBunlar geride kaldığına göre, şimdi burada neler var göstereyim — birkaç adım, istediğin an atlayabilirsin.';
 
   @override
   String get tourChatTitle => 'İstediğin saatte konuş';
 
   @override
   String get tourChatBody =>
-      'Sohbet, gecenin üçünde de açık. Konuştuklarını hatırlar, ruh hali kayıtlarını ve günlüklerini bilir — yani her seferinde baştan anlatmak zorunda değilsin.\n\nBir sonraki adımda, bu sohbetlerde neyi istemediğini soracağız. Cevabın her yanıtı şekillendirir.';
+      'Sohbet, gecenin üçünde de açık. Konuştuklarını hatırlar, ruh hali kayıtlarını ve günlüklerini bilir — yani her seferinde baştan anlatmak zorunda değilsin.\n\nBiraz önce sana nasıl davranılmasını istediğini söylemiştin; burada şimdiden geçerli, istediğin an da değiştirebilirsin.';
 
   @override
   String get tourMoodJournalTitle => 'Ruh hali ve günlük';
@@ -828,14 +850,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get boundariesIntro =>
-      'Herkesin konuşulmasını istemediği bir şey vardır. Sana nasıl yaklaşılmasını istemediğini şimdi söyle; gerisini sormaya ondan sonra geçelim.';
+      'Herkesin duymak istemediği bir şey vardır. Sana uyanları işaretle — uymamaya başladığında da istediğin gibi değiştir.';
 
   @override
   String get boundariesEffectNote =>
       'Seçtiklerin doğrudan sohbete işler: Hearth bundan sonra bu sınırların içinde konuşur. Tek istisna, hayati bir risk söz konusu olduğunda güvenliğini önceliklendirmesidir.';
-
-  @override
-  String get boundariesContinue => 'Kaydet ve devam et';
 
   @override
   String get boundariesNoteLabel => 'Eklemek istediğin bir şey var mı?';

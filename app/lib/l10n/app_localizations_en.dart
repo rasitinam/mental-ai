@@ -776,6 +776,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingSkipStep => 'Skip this step';
 
   @override
+  String get introGreeting =>
+      'Hi — I\'m Hearth. Before anything else, I\'d like to ask you one thing.';
+
+  @override
+  String get introQuestion =>
+      'How would you like me to be with you in these conversations — and what would you rather I never did? Write it in your own words. Everything I say from here on follows what you tell me now.';
+
+  @override
+  String get introExamples =>
+      'For example: \"Don\'t give me advice, just listen.\" · \"Keep it short.\" · \"Don\'t tell me to see a therapist.\" · \"Be honest with me, don\'t sugar-coat it.\"';
+
+  @override
+  String get introInputHint => 'Write in your own words…';
+
+  @override
+  String get introContinue => 'Continue';
+
+  @override
+  String get introChangeLater =>
+      'Saved. You can change it any time under Settings > Conversation preferences.';
+
+  @override
   String get tourNext => 'Next';
 
   @override
@@ -786,14 +808,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tourWelcomeBody =>
-      'Hearth is a space that keeps you company over time. The more you share, the more its answers are actually about you. It isn\'t a replacement for a therapist — but it\'s here on the days in between.\n\nLet me show you what\'s here in a few steps; you can skip whenever you like.';
+      'Hearth is a space that keeps you company over time. The more you share, the more its answers are actually about you. It isn\'t a replacement for a therapist — but it\'s here on the days in between.\n\nNow that that\'s out of the way, let me show you what\'s here — a few steps, and you can skip whenever you like.';
 
   @override
   String get tourChatTitle => 'Talk whenever you need to';
 
   @override
   String get tourChatBody =>
-      'Chat is open at three in the morning too. It remembers what you\'ve said and knows your check-ins and journal entries — so you don\'t have to start from the beginning every time.\n\nIn the next step we\'ll ask what you *don\'t* want from these conversations. Your answer shapes every reply.';
+      'Chat is open at three in the morning too. It remembers what you\'ve said and knows your check-ins and journal entries — so you don\'t have to start from the beginning every time.\n\nWhat you told me a moment ago about how you want to be spoken to is already in effect here, and you can change it whenever you like.';
 
   @override
   String get tourMoodJournalTitle => 'Mood and journal';
@@ -828,14 +850,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get boundariesIntro =>
-      'Everyone has something they\'d rather not hear. Tell us how you don\'t want to be approached first — the rest of the questions can wait until after that.';
+      'Everyone has something they\'d rather not hear. Tick whatever applies — and change it whenever it stops fitting.';
 
   @override
   String get boundariesEffectNote =>
       'What you pick goes straight into the conversation: Hearth will stay inside these limits from now on. The only exception is a real risk to your safety, which always comes first.';
-
-  @override
-  String get boundariesContinue => 'Save and continue';
 
   @override
   String get boundariesNoteLabel => 'Anything else you\'d like to add?';

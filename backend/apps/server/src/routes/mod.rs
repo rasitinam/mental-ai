@@ -8,6 +8,7 @@ mod insights;
 mod journal;
 mod life_analysis;
 mod mood;
+mod onboarding;
 pub(crate) mod profile;
 mod purchases;
 mod reports;
@@ -34,6 +35,7 @@ pub fn build_router(app_state: AppState) -> Router {
         .merge(catalog::router())
         .merge(chat::router())
         .merge(mood::router())
+        .merge(onboarding::router())
         .merge(journal::router())
         .merge(reports::router())
         .merge(insights::router())

@@ -46,7 +46,6 @@ class ChatBoundariesScreen extends ConsumerWidget {
                     child: Text(l10n.commonError, style: TextStyle(color: palette.warning)),
                   ),
                   data: (data) => ChatBoundariesView(
-                    onboarding: false,
                     initialBoundaries: data.chatBoundaries,
                     initialNote: data.chatBoundaryNote,
                     onSaved: () {

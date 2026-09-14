@@ -36,15 +36,15 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> register({required String email, required String password, String? displayName}) async {
     if (!_validate(email, password)) return;
-    await _submit(() => ref.read(authApiProvider).register(
-          email: email,
-          password: password,
-          displayName: displayName,
-          language: ref.read(localeControllerProvider).languageCode,
-        ));
-    if (state.error == null) {
-      ref.read(justRegisteredProvider.notifier).state = true;
-    }
+    await _submit(
+      () => ref.read(authApiProvider).register(
+            email: email,
+            password: password,
+            displayName: displayName,
+            language: ref.read(localeControllerProvider).languageCode,
+          ),
+      registering: true,
+    );
   }
 
   Future<void> login({required String email, required String password}) async {
@@ -70,12 +70,20 @@ class AuthController extends Notifier<AuthState> {
     return true;
   }
 
-  Future<void> _submit(Future<Session> Function() action) async {
+  Future<void> _submit(Future<Session> Function() action, {bool registering = false}) async {
     state = state.copyWith(submitting: true, error: null);
     try {
       final session = await action();
       final prefs = ref.read(sharedPreferencesProvider);
       await saveSession(prefs, StoredSession(userId: session.userId, token: session.token));
+      // Strictly before the token: publishing the token is what makes the
+      // router leave `/login`, and it reads `justRegistered` in the same
+      // pass to decide between the app and the onboarding flow. Set
+      // afterwards (as it used to be), a new account was first routed into
+      // the app and only bounced into onboarding on a second redirect —
+      // one extra frame of the wrong screen, and one more ordering
+      // assumption than this needs to rest on.
+      if (registering) ref.read(justRegisteredProvider.notifier).state = true;
       ref.read(sessionTokenProvider.notifier).state = session.token;
       state = state.copyWith(submitting: false);
     } catch (e) {

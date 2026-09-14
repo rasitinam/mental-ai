@@ -1514,6 +1514,42 @@ abstract class AppLocalizations {
   /// **'Bu adımı atla'**
   String get onboardingSkipStep;
 
+  /// No description provided for @introGreeting.
+  ///
+  /// In tr, this message translates to:
+  /// **'Merhaba, ben Hearth. Her şeyden önce sana tek bir şey sormak istiyorum.'**
+  String get introGreeting;
+
+  /// No description provided for @introQuestion.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu sohbetlerde sana nasıl davranmamı istersin — ve neyi kesinlikle yapmamamı istersin? Kendi cümlelerinle yaz. Bundan sonra söyleyeceğim her şey, şimdi bana anlattığına göre şekillenecek.'**
+  String get introQuestion;
+
+  /// No description provided for @introExamples.
+  ///
+  /// In tr, this message translates to:
+  /// **'Örneğin: \"Bana akıl verme, sadece dinle.\" · \"Kısa yaz.\" · \"Terapiste git deme.\" · \"Bana karşı dürüst ol, yumuşatma.\"'**
+  String get introExamples;
+
+  /// No description provided for @introInputHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kendi cümlelerinle yaz…'**
+  String get introInputHint;
+
+  /// No description provided for @introContinue.
+  ///
+  /// In tr, this message translates to:
+  /// **'Devam et'**
+  String get introContinue;
+
+  /// No description provided for @introChangeLater.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaydedildi. İstediğin zaman Ayarlar > Sohbet tercihlerim\'den değiştirebilirsin.'**
+  String get introChangeLater;
+
   /// No description provided for @tourNext.
   ///
   /// In tr, this message translates to:
@@ -1535,7 +1571,7 @@ abstract class AppLocalizations {
   /// No description provided for @tourWelcomeBody.
   ///
   /// In tr, this message translates to:
-  /// **'Hearth, ruh haline zamanla eşlik eden bir alan. Ne kadar çok şey paylaşırsan, sana o kadar özel cevaplar verir. Terapistin yerini tutmaz — ama arada geçen günlerde yanında olur.\n\nBirkaç adımda neler yapabileceğini göstereyim; istediğin an atlayabilirsin.'**
+  /// **'Hearth, ruh haline zamanla eşlik eden bir alan. Ne kadar çok şey paylaşırsan, sana o kadar özel cevaplar verir. Terapistin yerini tutmaz — ama arada geçen günlerde yanında olur.\n\nBunlar geride kaldığına göre, şimdi burada neler var göstereyim — birkaç adım, istediğin an atlayabilirsin.'**
   String get tourWelcomeBody;
 
   /// No description provided for @tourChatTitle.
@@ -1547,7 +1583,7 @@ abstract class AppLocalizations {
   /// No description provided for @tourChatBody.
   ///
   /// In tr, this message translates to:
-  /// **'Sohbet, gecenin üçünde de açık. Konuştuklarını hatırlar, ruh hali kayıtlarını ve günlüklerini bilir — yani her seferinde baştan anlatmak zorunda değilsin.\n\nBir sonraki adımda, bu sohbetlerde neyi istemediğini soracağız. Cevabın her yanıtı şekillendirir.'**
+  /// **'Sohbet, gecenin üçünde de açık. Konuştuklarını hatırlar, ruh hali kayıtlarını ve günlüklerini bilir — yani her seferinde baştan anlatmak zorunda değilsin.\n\nBiraz önce sana nasıl davranılmasını istediğini söylemiştin; burada şimdiden geçerli, istediğin an da değiştirebilirsin.'**
   String get tourChatBody;
 
   /// No description provided for @tourMoodJournalTitle.
@@ -1607,7 +1643,7 @@ abstract class AppLocalizations {
   /// No description provided for @boundariesIntro.
   ///
   /// In tr, this message translates to:
-  /// **'Herkesin konuşulmasını istemediği bir şey vardır. Sana nasıl yaklaşılmasını istemediğini şimdi söyle; gerisini sormaya ondan sonra geçelim.'**
+  /// **'Herkesin duymak istemediği bir şey vardır. Sana uyanları işaretle — uymamaya başladığında da istediğin gibi değiştir.'**
   String get boundariesIntro;
 
   /// No description provided for @boundariesEffectNote.
@@ -1615,12 +1651,6 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Seçtiklerin doğrudan sohbete işler: Hearth bundan sonra bu sınırların içinde konuşur. Tek istisna, hayati bir risk söz konusu olduğunda güvenliğini önceliklendirmesidir.'**
   String get boundariesEffectNote;
-
-  /// No description provided for @boundariesContinue.
-  ///
-  /// In tr, this message translates to:
-  /// **'Kaydet ve devam et'**
-  String get boundariesContinue;
 
   /// No description provided for @boundariesNoteLabel.
   ///

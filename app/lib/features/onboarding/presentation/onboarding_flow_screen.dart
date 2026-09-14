@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../assessment/presentation/assessment_screen.dart';
-import 'chat_boundaries_view.dart';
+import 'onboarding_intro_chat_view.dart';
 import 'onboarding_tour_view.dart';
 
 /// What a new account sees between registering and the app itself, in
-/// three phases: a short tour of what's here, then "what do you *not*
-/// want from these conversations", then the screening battery.
+/// three phases: one real exchange with Hearth about how it should talk
+/// to them, then the screening battery, then a tour of what's here.
 ///
-/// Order is deliberate. The tour earns the right to ask anything at all;
-/// the ground rules come before the questionnaire because the battery is
-/// twenty-odd questions about what's wrong with you, and being asked how
-/// you want to be spoken to *first* is the difference between an intake
-/// form and a conversation. Every phase can be skipped on its own —
-/// skipping the tour doesn't skip the questions, and skipping the
-/// questions still leaves the ground rules set.
+/// Order is deliberate. The app opens by asking *them* something and
+/// answering — before any questionnaire and before any feature pitch —
+/// because that first minute is what tells someone whether this is a
+/// conversation or an intake form. The tour comes last: a walkthrough of
+/// tabs means something once there's a reason to care about them, and
+/// nothing at all as a cold open. Every phase can be skipped on its own;
+/// skipping one never skips the next.
 class OnboardingFlowScreen extends ConsumerStatefulWidget {
   /// Called once the whole run is over, however it ended — the router
   /// clears `justRegistered` and moves on from here.
@@ -27,10 +27,10 @@ class OnboardingFlowScreen extends ConsumerStatefulWidget {
   ConsumerState<OnboardingFlowScreen> createState() => _OnboardingFlowScreenState();
 }
 
-enum _Phase { tour, boundaries, assessment }
+enum _Phase { intro, assessment, tour }
 
 class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
-  _Phase _phase = _Phase.tour;
+  _Phase _phase = _Phase.intro;
 
   void _go(_Phase next) => setState(() => _phase = next);
 
@@ -40,7 +40,7 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
     // handing off to it whole keeps one implementation of that flow
     // rather than a second copy wrapped in this screen's chrome.
     if (_phase == _Phase.assessment) {
-      return AssessmentScreen(skippable: true, onDone: widget.onFinished);
+      return AssessmentScreen(skippable: true, onDone: () => _go(_Phase.tour));
     }
 
     return Scaffold(
@@ -51,16 +51,14 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 220),
             child: switch (_phase) {
+              _Phase.intro => OnboardingIntroChatView(
+                  key: const ValueKey('intro'),
+                  onDone: () => _go(_Phase.assessment),
+                ),
               _Phase.tour => OnboardingTourView(
                   key: const ValueKey('tour'),
-                  onSkip: () => _go(_Phase.boundaries),
-                  onFinished: () => _go(_Phase.boundaries),
-                ),
-              _Phase.boundaries => ChatBoundariesView(
-                  key: const ValueKey('boundaries'),
-                  onboarding: true,
-                  onSaved: () => _go(_Phase.assessment),
-                  onSkip: () => _go(_Phase.assessment),
+                  onSkip: widget.onFinished,
+                  onFinished: widget.onFinished,
                 ),
               _Phase.assessment => const SizedBox.shrink(),
             },

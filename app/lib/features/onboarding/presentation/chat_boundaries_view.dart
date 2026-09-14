@@ -10,32 +10,26 @@ import '../../../l10n/app_localizations.dart';
 import '../../profile/data/profile_api.dart';
 import '../domain/chat_boundary_option.dart';
 
-/// "What do you *not* want from these conversations?" — asked once,
-/// before the screening battery, and reachable again from the profile.
+/// "What do you *not* want from these conversations?" as a checklist —
+/// the profile-side view of the same ground rules onboarding collects in
+/// prose (see `OnboardingIntroChatView`).
 ///
-/// It sits first in onboarding on purpose: every other question the app
-/// asks is about what's wrong, and answering a page of those before
-/// anyone has said how they want to be spoken to is the wrong order. The
-/// answer is a standing instruction, not a measurement — see
-/// `mental_domain::chat_boundary` for what each choice turns into.
+/// Both write the same two fields. Onboarding asks in the person's own
+/// words because a checklist is a bad first impression; this screen uses
+/// boxes because the job here is different — seeing what is currently in
+/// force and changing one thing about it. The answer is a standing
+/// instruction, not a measurement: see `mental_domain::chat_boundary`
+/// for what each choice turns into inside a prompt.
 class ChatBoundariesView extends ConsumerStatefulWidget {
-  /// Shown above the actions when this is part of the onboarding run;
-  /// the standalone (profile) entry passes its own back button instead.
-  final bool onboarding;
   final List<String> initialBoundaries;
   final String? initialNote;
 
-  /// Called after a successful save, and for the skip action in
-  /// onboarding (`onSkip` null = no skip affordance, i.e. the profile
-  /// entry, where leaving is just the back button).
+  /// Called after a successful save.
   final VoidCallback onSaved;
-  final VoidCallback? onSkip;
 
   const ChatBoundariesView({
     super.key,
-    required this.onboarding,
     required this.onSaved,
-    this.onSkip,
     this.initialBoundaries = const [],
     this.initialNote,
   });
@@ -177,20 +171,10 @@ class _ChatBoundariesViewState extends ConsumerState<ChatBoundariesView> {
           ),
         ),
         AppPrimaryButton(
-          label: widget.onboarding ? l10n.boundariesContinue : l10n.commonSave,
+          label: l10n.commonSave,
           loading: _saving,
           onPressed: _saving ? null : _save,
         ),
-        if (widget.onSkip != null) ...[
-          const SizedBox(height: 6),
-          Center(
-            child: TextButton(
-              onPressed: _saving ? null : widget.onSkip,
-              child: Text(l10n.onboardingSkipStep,
-                  style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
-            ),
-          ),
-        ],
       ],
     );
   }

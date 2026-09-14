@@ -68,6 +68,19 @@ pub const CHAT_BOUNDARIES: &[ChatBoundary] = &[
 /// become a second prompt smuggled into every request.
 pub const MAX_BOUNDARY_NOTE_LEN: usize = 280;
 
+/// The slug set written out for a prompt that has to *choose* among them
+/// — the onboarding step where someone describes what they want in their
+/// own words and the model maps it onto this closed list. Each line is
+/// the slug plus the directive it stands for, so the model matches on
+/// meaning rather than on guessing what a bare slug name implies.
+pub fn slug_menu() -> String {
+    CHAT_BOUNDARIES
+        .iter()
+        .map(|b| format!("- {}: {}", b.slug, b.directive))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 pub fn boundary(slug: &str) -> Option<&'static ChatBoundary> {
     CHAT_BOUNDARIES.iter().find(|b| b.slug == slug)
 }
