@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -82,6 +83,7 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
     final picked = await showModalBottomSheet<Disorder>(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _DiagnosisPickerSheet(categories: categories),
     );
@@ -132,10 +134,8 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
-          // 140 rather than 40: this route lives inside the shell, so
-          // `HomeShell`'s floating nav bar sits on top of the last ~100px —
-          // without this the submit button was unreachable on Android.
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
+          // Inside the shell: clear the floating tab bar (see `bottomClearance`).
+          padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -391,7 +391,7 @@ class _DiagnosisPickerSheet extends StatelessWidget {
               Expanded(
                 child: ListView.builder(
                   controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(22, 0, 22, 24),
+                  padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
                   itemCount: categories.length,
                   itemBuilder: (context, i) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),

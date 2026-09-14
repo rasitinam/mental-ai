@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
@@ -24,9 +25,8 @@ class ChatBoundariesScreen extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: Padding(
-          // Inside the shell, so the floating nav bar covers the last
-          // ~100px — same clearance as every other pushed settings page.
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 120),
+          // Inside the shell: clear the floating tab bar (see `bottomClearance`).
+          padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

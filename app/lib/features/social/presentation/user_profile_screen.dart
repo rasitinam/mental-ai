@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -106,7 +107,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 style: AppTypography.subheadline.copyWith(color: palette.warning)),
           ),
           data: (data) => ListView(
-            padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+            padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
             children: [
               Row(
                 children: [

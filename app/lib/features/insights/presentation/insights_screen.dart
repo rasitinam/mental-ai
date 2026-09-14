@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -188,7 +189,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                             ),
                           ),
                           SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+                            padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
                             sliver: SliverList.builder(
                               itemCount: state.loading || state.error != null
                                   ? 0
@@ -409,7 +410,7 @@ class _SearchResults extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
+      padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
       itemCount: matches.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, i) {

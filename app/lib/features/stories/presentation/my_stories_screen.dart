@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -54,7 +55,7 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
 
     return Scaffold(
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 86),
+        padding: EdgeInsets.only(bottom: bottomClearance(context, gap: 12)),
         child: FloatingActionButton(
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const StorySubmitScreen()),
@@ -104,7 +105,7 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
   ) {
     if (state.loadingMine) {
       return GridView.builder(
-        padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+        padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           crossAxisSpacing: 3,
@@ -136,7 +137,7 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+      padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 3,

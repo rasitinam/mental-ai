@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -60,7 +61,7 @@ class FollowListScreen extends ConsumerWidget {
                     );
                   }
                   return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(22, 0, 22, 28),
+                    padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
                     itemCount: people.length,
                     itemBuilder: (context, i) {
                       final card = people[i];

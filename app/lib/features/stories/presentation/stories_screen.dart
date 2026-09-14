@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -149,7 +150,7 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
       // landing screen, so this sits under the thumb permanently and an
       // extended label would cover a story card's worth of feed.
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 86),
+        padding: EdgeInsets.only(bottom: bottomClearance(context, gap: 12)),
         child: FloatingActionButton(
           onPressed: () => context.push('/stories/new'),
           backgroundColor: palette.accent,
@@ -251,7 +252,7 @@ class _FeedList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (loading) {
       return ListView(
-        padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+        padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
         children: const [_StoryCardSkeleton(), _StoryCardSkeleton(), _StoryCardSkeleton()],
       );
     }
@@ -277,7 +278,7 @@ class _FeedList extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+      padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
       itemCount: stories.length,
       itemBuilder: (context, i) {
         final story = stories[i];

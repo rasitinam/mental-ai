@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -25,12 +26,9 @@ class AssessmentSummaryScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        // 140 rather than 24: this route lives inside the shell, so
-        // `HomeShell`'s floating nav bar sits on top of the last ~100px of
-        // content — the same padding `profile_screen.dart` uses for the
-        // same reason.
+        // Inside the shell: clear the floating tab bar (see `bottomClearance`).
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
+          padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

@@ -164,13 +164,14 @@ Future<void> celebrateFirst(
 
   await showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     builder: (context) => Container(
       decoration: BoxDecoration(
         color: palette.canvasTop,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
+      padding: EdgeInsets.fromLTRB(24, 14, 24, 28 + MediaQuery.paddingOf(context).bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

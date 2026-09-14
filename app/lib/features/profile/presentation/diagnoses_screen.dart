@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -63,13 +64,10 @@ class DiagnosesScreen extends ConsumerWidget {
               : _CategoryList(categories: data, palette: palette, l10n: l10n),
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        // 100 rather than 24: this screen's own `bottomNavigationBar`
-        // renders at the very bottom of the space `HomeShell` gives its
-        // body, which is *behind* the floating nav bar (`extendBody:
-        // true`) — without enough clearance here, the Save button sits
-        // right where that floating bar is, effectively covered by it.
-        minimum: const EdgeInsets.fromLTRB(22, 0, 22, 100),
+      bottomNavigationBar: Padding(
+        // This screen's own bottom bar renders behind `HomeShell`'s floating tab
+        // bar (`extendBody: true`); `bottomClearance` lifts the Save button clear.
+        padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context, gap: 12)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

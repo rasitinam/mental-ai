@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -107,10 +108,8 @@ class _DmInboxScreenState extends ConsumerState<DmInboxScreen> {
                           ],
                         )
                       : ListView.builder(
-                          // 140 rather than 28: this route now lives
-                          // inside the shell, so the floating nav bar
-                          // sits over the last ~100px of the list.
-                          padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+                          // Inside the shell: clear the floating tab bar (see `bottomClearance`).
+                          padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
                           itemCount: list.length,
                           itemBuilder: (context, i) => _ThreadRow(
                             thread: list[i],

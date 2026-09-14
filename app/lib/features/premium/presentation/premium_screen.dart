@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -36,7 +37,7 @@ class PremiumScreen extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+          padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

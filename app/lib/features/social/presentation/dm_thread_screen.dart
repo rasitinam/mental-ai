@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -169,12 +170,8 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
             ),
             if (awaitingMyAnswer)
               Padding(
-                // 140 rather than 24: this route now lives inside the
-                // shell (see `app/router.dart`), so `HomeShell`'s
-                // floating nav bar sits over the last ~100px of the
-                // screen — without this the accept/decline buttons were
-                // unreachable on Android.
-                padding: const EdgeInsets.fromLTRB(22, 8, 22, 140),
+                // Inside the shell: clear the floating tab bar (see `bottomClearance`).
+                padding: EdgeInsets.fromLTRB(22, 8, 22, bottomClearance(context)),
                 child: Column(
                   children: [
                     Text(l10n.dmAcceptPrompt,
@@ -214,14 +211,14 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
               )
             else if (waitingOnThem)
               Padding(
-                padding: const EdgeInsets.fromLTRB(22, 8, 22, 140),
+                padding: EdgeInsets.fromLTRB(22, 8, 22, bottomClearance(context)),
                 child: Text(l10n.dmWaitingBody,
                     textAlign: TextAlign.center,
                     style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
               )
             else
               Padding(
-                padding: const EdgeInsets.fromLTRB(22, 4, 22, 140),
+                padding: EdgeInsets.fromLTRB(22, 4, 22, bottomClearance(context)),
                 child: Row(
                   children: [
                     Expanded(

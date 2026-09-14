@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -77,13 +78,11 @@ class _AssessmentScreenState extends ConsumerState<AssessmentScreen> {
         // with no floating nav bar over it, so it takes the real bottom
         // inset — Android's navigation bar was otherwise clipping the
         // skip link under it. The Settings retake entry
-        // (`skippable: false`) lives inside the shell, where `HomeShell`'s
-        // floating nav bar sits over the last ~100px, and the 140 bottom
-        // padding already clears both — same reasoning as
-        // `profile_screen.dart`.
+        // (`skippable: false`) lives inside the shell and clears its
+        // floating tab bar with `bottomClearance` instead.
         bottom: widget.skippable,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(22, 12, 22, widget.skippable ? 24 : 140),
+          padding: EdgeInsets.fromLTRB(22, 12, 22, widget.skippable ? 24 : bottomClearance(context)),
           child: AnimatedSwitcher(duration: const Duration(milliseconds: 200), child: body),
         ),
       ),

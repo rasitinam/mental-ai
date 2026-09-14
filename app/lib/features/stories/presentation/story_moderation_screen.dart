@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -354,7 +355,7 @@ class _PendingList extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+      padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
       itemCount: pending.length,
       itemBuilder: (context, i) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
@@ -404,7 +405,7 @@ class _ReportsList extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+      padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
       itemCount: reports.length,
       itemBuilder: (context, i) => Padding(
         padding: const EdgeInsets.only(bottom: 12),

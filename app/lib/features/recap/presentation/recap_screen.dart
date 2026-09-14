@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -66,7 +67,7 @@ class _RecapScreenState extends ConsumerState<RecapScreen> {
       body: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+          padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

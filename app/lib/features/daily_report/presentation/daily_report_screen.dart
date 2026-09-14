@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -49,7 +50,7 @@ class DailyReportScreen extends ConsumerWidget {
             ref.invalidate(streakProvider);
           },
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(22, 8, 22, 140),
+            padding: EdgeInsets.fromLTRB(22, 8, 22, bottomClearance(context)),
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

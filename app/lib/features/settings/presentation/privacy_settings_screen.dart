@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -23,10 +24,9 @@ class PrivacySettingsScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        // 140 rather than 24: this route lives inside the shell, so
-        // `HomeShell`'s floating nav bar sits on top of the last ~100px.
+        // Inside the shell: clear the floating tab bar (see `bottomClearance`).
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 140),
+          padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

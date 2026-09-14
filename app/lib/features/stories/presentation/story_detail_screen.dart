@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -136,7 +137,7 @@ class StoryDetailScreen extends ConsumerWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(22, 0, 22, 140),
+                padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
                 children: [
                   Wrap(
                     spacing: 8,
