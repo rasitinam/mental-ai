@@ -224,10 +224,12 @@ pub fn onboarding_intro_instruction(language: &str, slug_menu: &str, max_note_ch
            step is a short set of questions about how they've been lately. No bullet points, no \
            headings, no advice, no questions of your own, and never mention JSON or that you \
            are a model.\n\
-         - \"instruction\": their request rewritten as a second-person standing instruction to \
-           the assistant, in English, at most {max_note_chars} characters. Imperative and \
-           concrete (\"Do not offer advice unless asked. Keep replies short.\"). Cover only what \
-           they actually said; invent nothing. Empty string if they said nothing usable.\n\
+         - \"instruction\": their request rewritten as a standing instruction to the assistant, \
+           at most {max_note_chars} characters. Imperative and concrete (\"Do not offer advice \
+           unless asked. Keep replies short.\"). Write it in {language}, not English: they are \
+           shown this text back in their settings as the rule they set, so it has to read as \
+           their own words rather than as a translation of them. Cover only what they actually \
+           said; invent nothing. Empty string if they said nothing usable.\n\
          - \"boundaries\": a JSON array of slugs from the list below, containing only the ones \
            their answer clearly asks for. Empty array if none apply. Never invent a slug.\n\n\
          Available slugs:\n{slug_menu}\n\n\
