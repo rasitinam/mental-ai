@@ -44,8 +44,10 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
     }
 
     return Scaffold(
+      // Bottom inset included: this is a top-level route with no nav bar
+      // of its own, and Android's system navigation bar was sitting over
+      // the skip link and the primary button at the foot of each phase.
       body: SafeArea(
-        bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
           child: AnimatedSwitcher(

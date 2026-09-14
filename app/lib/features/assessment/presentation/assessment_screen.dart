@@ -57,17 +57,31 @@ class _AssessmentScreenState extends ConsumerState<AssessmentScreen> {
         onSkip: widget.skippable ? widget.onDone : null,
       );
     } else {
-      body = _QuestionView(key: const ValueKey('question'), state: state, controller: controller, palette: palette, l10n: l10n);
+      body = _QuestionView(
+        key: const ValueKey('question'),
+        state: state,
+        controller: controller,
+        palette: palette,
+        l10n: l10n,
+        // From the very first question there is nothing to step back to
+        // inside the battery, so back returns to the intro card — which
+        // is where the skip link lives. Without this, tapping "Başla"
+        // once and changing your mind left no way out but 48 questions.
+        onBackFromFirst: () => setState(() => _started = false),
+      );
     }
 
     return Scaffold(
       body: SafeArea(
-        bottom: false,
         // The onboarding entry (`skippable: true`) is a top-level route
-        // with no floating nav bar over it; the Settings retake entry
+        // with no floating nav bar over it, so it takes the real bottom
+        // inset — Android's navigation bar was otherwise clipping the
+        // skip link under it. The Settings retake entry
         // (`skippable: false`) lives inside the shell, where `HomeShell`'s
-        // floating nav bar sits over the last ~100px — same reasoning as
-        // `profile_screen.dart`'s 140 bottom padding.
+        // floating nav bar sits over the last ~100px, and the 140 bottom
+        // padding already clears both — same reasoning as
+        // `profile_screen.dart`.
+        bottom: widget.skippable,
         child: Padding(
           padding: EdgeInsets.fromLTRB(22, 12, 22, widget.skippable ? 24 : 140),
           child: AnimatedSwitcher(duration: const Duration(milliseconds: 200), child: body),
@@ -157,12 +171,16 @@ class _QuestionView extends StatelessWidget {
   final AppPalette palette;
   final AppLocalizations l10n;
 
+  /// Where back goes on the first question — see `_AssessmentScreenState`.
+  final VoidCallback onBackFromFirst;
+
   const _QuestionView({
     super.key,
     required this.state,
     required this.controller,
     required this.palette,
     required this.l10n,
+    required this.onBackFromFirst,
   });
 
   @override
@@ -180,7 +198,9 @@ class _QuestionView extends StatelessWidget {
             children: [
               SquareIconButton(
                 icon: Icons.arrow_back_rounded,
-                onPressed: state.isFirstStep || state.submitting ? null : controller.goBack,
+                onPressed: state.submitting
+                    ? null
+                    : (state.isFirstStep ? onBackFromFirst : controller.goBack),
               ),
               const SizedBox(width: 14),
               Expanded(
