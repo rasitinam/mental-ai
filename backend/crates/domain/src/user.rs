@@ -48,11 +48,39 @@ pub struct User {
     /// Anything the fixed list above didn't cover, in their own words.
     #[serde(default)]
     pub chat_boundary_note: Option<String>,
+    /// Whether the evening check-in reminder is on, and the local hour
+    /// (0-23) it goes out at — see `scheduler::spawn_checkin_nudge_job`.
+    #[serde(default = "default_true")]
+    pub checkin_reminder_enabled: bool,
+    #[serde(default = "default_reminder_hour")]
+    pub checkin_reminder_hour: u8,
+    /// Minutes east of UTC, as the app last reported the device clock. A
+    /// fixed offset rather than an IANA zone: it's what the app can hand
+    /// over without shipping a timezone database, and a daylight-saving
+    /// change corrects itself the next time the app is opened.
+    #[serde(default = "default_utc_offset")]
+    pub utc_offset_minutes: i32,
     pub created_at: DateTime<Utc>,
 }
 
 fn default_dm_policy() -> DmPolicy {
     DmPolicy::Everyone
+}
+
+fn default_true() -> bool {
+    true
+}
+
+/// 21:00 local: late enough that the day has happened, early enough not
+/// to feel like the app is keeping someone up.
+fn default_reminder_hour() -> u8 {
+    21
+}
+
+/// Turkey (UTC+3), the app's primary audience, until a device reports its
+/// own offset.
+fn default_utc_offset() -> i32 {
+    180
 }
 
 fn default_language() -> String {

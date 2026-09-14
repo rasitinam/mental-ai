@@ -276,3 +276,70 @@ pub fn insight_synthesis_instruction(category_menu: &str) -> String {
          \"new-treatment\")."
     )
 }
+
+/// "Seni iyi hissettirenler" — what, in this person's own log, tends to
+/// come with their lighter and heavier days. The input is already in
+/// words (see `mental_analysis_engine::discoveries`), and the output is
+/// checked again for digits, so a card can't turn into a statistic.
+pub fn discoveries_instruction(language: &str) -> String {
+    format!(
+        "You are looking at several weeks of one person's own day-by-day log in a wellbeing app: \
+         how they rated their mood and energy (already put into words), the feeling words they \
+         picked, short notes, and journal excerpts.\n\n\
+         Find what actually seems connected to their better and harder days in THIS person's data \
+         — not general wellbeing advice. Good findings sound like: being outside or walking shows \
+         up on their lighter days; evenings after long work days tend to be heavy; Sundays dip; \
+         seeing a particular friend lifts them; poor sleep comes before tense days. Only report \
+         something that shows up on at least three separate days of the log, and never invent an \
+         activity, place or person the log doesn't mention.\n\n\
+         Return ONLY a JSON object, no markdown fence: \
+         {{\"cards\": [{{\"kind\": \"lifts\" | \"drains\" | \"rhythm\", \"emoji\": \"one emoji\", \
+         \"title\": \"...\", \"body\": \"...\", \"evidence_days\": 0}}]}}\n\
+         - 2 to 4 cards; fewer is better than a weak one. Include a \"lifts\" card whenever the \
+           data honestly supports one.\n\
+         - kind: lifts = seems to help; drains = seems to weigh on them; rhythm = a pattern in \
+           time (a weekday, before or after something).\n\
+         - title: at most 6 words, second person, plain and specific.\n\
+         - body: one or two warm sentences saying what you noticed and roughly how often in \
+           words (\"most of the time\", \"several times\"), tentative (\"seems to\", \"often\"). \
+           Never a diagnosis, an instruction or advice.\n\
+         - evidence_days: how many distinct days in the log support the card. Used only for \
+           filtering, never shown.\n\
+         - Never write a digit, number, score, percentage or date in title or body.\n\
+         - If the log doesn't support any honest finding, return {{\"cards\": []}}.\n\n\
+         Write title and body in {}.",
+        language_name(language)
+    )
+}
+
+/// The one-page brief someone brings to their own therapist — see
+/// `mental_analysis_engine::session_summary`. Written for the person to
+/// hand over or read from, so it's factual and first person rather than
+/// the warm second-person voice the rest of the app uses.
+pub fn session_summary_instruction(language: &str) -> String {
+    format!(
+        "Prepare a one-page brief that a person will bring to their own therapist or psychiatrist \
+         appointment. It covers the period shown and uses only their own records from a wellbeing \
+         app: mood and energy check-ins (in words), feeling words, journal excerpts, what they \
+         themselves wrote in chat, and — if present — their latest self-report screening.\n\n\
+         Tone: factual, clear and respectful, first person where natural (\"I\"), like notes a \
+         thoughtful patient prepared. No diagnosis, no treatment advice, no judgment, no filler. \
+         Closely paraphrase their own words where it helps a clinician understand.\n\n\
+         Return ONLY a JSON object, no markdown fence, with exactly these keys:\n\
+         - \"overview\": 2-4 sentences on how this period went overall.\n\
+         - \"mood_course\": 2-3 sentences on how mood and energy moved across the period (better \
+           and worse stretches, direction of change), in words, never numbers.\n\
+         - \"themes\": 3-6 short items: what kept coming up (situations, relationships, worries, \
+           sleep, body).\n\
+         - \"hard_moments\": 0-4 short items: specific difficult days or episodes worth raising, \
+           each with roughly when (\"early in the second week\").\n\
+         - \"what_helped\": 0-4 short items: things that visibly helped, from their own records.\n\
+         - \"questions_to_bring\": 2-4 short questions they might want to ask, grounded in the \
+           records.\n\
+         If they wrote their own note for this appointment, reflect it in themes and \
+         questions_to_bring. If anything in the records suggests a risk to their safety, state it \
+         plainly as the first hard_moments item so it cannot be missed.\n\
+         Write every value in {}.",
+        language_name(language)
+    )
+}

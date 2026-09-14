@@ -15,6 +15,11 @@
          maintenance window — the difference between "message arrives
          now" and "message arrives whenever the phone happens to wake up". -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- Dictation in the journal and chat (lib/core/voice/voice.dart): the
+         device's own speech recognizer needs the microphone. Asked the
+         first time someone taps the mic, never up front. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
     <application
         android:label="Hearth"
         android:name="${applicationName}"
@@ -77,5 +82,16 @@
             <action android:name="android.intent.action.DIAL"/>
             <data android:scheme="tel"/>
         </intent>
+        <!-- Android 11+ package visibility again: without these the speech
+             recognizer and text-to-speech services are invisible to the
+             app, and dictation / read-aloud report "unavailable" on a
+             phone that has both. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE"/>
+        </intent>
+
     </queries>
 </manifest>

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
+
 
 import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
@@ -10,6 +12,8 @@ import '../../../core/network/error_messages.dart';
 import '../../../core/widgets/mood_heatmap.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../discoveries/data/discoveries_api.dart';
+import '../../discoveries/presentation/discoveries_section.dart';
 import '../../mood_tracking/data/mood_api.dart';
 import '../../streak/data/streak_api.dart';
 import 'life_analysis_controller.dart';
@@ -42,7 +46,10 @@ class LifeAnalysisScreen extends ConsumerWidget {
         bottom: false,
         child: RefreshIndicator(
           color: palette.accent,
-          onRefresh: controller.loadLatest,
+          onRefresh: () async {
+            ref.invalidate(discoveriesProvider);
+            await controller.loadLatest();
+          },
           child: state.loading
               ? ListView(
                   padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
@@ -81,6 +88,9 @@ class LifeAnalysisScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
+                    const _SessionSummaryEntry(),
+                    const SizedBox(height: 22),
+                    const DiscoveriesList(),
                     const _PeriodStreakCard(),
                     const _MoodHistoryCard(),
                     if (state.error != null)
@@ -354,6 +364,57 @@ class _EmptyState extends StatelessWidget {
             child: AppPrimaryButton(label: l10n.lifeGenerate, onPressed: onGenerate),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The way into "Seans öncesi özetim" — on Yaşam because that's where the
+/// long view of someone's history already lives, and a summary for a
+/// therapist is the same view, pointed at a specific appointment.
+class _SessionSummaryEntry extends StatelessWidget {
+  const _SessionSummaryEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return Material(
+      color: palette.accentSoft,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.go('/life-analysis/session-summary'),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: palette.accent, borderRadius: BorderRadius.circular(13)),
+                child: const Icon(Icons.assignment_outlined, size: 21, color: Colors.white),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.sessionEntryTitle,
+                        style: AppTypography.label.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(l10n.sessionEntryBody,
+                        style: AppTypography.footnote.copyWith(color: palette.textSecondary, height: 1.4)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right_rounded, color: palette.accent),
+            ],
+          ),
+        ),
       ),
     );
   }

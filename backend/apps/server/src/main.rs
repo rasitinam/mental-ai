@@ -13,6 +13,7 @@ use mental_llm_connector::LlmProvider;
 use mental_storage::{
     init_pool, SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository,
     SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
+    SqliteDiscoveryRepository,
     SqliteDmRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
@@ -113,6 +114,7 @@ async fn main() -> anyhow::Result<()> {
         content_translations: Arc::new(SqliteContentTranslationRepository::new(pool.clone())),
         subscriptions: Arc::new(SqliteSubscriptionRepository::new(pool.clone())),
         chat_usage: Arc::new(SqliteChatUsageRepository::new(pool.clone())),
+        discoveries: Arc::new(SqliteDiscoveryRepository::new(pool.clone())),
         login_rate_limiter: Arc::new(rate_limit::LoginRateLimiter::new()),
         apple_iap: AppleIapState {
             shared_secret: apple_shared_secret,

@@ -28,6 +28,7 @@ pub fn router() -> Router<AppState> {
         .route("/profile/diagnoses", put(set_diagnoses))
         .route("/profile/chat-boundaries", put(set_chat_boundaries))
         .route("/profile/preferences", put(set_preferences))
+        .route("/profile/checkin-reminder", put(set_checkin_reminder))
         .route("/profile/avatar", put(upload_avatar).get(get_avatar))
         .layer(DefaultBodyLimit::max(MAX_AVATAR_BYTES + 1024))
         .route("/profile/push-token", put(register_push_token).delete(unregister_push_token))
@@ -52,6 +53,8 @@ struct ProfileResponse {
     dm_policy: String,
     chat_boundaries: Vec<String>,
     chat_boundary_note: Option<String>,
+    checkin_reminder_enabled: bool,
+    checkin_reminder_hour: u8,
 }
 
 #[derive(Debug, Deserialize)]
@@ -82,6 +85,10 @@ struct SetPreferencesRequest {
     /// "everyone" | "following" — who may open a DM request.
     #[serde(default)]
     dm_policy: Option<String>,
+    /// The device's current offset from UTC in minutes, sent by the app on
+    /// launch so the evening reminder lands at the person's own evening.
+    #[serde(default)]
+    utc_offset_minutes: Option<i32>,
 }
 
 async fn profile(
@@ -113,6 +120,8 @@ async fn profile(
         dm_policy: user.dm_policy.as_str().to_string(),
         chat_boundaries: user.chat_boundaries.clone(),
         chat_boundary_note: user.chat_boundary_note.clone(),
+        checkin_reminder_enabled: user.checkin_reminder_enabled,
+        checkin_reminder_hour: user.checkin_reminder_hour,
     }))
 }
 
@@ -211,6 +220,18 @@ async fn set_preferences(
         }
     }
 
+    // Real-world offsets run from UTC-12:00 to UTC+14:00.
+    if let Some(minutes) = req.utc_offset_minutes {
+        if !(-720..=840).contains(&minutes) {
+            return Err((StatusCode::BAD_REQUEST, format!("utc offset out of range: {minutes}")));
+        }
+        state
+            .users
+            .set_utc_offset(auth.user_id, minutes)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    }
+
     let dm_policy = match req.dm_policy.as_deref() {
         None => None,
         Some("everyone") => Some(DmPolicy::Everyone),
@@ -231,6 +252,37 @@ async fn set_preferences(
         )
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    profile(State(state), auth).await
+}
+
+#[derive(Debug, Deserialize)]
+struct CheckinReminderRequest {
+    enabled: bool,
+    /// Local hour — see [`REMINDER_HOURS`].
+    hour: u8,
+}
+
+/// The hours the reminder can be set to. It's an *evening* check-in: a
+/// reminder to rate a day that hasn't happened yet would be noise, and
+/// anything past 23:00 is a notification at bedtime.
+const REMINDER_HOURS: std::ops::RangeInclusive<u8> = 17..=23;
+
+/// Turns the evening check-in reminder on or off and picks its hour.
+async fn set_checkin_reminder(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(req): Json<CheckinReminderRequest>,
+) -> Result<Json<ProfileResponse>, (StatusCode, String)> {
+    if !REMINDER_HOURS.contains(&req.hour) {
+        return Err((StatusCode::BAD_REQUEST, format!("reminder hour out of range: {}", req.hour)));
+    }
+
+    state
+        .users
+        .set_checkin_reminder(auth.user_id, req.enabled, req.hour)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     profile(State(state), auth).await
 }

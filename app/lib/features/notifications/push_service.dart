@@ -151,5 +151,12 @@ class PushService {
     if (data['type'] == 'checkin_nudge') {
       _ref.read(appRouterProvider).push('/mood');
     }
+
+    // "Bende de oldu" on one of this person's own stories: their stories
+    // list is where the new count shows up.
+    if (data['type'] == 'story_metoo') {
+      _ref.read(appRouterProvider).go('/settings/my-stories');
+    }
+
   }
 }

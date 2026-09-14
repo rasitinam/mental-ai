@@ -26,6 +26,11 @@ class UserProfile {
   /// Anything the fixed list didn't cover, in their own words.
   final String? chatBoundaryNote;
 
+  /// The evening check-in reminder: whether it's on, and the local hour
+  /// it goes out at (17-23). See `NotificationSettingsScreen`.
+  final bool checkinReminderEnabled;
+  final int checkinReminderHour;
+
   const UserProfile({
     required this.id,
     required this.displayName,
@@ -39,6 +44,8 @@ class UserProfile {
     required this.dmPolicy,
     this.chatBoundaries = const [],
     this.chatBoundaryNote,
+    this.checkinReminderEnabled = true,
+    this.checkinReminderHour = 21,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -54,5 +61,8 @@ class UserProfile {
         dmPolicy: json['dm_policy'] as String? ?? 'everyone',
         chatBoundaries: (json['chat_boundaries'] as List<dynamic>? ?? []).cast<String>(),
         chatBoundaryNote: json['chat_boundary_note'] as String?,
+        checkinReminderEnabled: json['checkin_reminder_enabled'] as bool? ?? true,
+        checkinReminderHour: json['checkin_reminder_hour'] as int? ?? 21,
+
       );
 }

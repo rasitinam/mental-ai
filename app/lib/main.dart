@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'core/session/session_bootstrap.dart';
+import 'core/session/utc_offset_sync.dart';
+
 import 'core/storage/local_prefs.dart';
 import 'features/notifications/push_service.dart';
 
@@ -62,6 +64,8 @@ Future<void> main() async {
     );
 
     loadStoredSession(container);
+    syncUtcOffset(container);
+
 
     // Web needs its own Firebase web-app config, a service worker, and a
     // VAPID key — none of which exist yet, so push stays Android/iOS-only

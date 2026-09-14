@@ -125,6 +125,13 @@ class SettingsScreen extends ConsumerWidget {
     final userId = ref.watch(currentUserIdProvider);
     final palette = AppPalette.of(context);
     final isAdmin = ref.watch(myProfileProvider).valueOrNull?.isAdmin ?? false;
+    final myProfile = ref.watch(myProfileProvider).valueOrNull;
+    final String? notificationsSummary = myProfile == null
+        ? null
+        : myProfile.checkinReminderEnabled
+            ? l10n.settingsNotificationsOn('${myProfile.checkinReminderHour.toString().padLeft(2, '0')}:00')
+            : l10n.settingsNotificationsOff;
+
 
     return Scaffold(
       body: SafeArea(
@@ -174,6 +181,11 @@ class SettingsScreen extends ConsumerWidget {
                     ref.read(dmEnteredFromSettingsProvider.notifier).state = true;
                     context.go('/dm');
                   },
+                ),
+                _Row(
+                  label: l10n.settingsNotifications,
+                  description: notificationsSummary,
+                  onTap: () => context.go('/settings/notifications'),
                 ),
                 _Row(label: l10n.settingsPrivacyRow, onTap: () => context.go('/settings/privacy')),
               ],

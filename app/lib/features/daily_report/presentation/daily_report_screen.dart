@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/layout/bottom_clearance.dart';
+import '../../discoveries/data/discoveries_api.dart';
+import '../../discoveries/presentation/discoveries_section.dart';
+
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
@@ -48,6 +51,7 @@ class DailyReportScreen extends ConsumerWidget {
               reportController.loadLatest(),
             ]);
             ref.invalidate(streakProvider);
+            ref.invalidate(discoveriesProvider);
           },
           child: ListView(
             padding: EdgeInsets.fromLTRB(22, 8, 22, bottomClearance(context)),
@@ -86,6 +90,9 @@ class DailyReportScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               _StateCard(data: home, palette: palette, l10n: l10n),
               const SizedBox(height: 16),
+              // Carries its own bottom spacing, and takes none at all when
+              // there's nothing to show.
+              const DiscoveriesStrip(),
               const _StreakCard(),
               const SizedBox(height: 16),
               const _RecapCard(),

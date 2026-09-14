@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../core/onboarding/first_run.dart';
+import '../../../core/voice/voice.dart';
+
 import '../../../l10n/app_localizations.dart';
 import '../../streak/data/streak_api.dart';
 import '../domain/chat_message.dart';
@@ -193,7 +195,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
+                    DictationButton(controller: _inputController),
+                    const SizedBox(width: 8),
                     _SendButton(color: palette.accent, onTap: _send),
                   ],
                 ),
@@ -259,7 +263,7 @@ class _ChatBubbleState extends State<_ChatBubble> {
         Align(
           alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-            margin: const EdgeInsets.only(bottom: 14),
+            margin: EdgeInsets.only(bottom: isUser ? 14 : 2),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
             constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * (isUser ? 0.72 : 0.8),
@@ -284,6 +288,14 @@ class _ChatBubbleState extends State<_ChatBubble> {
             ),
           ),
         ),
+        if (!isUser)
+          Padding(
+            padding: const EdgeInsets.only(left: 2, bottom: 8),
+            child: SpeakButton(
+              id: 'chat-${identityHashCode(widget.message)}',
+              text: widget.message.text,
+            ),
+          ),
         if (widget.message.crisisFlag && !_dismissed)
           Container(
             width: double.infinity,

@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Günlüğünü ve sohbet mesajlarını sesle yazabilmen için mikrofon kullanılır.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Söylediklerini yazıya çevirmek için cihazının konuşma tanıma özelliği kullanılır.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Profil fotoğrafı seçmek için galeriye erişim gerekiyor.</string>
 	<key>UIApplicationSceneManifest</key>

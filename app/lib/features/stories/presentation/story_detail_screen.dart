@@ -10,6 +10,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
 import '../domain/life_story.dart';
+import 'metoo.dart';
 import 'stories_controller.dart';
 import 'story_submit_screen.dart';
 
@@ -180,6 +181,11 @@ class StoryDetailScreen extends ConsumerWidget {
                     DateFormat.yMMMMd(Localizations.localeOf(context).languageCode).format(story.createdAt),
                     style: AppTypography.caption.copyWith(color: palette.textSecondary),
                   ),
+                  if (story.metooCount > 0) ...[
+                    const SizedBox(height: 20),
+                    _MetooSummary(count: story.metooCount, notes: story.metooNotes, palette: palette, l10n: l10n),
+                  ],
+
                 ],
               ),
             ),
@@ -204,6 +210,62 @@ class _Badge extends StatelessWidget {
       child: Text(
         label.toUpperCase(),
         style: TextStyle(fontSize: 11, height: 1.2, fontWeight: FontWeight.w600, letterSpacing: 0.44, color: color),
+      ),
+    );
+  }
+}
+
+/// What the author sees of "Bende de oldu": how many readers found
+/// themselves in the story and which notes they left, never who.
+class _MetooSummary extends StatelessWidget {
+  final int count;
+  final Map<String, int> notes;
+  final AppPalette palette;
+  final AppLocalizations l10n;
+
+  const _MetooSummary({required this.count, required this.notes, required this.palette, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final noted = [for (final key in metooNotes) if ((notes[key] ?? 0) > 0) key];
+
+    return GlassSurface(
+      radius: 18,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('🫂', style: TextStyle(fontSize: 22)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(l10n.metooOwnCount(count),
+                    style: AppTypography.label.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+          if (noted.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final key in noted)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+                    decoration: BoxDecoration(color: palette.accentSoft, borderRadius: BorderRadius.circular(100)),
+                    child: Text(
+                      '${metooNoteEmoji(key)}  ${metooNoteLabel(l10n, key)} · ${notes[key]}',
+                      style: AppTypography.caption.copyWith(color: palette.accent, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 10),
+          Text(l10n.metooOwnPrivacy,
+              style: AppTypography.caption.copyWith(color: palette.textTertiary, height: 1.4)),
+        ],
       ),
     );
   }

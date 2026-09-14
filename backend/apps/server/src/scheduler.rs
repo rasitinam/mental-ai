@@ -2,12 +2,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use chrono::{Duration as ChronoDuration, Utc};
+use chrono::{Duration as ChronoDuration, Timelike, Utc};
 
 use mental_analysis_engine::{generate_disorder_explainer, synthesize_insights};
 use mental_common::config::ResearchIngestConfig;
 use mental_domain::catalog;
-use mental_domain::repository::{ActivityRepository, ExplainerRepository, InsightRepository, PushTokenRepository};
+use mental_domain::repository::{
+    ExplainerRepository, InsightRepository, MoodRepository, PushTokenRepository, UserRepository,
+};
 use mental_push::PushRequest;
 use mental_research_ingest::sources::{PubMedSource, WhoRssSource};
 use mental_research_ingest::{run_ingest_cycle, ResearchSource};
@@ -266,22 +268,19 @@ fn pubmed(label: &'static str, query: &str, tags: Vec<&str>) -> Arc<dyn Research
     ))
 }
 
-/// UTC hour the daily check-in nudge fires — 16:00 UTC lands around 19:00
-/// in Turkey (UTC+3), an evening slot most accounts are actually holding
-/// their phone for without being late enough to feel intrusive.
-const CHECKIN_NUDGE_HOUR_UTC: u32 = 16;
-
-/// How far back "today" reaches for this check, in place of midnight-to-now
-/// day math: a day-old gap in activity is the same signal whether or not it
-/// happens to straddle UTC midnight, and this needs no extra date handling.
-const CHECKIN_NUDGE_WINDOW_HOURS: i64 = 20;
-
-/// Once a day, nudges anyone with a registered device who hasn't logged a
-/// mood check-in, journal entry or chat message in the last
-/// [`CHECKIN_NUDGE_WINDOW_HOURS`] hours. Deliberately narrow: this is a
-/// gentle reminder for someone who quietly stopped showing up today, not a
-/// re-engagement campaign, so it only ever reaches people it would
-/// actually help and never more than once in that window.
+/// Evening check-in reminder, sent at the local hour each person picked
+/// (Ayarlar → Bildirimler; 21:00 unless they changed it).
+///
+/// Runs at the top of every hour. For each account with a registered
+/// device it checks, before sending anything, that the reminder is on,
+/// that it is currently that person's chosen hour on their own clock, and
+/// that they haven't logged a mood yet that local day.
+/// `claim_checkin_reminder` then marks the day as done atomically, so a
+/// restart mid-hour or a second server process can't send it twice.
+///
+/// This replaced one nudge at 16:00 UTC for everybody, which arrived at
+/// the same moment whatever anyone's evening looked like and couldn't be
+/// turned off.
 pub fn spawn_checkin_nudge_job(state: AppState) {
     tokio::spawn(async move {
         let scheduler = match JobScheduler::new().await {
@@ -292,8 +291,7 @@ pub fn spawn_checkin_nudge_job(state: AppState) {
             }
         };
 
-        let schedule = format!("0 0 {CHECKIN_NUDGE_HOUR_UTC} * * *");
-        let job = match Job::new_async(schedule.as_str(), move |_uuid, _lock| {
+        let job = match Job::new_async("0 0 * * * *", move |_uuid, _lock| {
             let state = state.clone();
             Box::pin(async move { run_checkin_nudge(&state).await })
         }) {
@@ -323,19 +321,38 @@ async fn run_checkin_nudge(state: &AppState) {
         }
     };
 
-    let since = Utc::now() - ChronoDuration::hours(CHECKIN_NUDGE_WINDOW_HOURS);
+    let now = Utc::now();
     let mut nudged = 0u32;
 
     for user_id in user_ids {
-        // A failed lookup should never nag someone twice by mistake, so
-        // treat "couldn't tell" the same as "already active".
-        let active_recently = state
-            .activity
-            .daily_counts(user_id, since)
+        let Some(user) = user_for(state, user_id).await else {
+            continue;
+        };
+        if !user.checkin_reminder_enabled {
+            continue;
+        }
+
+        let offset = ChronoDuration::minutes(i64::from(user.utc_offset_minutes));
+        let local_now = now + offset;
+        if local_now.hour() != u32::from(user.checkin_reminder_hour) {
+            continue;
+        }
+
+        let local_date = local_now.date_naive();
+        let Some(local_midnight) = local_date.and_hms_opt(0, 0, 0) else {
+            continue;
+        };
+        let day_start = chrono::DateTime::<Utc>::from_naive_utc_and_offset(local_midnight, Utc) - offset;
+
+        // "Couldn't tell" counts as "already logged": a failed lookup must
+        // never turn into a reminder someone didn't need.
+        let logged_today = state
+            .moods
+            .list_between(user_id, day_start, now)
             .await
-            .map(|counts| !counts.is_empty())
+            .map(|entries| !entries.is_empty())
             .unwrap_or(true);
-        if active_recently {
+        if logged_today {
             continue;
         }
 
@@ -344,15 +361,21 @@ async fn run_checkin_nudge(state: &AppState) {
             continue;
         }
 
-        let language = user_for(state, user_id).await.map(|u| u.language).unwrap_or_else(|| "tr".to_string());
-        let (title, body) = checkin_nudge_text(&language);
+        match state.users.claim_checkin_reminder(user_id, local_date).await {
+            Ok(true) => {}
+            Ok(false) => continue,
+            Err(err) => {
+                tracing::warn!(error = %err, "check-in nudge: failed to claim today's reminder");
+                continue;
+            }
+        }
 
+        let (title, body) = checkin_nudge_text(&user.language);
         let mut data = HashMap::new();
         data.insert("type".to_string(), "checkin_nudge".to_string());
 
         for token in tokens {
-            let request =
-                PushRequest { token, title: title.clone(), body: body.clone(), data: data.clone() };
+            let request = PushRequest { token, title: title.clone(), body: body.clone(), data: data.clone() };
             if let Err(err) = state.push.send(request).await {
                 tracing::warn!(error = %err, "check-in nudge: send failed");
             }
@@ -360,19 +383,20 @@ async fn run_checkin_nudge(state: &AppState) {
         nudged += 1;
     }
 
-    tracing::info!(nudged, "check-in nudge cycle complete");
+    if nudged > 0 {
+        tracing::info!(nudged, "check-in nudge cycle complete");
+    }
 }
 
 fn checkin_nudge_text(language: &str) -> (String, String) {
     match language {
         "en" => (
-            "Hearth".to_string(),
-            "You haven't checked in today. Take a few seconds to share how you're feeling.".to_string(),
+            "How was today?".to_string(),
+            "Half a minute is enough — how today felt shapes tomorrow's note.".to_string(),
         ),
         _ => (
-            "Hearth".to_string(),
-            "Bugün henüz check-in yapmadın. Birkaç saniyeni ayırıp ruh halini paylaşmak ister misin?"
-                .to_string(),
+            "Bugün nasıldı?".to_string(),
+            "Yarım dakika yeter — bugün nasıl hissettiğin, yarınki notunu şekillendirir.".to_string(),
         ),
     }
 }

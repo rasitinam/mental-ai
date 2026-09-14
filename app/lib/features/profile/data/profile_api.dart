@@ -60,12 +60,24 @@ class ProfileApi {
     String? language,
     int? birthYear,
     String? dmPolicy,
+    int? utcOffsetMinutes,
   }) async {
     final response = await _dio.put('/profile/preferences', data: {
       'display_name': ?displayName,
       'language': ?language,
       'birth_year': ?birthYear,
       'dm_policy': ?dmPolicy,
+      'utc_offset_minutes': ?utcOffsetMinutes,
+    });
+    return UserProfile.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Turns the evening check-in reminder on or off and sets its local
+  /// hour (17-23, enforced server-side).
+  Future<UserProfile> setCheckinReminder({required bool enabled, required int hour}) async {
+    final response = await _dio.put('/profile/checkin-reminder', data: {
+      'enabled': enabled,
+      'hour': hour,
     });
     return UserProfile.fromJson(response.data as Map<String, dynamic>);
   }

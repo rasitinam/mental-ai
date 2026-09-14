@@ -93,6 +93,12 @@ async fn register(
             // `routes::profile::set_chat_boundaries`.
             chat_boundaries: vec![],
             chat_boundary_note: None,
+            // The column defaults, spelled out: reminder on at 21:00, and
+            // Turkey's offset until the app reports the device's real one
+            // (see `routes::profile::set_preferences`).
+            checkin_reminder_enabled: true,
+            checkin_reminder_hour: 21,
+            utc_offset_minutes: 180,
             created_at: now,
         })
         .await

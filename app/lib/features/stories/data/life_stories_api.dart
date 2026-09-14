@@ -75,6 +75,16 @@ class LifeStoriesApi {
     }
   }
 
+  /// "Bende de oldu" on someone else's story, with an optional note key
+  /// from `metooNotes` — or clears it (`on: false`).
+  Future<void> setMetoo(String id, {required bool on, String? note}) async {
+    if (on) {
+      await _dio.post('/stories/$id/metoo', data: {'note': ?note});
+    } else {
+      await _dio.delete('/stories/$id/metoo');
+    }
+  }
+
   Future<void> withdraw(String id) async {
     await _dio.delete('/stories/$id');
   }

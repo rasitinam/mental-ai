@@ -22,6 +22,9 @@ import '../features/profile/presentation/diagnoses_screen.dart';
 import '../features/profile/presentation/my_profile_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/recap/presentation/recap_screen.dart';
+import '../features/session_summary/presentation/session_summary_screen.dart';
+import '../features/settings/presentation/notification_settings_screen.dart';
+
 import '../features/settings/presentation/privacy_settings_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/social/presentation/dm_inbox_screen.dart';
@@ -147,7 +150,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: '/life-analysis', builder: (context, state) => const LifeAnalysisScreen()),
+            GoRoute(
+              path: '/life-analysis',
+              builder: (context, state) => const LifeAnalysisScreen(),
+              routes: [
+                // Nested so the tab bar stays and Back returns to Yaşam,
+                // where the entry card for it lives.
+                GoRoute(
+                  path: 'session-summary',
+                  builder: (context, state) => const SessionSummaryScreen(),
+                ),
+              ],
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
@@ -161,6 +175,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               builder: (context, state) => const MyProfileScreen(),
               routes: [
                 GoRoute(path: 'list', builder: (context, state) => const SettingsScreen()),
+                GoRoute(
+                  path: 'notifications',
+                  builder: (context, state) => const NotificationSettingsScreen(),
+                ),
+
                 GoRoute(path: 'profile', builder: (context, state) => const ProfileScreen()),
                 GoRoute(
                   path: 'chat-boundaries',

@@ -32,6 +32,18 @@ class LifeStory {
   final Map<String, int> reactions;
   final String? viewerReaction;
 
+  /// "Bende de oldu": readers who said this story is theirs too. In the
+  /// feed, [viewerMetoo] says whether the viewer is one of them; on the
+  /// author's own copy, [metooNotes] tallies the notes readers left.
+  final int metooCount;
+  final bool viewerMetoo;
+  final Map<String, int> metooNotes;
+
+  /// The viewer wrote this story. Only meaningful in the feed, where an
+  /// anonymous story carries no author id to compare against.
+  final bool isMine;
+
+
   /// Null for an anonymous story — the backend doesn't send an id to
   /// click through to, not just no name to render.
   final String? authorUserId;
@@ -49,6 +61,10 @@ class LifeStory {
     this.anonymous = true,
     this.reactions = const {},
     this.viewerReaction,
+    this.metooCount = 0,
+    this.viewerMetoo = false,
+    this.metooNotes = const {},
+    this.isMine = false,
     this.authorUserId,
     this.authorDisplayName,
     this.authorHasAvatar = false,
@@ -74,6 +90,10 @@ class LifeStory {
         reactions: (json['reactions'] as Map<String, dynamic>? ?? {})
             .map((key, value) => MapEntry(key, value as int)),
         viewerReaction: json['viewer_reaction'] as String?,
+        metooCount: json['metoo_count'] as int? ?? 0,
+        viewerMetoo: json['viewer_metoo'] as bool? ?? false,
+        isMine: json['is_mine'] as bool? ?? false,
+
         authorUserId: json['author_user_id'] as String?,
         authorDisplayName: json['author_display_name'] as String?,
         authorHasAvatar: json['author_has_avatar'] as bool? ?? false,
@@ -88,6 +108,10 @@ class LifeStory {
         crisisFlag: json['crisis_flag'] as bool? ?? false,
         createdAt: DateTime.parse(json['created_at'] as String),
         anonymous: json['anonymous'] as bool? ?? true,
+        metooCount: json['metoo_count'] as int? ?? 0,
+        metooNotes: (json['metoo_notes'] as Map<String, dynamic>? ?? {})
+            .map((key, value) => MapEntry(key, value as int)),
+        isMine: true,
       );
 
   /// Local echo of a reaction change, so the row updates on tap instead of
@@ -112,6 +136,34 @@ class LifeStory {
       anonymous: anonymous,
       reactions: next,
       viewerReaction: reaction,
+      metooCount: metooCount,
+      viewerMetoo: viewerMetoo,
+      metooNotes: metooNotes,
+      isMine: isMine,
+      authorUserId: authorUserId,
+      authorDisplayName: authorDisplayName,
+      authorHasAvatar: authorHasAvatar,
+    );
+  }
+
+  /// Local echo of "Bende de oldu" being set (`on: true`) or cleared.
+  LifeStory withMetoo(bool on) {
+    final delta = (on ? 1 : 0) - (viewerMetoo ? 1 : 0);
+    return LifeStory(
+      id: id,
+      body: body,
+      language: language,
+      diagnosisSlug: diagnosisSlug,
+      status: status,
+      crisisFlag: crisisFlag,
+      createdAt: createdAt,
+      anonymous: anonymous,
+      reactions: reactions,
+      viewerReaction: viewerReaction,
+      metooCount: metooCount + delta < 0 ? 0 : metooCount + delta,
+      viewerMetoo: on,
+      metooNotes: metooNotes,
+      isMine: isMine,
       authorUserId: authorUserId,
       authorDisplayName: authorDisplayName,
       authorHasAvatar: authorHasAvatar,

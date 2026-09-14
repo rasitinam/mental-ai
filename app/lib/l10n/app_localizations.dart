@@ -3073,6 +3073,450 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Bugünkü ücretsiz sohbet hakkın doldu. Hearth Plus ile sınırsız sohbet edebilirsin.'**
   String get chatQuotaExceeded;
+
+  /// No description provided for @voiceDictate.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sesle yaz'**
+  String get voiceDictate;
+
+  /// No description provided for @voiceListening.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dinliyorum…'**
+  String get voiceListening;
+
+  /// No description provided for @voiceUnavailable.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu cihazda sesle yazma şu an kullanılamıyor.'**
+  String get voiceUnavailable;
+
+  /// No description provided for @voicePermissionDenied.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sesle yazmak için mikrofon izni gerekiyor. Telefonunun ayarlarından Hearth\'e izin verebilirsin.'**
+  String get voicePermissionDenied;
+
+  /// No description provided for @voiceSpeak.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sesli oku'**
+  String get voiceSpeak;
+
+  /// No description provided for @voiceStopSpeaking.
+  ///
+  /// In tr, this message translates to:
+  /// **'Okumayı durdur'**
+  String get voiceStopSpeaking;
+
+  /// No description provided for @discoveriesTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Seni iyi hissettirenler'**
+  String get discoveriesTitle;
+
+  /// No description provided for @discoveriesSeeAll.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tümü'**
+  String get discoveriesSeeAll;
+
+  /// No description provided for @discoveriesKindLifts.
+  ///
+  /// In tr, this message translates to:
+  /// **'İyi geliyor'**
+  String get discoveriesKindLifts;
+
+  /// No description provided for @discoveriesKindDrains.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yoruyor'**
+  String get discoveriesKindDrains;
+
+  /// No description provided for @discoveriesKindRhythm.
+  ///
+  /// In tr, this message translates to:
+  /// **'Döngü'**
+  String get discoveriesKindRhythm;
+
+  /// No description provided for @discoveriesError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Keşiflerin şu an yüklenemedi.'**
+  String get discoveriesError;
+
+  /// No description provided for @discoveriesEmptyTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz belirgin bir şey yok'**
+  String get discoveriesEmptyTitle;
+
+  /// No description provided for @discoveriesEmptyBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kayıtlarında şimdilik tekrar eden net bir örüntü görünmüyor. Ruh haline birkaç kelime ya da kısa bir not ekledikçe burası dolacak.'**
+  String get discoveriesEmptyBody;
+
+  /// No description provided for @discoveriesFootnote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu, yalnızca senin kayıtlarında görülen bir eğilim; kesin bir sonuç ya da tanı değil.'**
+  String get discoveriesFootnote;
+
+  /// No description provided for @discoveriesLockedTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Keşiflerin yolda'**
+  String get discoveriesLockedTitle;
+
+  /// No description provided for @discoveriesLockedBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Seni neyin iyi hissettirdiğini görebilmem için birkaç gün daha ruh hali kaydı gerekiyor.'**
+  String get discoveriesLockedBody;
+
+  /// No description provided for @discoveriesLockedProgress.
+  ///
+  /// In tr, this message translates to:
+  /// **'{logged}/{needed} gün'**
+  String discoveriesLockedProgress(int logged, int needed);
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirimler'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsCheckinTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Akşam kontrolü'**
+  String get notificationsCheckinTitle;
+
+  /// No description provided for @notificationsCheckinBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'O gün ruh halini kaydetmediysen, seçtiğin saatte tek bir nazik hatırlatma gelir. Kaydettiysen hiç rahatsız etmez.'**
+  String get notificationsCheckinBody;
+
+  /// No description provided for @notificationsTimeLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Saat'**
+  String get notificationsTimeLabel;
+
+  /// No description provided for @notificationsPreviewLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirim böyle görünür'**
+  String get notificationsPreviewLabel;
+
+  /// No description provided for @notificationsPreviewTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bugün nasıldı?'**
+  String get notificationsPreviewTitle;
+
+  /// No description provided for @notificationsPreviewBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yarım dakika yeter — bugün nasıl hissettiğin, yarınki notunu şekillendirir.'**
+  String get notificationsPreviewBody;
+
+  /// No description provided for @notificationsWebNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirimler şimdilik yalnızca telefon uygulamasında gelir; tercihin yine de kaydedilir.'**
+  String get notificationsWebNote;
+
+  /// No description provided for @settingsNotifications.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirimler'**
+  String get settingsNotifications;
+
+  /// No description provided for @settingsNotificationsOn.
+  ///
+  /// In tr, this message translates to:
+  /// **'Akşam kontrolü · {time}'**
+  String settingsNotificationsOn(String time);
+
+  /// No description provided for @settingsNotificationsOff.
+  ///
+  /// In tr, this message translates to:
+  /// **'Akşam kontrolü kapalı'**
+  String get settingsNotificationsOff;
+
+  /// No description provided for @metooButton.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bende de oldu'**
+  String get metooButton;
+
+  /// No description provided for @metooCount.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} kişi'**
+  String metooCount(int count);
+
+  /// No description provided for @metooWithYou.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sen ve {count} kişi daha'**
+  String metooWithYou(int count);
+
+  /// No description provided for @metooYouSaidIt.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yazana iletildi'**
+  String get metooYouSaidIt;
+
+  /// No description provided for @metooSheetTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu senin de hikayen mi?'**
+  String get metooSheetTitle;
+
+  /// No description provided for @metooSheetBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yazana kim olduğun asla gösterilmez. İstersen ona kısa bir not bırakabilirsin.'**
+  String get metooSheetBody;
+
+  /// No description provided for @metooNoteNotAlone.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yalnız değilsin'**
+  String get metooNoteNotAlone;
+
+  /// No description provided for @metooNoteSameHere.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ben de benzerini yaşadım'**
+  String get metooNoteSameHere;
+
+  /// No description provided for @metooNoteThanks.
+  ///
+  /// In tr, this message translates to:
+  /// **'Paylaştığın için teşekkürler'**
+  String get metooNoteThanks;
+
+  /// No description provided for @metooNoteStrength.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sana güç yolluyorum'**
+  String get metooNoteStrength;
+
+  /// No description provided for @metooJustMark.
+  ///
+  /// In tr, this message translates to:
+  /// **'Not bırakmadan işaretle'**
+  String get metooJustMark;
+
+  /// No description provided for @metooSent.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yazana iletildi. Kim olduğun gösterilmedi.'**
+  String get metooSent;
+
+  /// No description provided for @metooOwnCount.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} kişi bu hikayede kendini buldu'**
+  String metooOwnCount(int count);
+
+  /// No description provided for @metooOwnPrivacy.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kim oldukları sana gösterilmez; yalnızca bıraktıkları notları görürsün.'**
+  String get metooOwnPrivacy;
+
+  /// No description provided for @sessionEntryTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Seans öncesi özetim'**
+  String get sessionEntryTitle;
+
+  /// No description provided for @sessionEntryBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Terapistine götürmek için son dönemini tek sayfada hazırla.'**
+  String get sessionEntryBody;
+
+  /// No description provided for @sessionTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Seans öncesi özet'**
+  String get sessionTitle;
+
+  /// No description provided for @sessionIntro.
+  ///
+  /// In tr, this message translates to:
+  /// **'Terapistine ya da psikiyatristine götürebileceğin tek sayfalık bir özet: bu dönem nasıl geçti, neler tekrar etti, neler zorladı, neler iyi geldi. Yalnızca senin kendi kayıtlarından hazırlanır.'**
+  String get sessionIntro;
+
+  /// No description provided for @sessionPeriodLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hangi dönemi özetleyelim?'**
+  String get sessionPeriodLabel;
+
+  /// No description provided for @sessionPeriodWeek.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son 1 hafta'**
+  String get sessionPeriodWeek;
+
+  /// No description provided for @sessionPeriodTwoWeeks.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son 2 hafta'**
+  String get sessionPeriodTwoWeeks;
+
+  /// No description provided for @sessionPeriodMonth.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son 1 ay'**
+  String get sessionPeriodMonth;
+
+  /// No description provided for @sessionNoteLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu seansta konuşmak istediğin bir şey var mı?'**
+  String get sessionNoteLabel;
+
+  /// No description provided for @sessionNoteHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'İsteğe bağlı. Örn. uyku sorunlarım, işteki gerginlik'**
+  String get sessionNoteHint;
+
+  /// No description provided for @sessionGenerate.
+  ///
+  /// In tr, this message translates to:
+  /// **'Özeti hazırla'**
+  String get sessionGenerate;
+
+  /// No description provided for @sessionRegenerate.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeniden hazırla'**
+  String get sessionRegenerate;
+
+  /// No description provided for @sessionGenerating.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kayıtların okunuyor…'**
+  String get sessionGenerating;
+
+  /// No description provided for @sessionGeneratingBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh hali kayıtların, günlüklerin ve sohbetlerin bir araya getiriliyor. Bu yarım dakika kadar sürebilir.'**
+  String get sessionGeneratingBody;
+
+  /// No description provided for @sessionDocTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Seans öncesi özet'**
+  String get sessionDocTitle;
+
+  /// No description provided for @sessionStats.
+  ///
+  /// In tr, this message translates to:
+  /// **'{moodDays} gün ruh hali kaydı · {journals} günlük'**
+  String sessionStats(int moodDays, int journals);
+
+  /// No description provided for @sessionOverview.
+  ///
+  /// In tr, this message translates to:
+  /// **'Genel tablo'**
+  String get sessionOverview;
+
+  /// No description provided for @sessionMoodCourse.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh hali seyri'**
+  String get sessionMoodCourse;
+
+  /// No description provided for @sessionThemes.
+  ///
+  /// In tr, this message translates to:
+  /// **'Öne çıkan konular'**
+  String get sessionThemes;
+
+  /// No description provided for @sessionHardMoments.
+  ///
+  /// In tr, this message translates to:
+  /// **'Zorlayan anlar'**
+  String get sessionHardMoments;
+
+  /// No description provided for @sessionWhatHelped.
+  ///
+  /// In tr, this message translates to:
+  /// **'İyi gelenler'**
+  String get sessionWhatHelped;
+
+  /// No description provided for @sessionQuestions.
+  ///
+  /// In tr, this message translates to:
+  /// **'Konuşmak istediklerim'**
+  String get sessionQuestions;
+
+  /// No description provided for @sessionScreening.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son öz değerlendirme'**
+  String get sessionScreening;
+
+  /// No description provided for @sessionScreeningAgo.
+  ///
+  /// In tr, this message translates to:
+  /// **'{days} gün önce'**
+  String sessionScreeningAgo(int days);
+
+  /// No description provided for @sessionScreeningDepression.
+  ///
+  /// In tr, this message translates to:
+  /// **'Depresyon (PHQ-9)'**
+  String get sessionScreeningDepression;
+
+  /// No description provided for @sessionScreeningAnxiety.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaygı (GAD-7)'**
+  String get sessionScreeningAnxiety;
+
+  /// No description provided for @sessionScreeningWellbeing.
+  ///
+  /// In tr, this message translates to:
+  /// **'İyi oluş (WHO-5)'**
+  String get sessionScreeningWellbeing;
+
+  /// No description provided for @sessionShare.
+  ///
+  /// In tr, this message translates to:
+  /// **'PDF olarak paylaş'**
+  String get sessionShare;
+
+  /// No description provided for @sessionNotEnough.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu dönemde hiç ruh hali ya da günlük kaydın yok. Daha uzun bir dönem seç ya da birkaç gün kayıt girip tekrar dene.'**
+  String get sessionNotEnough;
+
+  /// No description provided for @sessionDisclaimer.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu özet senin kendi kayıtlarından hazırlandı; tanı ya da tıbbi değerlendirme değildir.'**
+  String get sessionDisclaimer;
+
+  /// No description provided for @sessionPdfFooter.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth · kişinin kendi kayıtlarından hazırlanmıştır, tanı değildir'**
+  String get sessionPdfFooter;
 }
 
 class _AppLocalizationsDelegate

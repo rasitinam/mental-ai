@@ -2,13 +2,16 @@ use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
 use mental_domain::repository::{
     ActivityRepository, AssessmentRepository, AuthRepository, ChatRepository, ChatUsageRepository,
-    ContentTranslationRepository, DmRepository, ExplainerRepository, InsightRepository,
+    ContentTranslationRepository, DiscoveryRepository, DmRepository, ExplainerRepository,
+    InsightRepository,
     JournalRepository, LifeAnalysisRepository, LifeStoryRepository, MoodRepository,
     PushTokenRepository, ReportRepository, ResearchRepository, SocialRepository,
     SubscriptionRepository, UserRepository, UserStateRepository,
 };
 use mental_domain::life_story::REACTIONS;
 use mental_domain::report::LifeAnalysis;
+use mental_domain::{CachedDiscoveries, Discovery};
+
 use mental_domain::{
     ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, DmMessage,
     DmPolicy, DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry,
@@ -58,8 +61,9 @@ impl SqliteUserRepository {
 #[async_trait]
 impl UserRepository for SqliteUserRepository {
     async fn get(&self, id: Uuid) -> anyhow::Result<Option<User>> {
-        let row = sqlx::query_as::<_, (String, String, String, String, String, Option<i32>, bool, Option<String>, String, String, Option<String>, DateTime<Utc>)>(
-            "SELECT id, display_name, timezone, diagnoses, language, birth_year, is_admin, avatar_content_type, dm_policy, chat_boundaries, chat_boundary_note, created_at
+        let row = sqlx::query_as::<_, (String, String, String, String, String, Option<i32>, bool, Option<String>, String, String, Option<String>, bool, i64, i64, DateTime<Utc>)>(
+            "SELECT id, display_name, timezone, diagnoses, language, birth_year, is_admin, avatar_content_type, dm_policy, chat_boundaries, chat_boundary_note,
+                    checkin_reminder_enabled, checkin_reminder_hour, utc_offset_minutes, created_at
              FROM users WHERE id = ?1",
         )
         .bind(id.to_string())
@@ -67,7 +71,7 @@ impl UserRepository for SqliteUserRepository {
         .await?;
 
         Ok(row.map(
-            |(id, display_name, timezone, diagnoses, language, birth_year, is_admin, avatar_content_type, dm_policy, chat_boundaries, chat_boundary_note, created_at)| User {
+            |(id, display_name, timezone, diagnoses, language, birth_year, is_admin, avatar_content_type, dm_policy, chat_boundaries, chat_boundary_note, reminder_enabled, reminder_hour, utc_offset, created_at)| User {
                 id: Uuid::parse_str(&id).unwrap_or_default(),
                 display_name,
                 timezone,
@@ -79,6 +83,9 @@ impl UserRepository for SqliteUserRepository {
                 dm_policy: DmPolicy::parse(&dm_policy),
                 chat_boundaries: tags_from_json(&chat_boundaries),
                 chat_boundary_note,
+                checkin_reminder_enabled: reminder_enabled,
+                checkin_reminder_hour: reminder_hour.clamp(0, 23) as u8,
+                utc_offset_minutes: utc_offset as i32,
                 created_at,
             },
         ))
@@ -111,6 +118,42 @@ impl UserRepository for SqliteUserRepository {
             .await?;
 
         Ok(())
+    }
+
+    async fn set_checkin_reminder(&self, user_id: Uuid, enabled: bool, hour: u8) -> anyhow::Result<()> {
+        sqlx::query("UPDATE users SET checkin_reminder_enabled = ?1, checkin_reminder_hour = ?2 WHERE id = ?3")
+            .bind(enabled)
+            .bind(i64::from(hour))
+            .bind(user_id.to_string())
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn set_utc_offset(&self, user_id: Uuid, minutes: i32) -> anyhow::Result<()> {
+        sqlx::query("UPDATE users SET utc_offset_minutes = ?1 WHERE id = ?2")
+            .bind(i64::from(minutes))
+            .bind(user_id.to_string())
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn claim_checkin_reminder(&self, user_id: Uuid, local_date: NaiveDate) -> anyhow::Result<bool> {
+        // One conditional UPDATE, so "was today already sent" and "mark it
+        // sent" can't be split by a second caller in between.
+        let result = sqlx::query(
+            "UPDATE users SET checkin_reminder_last_sent = ?1
+             WHERE id = ?2 AND (checkin_reminder_last_sent IS NULL OR checkin_reminder_last_sent <> ?1)",
+        )
+        .bind(local_date.to_string())
+        .bind(user_id.to_string())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected() == 1)
     }
 
     async fn set_diagnoses(&self, user_id: Uuid, diagnoses: &[String]) -> anyhow::Result<()> {
@@ -198,12 +241,20 @@ impl UserRepository for SqliteUserRepository {
         .bind(&id)
         .execute(&mut *tx)
         .await?;
+        sqlx::query(
+            "DELETE FROM story_metoo WHERE story_id IN (SELECT id FROM life_stories WHERE user_id = ?1)",
+        )
+        .bind(&id)
+        .execute(&mut *tx)
+        .await?;
         sqlx::query("DELETE FROM life_stories WHERE user_id = ?1").bind(&id).execute(&mut *tx).await?;
 
         // This account's own activity elsewhere in the feed — a reaction or
         // report it made on someone else's story, not its own.
         sqlx::query("DELETE FROM story_reactions WHERE user_id = ?1").bind(&id).execute(&mut *tx).await?;
         sqlx::query("DELETE FROM story_upvotes WHERE user_id = ?1").bind(&id).execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM story_metoo WHERE user_id = ?1").bind(&id).execute(&mut *tx).await?;
+
         sqlx::query("DELETE FROM life_story_reports WHERE reporter_user_id = ?1")
             .bind(&id)
             .execute(&mut *tx)
@@ -265,6 +316,8 @@ impl UserRepository for SqliteUserRepository {
             "chat_token_usage",
             "wellbeing_assessments",
             "user_states",
+            "discoveries",
+
             "subscriptions",
             "device_push_tokens",
             "sessions",
@@ -1325,6 +1378,10 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
             .bind(id.to_string())
             .execute(&mut *tx)
             .await?;
+        sqlx::query("DELETE FROM story_metoo WHERE story_id = ?1")
+            .bind(id.to_string())
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("DELETE FROM life_story_reports WHERE story_id = ?1")
             .bind(id.to_string())
             .execute(&mut *tx)
@@ -1445,7 +1502,7 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(rows
+        let mut items: Vec<StoryFeedItem> = rows
             .into_iter()
             .map(|(id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at,
                    anonymous, reviewed_at, created_at, language, reaction_summary, mine,
@@ -1457,11 +1514,38 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
                     )),
                     reaction_counts: parse_reaction_counts(reaction_summary),
                     viewer_reaction: mine,
+                    metoo_count: 0,
+                    viewer_metoo: false,
+
                     author_display_name: display_name,
                     author_has_avatar: avatar.is_some(),
                 }
             })
-            .collect())
+            .collect();
+
+        // "Bende de oldu" tallies come from a second query rather than two
+        // more columns above: that SELECT is already at the sqlx tuple
+        // limit of 16 columns (see the note on `reaction_summary`).
+        let metoo = sqlx::query_as::<_, (String, i64, i64)>(
+            "SELECT m.story_id, COUNT(*), SUM(CASE WHEN m.user_id = ?1 THEN 1 ELSE 0 END)
+             FROM story_metoo m JOIN life_stories s ON s.id = m.story_id
+             WHERE s.status = 'approved'
+             GROUP BY m.story_id",
+        )
+        .bind(viewer.to_string())
+        .fetch_all(&self.pool)
+        .await?;
+        let metoo: std::collections::HashMap<String, (i64, i64)> =
+            metoo.into_iter().map(|(story_id, count, mine)| (story_id, (count, mine))).collect();
+
+        for item in &mut items {
+            if let Some((count, mine)) = metoo.get(&item.story.id.to_string()) {
+                item.metoo_count = (*count).max(0) as u32;
+                item.viewer_metoo = *mine > 0;
+            }
+        }
+
+        Ok(items)
     }
 
     async fn approved_count_for(&self, user_id: Uuid) -> anyhow::Result<u32> {
@@ -1473,6 +1557,22 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
         .await?;
 
         Ok(count.max(0) as u32)
+    }
+
+    async fn metoo_for_author(&self, author_id: Uuid) -> anyhow::Result<Vec<(Uuid, Option<String>)>> {
+        let rows = sqlx::query_as::<_, (String, Option<String>)>(
+            "SELECT m.story_id, m.note FROM story_metoo m
+             JOIN life_stories s ON s.id = m.story_id
+             WHERE s.user_id = ?1",
+        )
+        .bind(author_id.to_string())
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|(story_id, note)| (Uuid::parse_str(&story_id).unwrap_or_default(), note))
+            .collect())
     }
 
     async fn get_translation(
@@ -1628,6 +1728,39 @@ impl SocialRepository for SqliteSocialRepository {
 
         Ok(())
     }
+
+    async fn set_metoo(&self, story_id: Uuid, user_id: Uuid, note: Option<&str>) -> anyhow::Result<bool> {
+        let existed: Option<i64> =
+            sqlx::query_scalar("SELECT 1 FROM story_metoo WHERE story_id = ?1 AND user_id = ?2")
+                .bind(story_id.to_string())
+                .bind(user_id.to_string())
+                .fetch_optional(&self.pool)
+                .await?;
+
+        sqlx::query(
+            "INSERT INTO story_metoo (story_id, user_id, note, created_at) VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(story_id, user_id) DO UPDATE SET note = excluded.note",
+        )
+        .bind(story_id.to_string())
+        .bind(user_id.to_string())
+        .bind(note)
+        .bind(Utc::now())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(existed.is_none())
+    }
+
+    async fn remove_metoo(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()> {
+        sqlx::query("DELETE FROM story_metoo WHERE story_id = ?1 AND user_id = ?2")
+            .bind(story_id.to_string())
+            .bind(user_id.to_string())
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
 }
 
 pub struct SqliteDmRepository {
@@ -2163,5 +2296,49 @@ impl ChatUsageRepository for SqliteChatUsageRepository {
         .await?;
 
         Ok(used.unwrap_or(0))
+    }
+}
+
+pub struct SqliteDiscoveryRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteDiscoveryRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl DiscoveryRepository for SqliteDiscoveryRepository {
+    async fn get(&self, user_id: Uuid) -> anyhow::Result<Option<CachedDiscoveries>> {
+        let row = sqlx::query_as::<_, (String, String, DateTime<Utc>)>(
+            "SELECT language, cards, generated_at FROM discoveries WHERE user_id = ?1",
+        )
+        .bind(user_id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|(language, cards, generated_at)| CachedDiscoveries {
+            language,
+            cards: serde_json::from_str::<Vec<Discovery>>(&cards).unwrap_or_default(),
+            generated_at,
+        }))
+    }
+
+    async fn save(&self, user_id: Uuid, cached: &CachedDiscoveries) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO discoveries (user_id, language, cards, generated_at) VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(user_id) DO UPDATE SET
+                language = excluded.language, cards = excluded.cards, generated_at = excluded.generated_at",
+        )
+        .bind(user_id.to_string())
+        .bind(&cached.language)
+        .bind(serde_json::to_string(&cached.cards).unwrap_or_else(|_| "[]".to_string()))
+        .bind(cached.generated_at)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
     }
 }

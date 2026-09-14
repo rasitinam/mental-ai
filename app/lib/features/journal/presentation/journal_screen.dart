@@ -8,6 +8,8 @@ import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/network/error_messages.dart';
 import '../../../core/onboarding/first_run.dart';
+import '../../../core/voice/voice.dart';
+
 import '../../../core/storage/local_prefs.dart';
 import '../../../core/widgets/countdown_text.dart';
 import '../../../core/widgets/skeleton.dart';
@@ -150,15 +152,23 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                         onChanged: (value) =>
                             ref.read(sharedPreferencesProvider).setString(_draftKey, value),
                         footer: (value) => Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(l10n.journalCharCount(value.length),
-                                style: AppTypography.caption
-                                    .copyWith(color: palette.textSecondary)),
-                            if (value.isNotEmpty)
-                              Text(l10n.journalDraftSaved,
-                                  style: AppTypography.caption
-                                      .copyWith(color: palette.textSecondary)),
+                            Expanded(
+                              child: Text(
+                                value.isNotEmpty
+                                    ? '${l10n.journalCharCount(value.length)} · ${l10n.journalDraftSaved}'
+                                    : l10n.journalCharCount(value.length),
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.caption.copyWith(color: palette.textSecondary),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            DictationButton(
+                              controller: _controller,
+                              style: DictationStyle.pill,
+                              onChanged: (text) =>
+                                  ref.read(sharedPreferencesProvider).setString(_draftKey, text),
+                            ),
                           ],
                         ),
                       ),

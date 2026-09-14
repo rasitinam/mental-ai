@@ -102,6 +102,32 @@ class StoriesController extends Notifier<StoriesState> {
     }
   }
 
+  /// Optimistic, the same way as [setReaction]. Returns `false` if the
+  /// request failed and the row was rolled back, so the caller can say so.
+  Future<bool> setMetoo(String id, {required bool on, String? note}) async {
+    final index = state.feed.indexWhere((s) => s.id == id);
+    if (index < 0) return false;
+
+    final original = state.feed[index];
+    HapticFeedback.selectionClick();
+    final optimistic = [...state.feed];
+    optimistic[index] = original.withMetoo(on);
+    state = state.copyWith(feed: optimistic);
+
+    try {
+      await ref.read(lifeStoriesApiProvider).setMetoo(id, on: on, note: note);
+      return true;
+    } catch (_) {
+      final rolledBack = [...state.feed];
+      final current = rolledBack.indexWhere((s) => s.id == id);
+      if (current >= 0) {
+        rolledBack[current] = original;
+        state = state.copyWith(feed: rolledBack);
+      }
+      return false;
+    }
+  }
+
   Future<bool> submit({
     required String body,
     required String diagnosisSlug,

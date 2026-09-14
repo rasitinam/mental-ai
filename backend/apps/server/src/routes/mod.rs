@@ -2,6 +2,7 @@ mod assessment;
 mod auth;
 mod catalog;
 mod chat;
+mod discoveries;
 mod dm;
 mod health;
 mod insights;
@@ -12,6 +13,7 @@ mod onboarding;
 pub(crate) mod profile;
 mod purchases;
 mod reports;
+mod session_summary;
 pub(crate) mod social;
 mod state;
 mod stories;
@@ -34,6 +36,8 @@ pub fn build_router(app_state: AppState) -> Router {
         .merge(profile::router())
         .merge(catalog::router())
         .merge(chat::router())
+        .merge(discoveries::router())
+        .merge(session_summary::router())
         .merge(mood::router())
         .merge(onboarding::router())
         .merge(journal::router())

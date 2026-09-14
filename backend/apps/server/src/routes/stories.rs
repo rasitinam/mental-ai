@@ -9,9 +9,10 @@ use axum::{
 use chrono::{DateTime, Utc};
 use mental_analysis_engine::{screen_for_crisis_language, translate_text};
 use mental_domain::catalog;
-use mental_domain::life_story::{detect_language, REACTIONS};
-use mental_domain::repository::{LifeStoryRepository, SocialRepository};
+use mental_domain::life_story::{detect_language, METOO_NOTES, REACTIONS};
+use mental_domain::repository::{LifeStoryRepository, PushTokenRepository, SocialRepository};
 use mental_domain::{LifeStory, LifeStoryReport, StoryFeedItem, StoryStatus};
+use mental_push::PushRequest;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -26,6 +27,8 @@ pub fn router() -> Router<AppState> {
         .route("/stories/:id", axum::routing::delete(withdraw).put(update_story))
         .route("/stories/:id/report", post(report))
         .route("/stories/:id/react", post(react).delete(remove_reaction))
+        .route("/stories/:id/metoo", post(metoo).delete(remove_metoo))
+
         .route("/stories/:id/translate", get(translate))
         .route("/stories/pending", get(pending))
         .route("/stories/reports", get(reports))
@@ -71,6 +74,13 @@ struct PublicStory {
     /// need to hardcode the same ordering the backend does.
     reactions: HashMap<String, u32>,
     viewer_reaction: Option<String>,
+    /// "Bende de oldu": how many readers said this happened to them too,
+    /// and whether the viewer is one of them.
+    metoo_count: u32,
+    viewer_metoo: bool,
+    /// Whether the viewer wrote it. The only way the app can hide "Bende
+    /// de oldu" on its own anonymous stories, which carry no author id.
+    is_mine: bool,
     anonymous: bool,
     author_user_id: Option<String>,
     author_display_name: Option<String>,
@@ -93,6 +103,10 @@ impl From<&StoryFeedItem> for PublicStory {
             created_at: item.story.created_at,
             reactions,
             viewer_reaction: item.viewer_reaction.clone(),
+            metoo_count: item.metoo_count,
+            viewer_metoo: item.viewer_metoo,
+            is_mine: false,
+
             anonymous: item.story.anonymous,
             author_user_id: signed.then(|| item.story.user_id.to_string()),
             author_display_name: signed.then(|| item.author_display_name.clone()),
@@ -221,7 +235,12 @@ async fn public_feed(
         items.sort_by_key(|item| !mine.contains(&item.story.diagnosis_slug));
     }
 
-    Ok(Json(items.iter().map(PublicStory::from).collect()))
+    Ok(Json(
+        items
+            .iter()
+            .map(|item| PublicStory { is_mine: item.story.user_id == auth.user_id, ..PublicStory::from(item) })
+            .collect(),
+    ))
 }
 
 const FEED_LIMIT: u32 = 200;
@@ -263,6 +282,122 @@ async fn remove_reaction(
 
     Ok(StatusCode::NO_CONTENT)
 }
+
+#[derive(Debug, Deserialize)]
+struct MetooRequest {
+    /// One of [`METOO_NOTES`], or omitted to just mark it.
+    #[serde(default)]
+    note: Option<String>,
+}
+
+/// "Bende de oldu": the reader recognizes their own experience in this
+/// story. Only on someone else's approved story, since saying it about
+/// your own means nothing and a pending or rejected story isn't visible to
+/// anyone who could say it. The author hears about it once per reader (a
+/// push the first time, not again when the note changes), and only ever as
+/// a count and a note, never who.
+async fn metoo(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<MetooRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let note = req.note.as_deref().filter(|n| !n.is_empty());
+    if let Some(note) = note {
+        if !METOO_NOTES.contains(&note) {
+            return Err((StatusCode::BAD_REQUEST, format!("unknown note: {note}")));
+        }
+    }
+
+    let story = state
+        .life_stories
+        .get(id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "story not found".to_string()))?;
+    if !matches!(story.status, StoryStatus::Approved) {
+        return Err((StatusCode::NOT_FOUND, "story not found".to_string()));
+    }
+    if story.user_id == auth.user_id {
+        return Err((StatusCode::BAD_REQUEST, "cannot mark your own story".to_string()));
+    }
+
+    let first_time = state
+        .social
+        .set_metoo(id, auth.user_id, note)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    if first_time {
+        notify_metoo_author(&state, story.user_id, note).await;
+    }
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn remove_metoo(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    state
+        .social
+        .remove_metoo(id, auth.user_id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Best-effort, like every other push here: an unconfigured or failed push
+/// must never fail the tap that caused it.
+async fn notify_metoo_author(state: &AppState, author: Uuid, note: Option<&str>) {
+    let tokens = state.push_tokens.tokens_for_user(author).await.unwrap_or_default();
+    if tokens.is_empty() {
+        return;
+    }
+
+    let language = user_for(state, author).await.map(|u| u.language).unwrap_or_else(|| "tr".to_string());
+    let (title, body) = metoo_push_text(&language, note);
+    let mut data = HashMap::new();
+    data.insert("type".to_string(), "story_metoo".to_string());
+
+    for token in tokens {
+        let request = PushRequest { token, title: title.clone(), body: body.clone(), data: data.clone() };
+        if let Err(err) = state.push.send(request).await {
+            tracing::warn!(error = %err, "failed to send me-too push");
+        }
+    }
+}
+
+fn metoo_push_text(language: &str, note: Option<&str>) -> (String, String) {
+    if language == "en" {
+        let note_line = match note {
+            Some("yalniz_degilsin") => " They left you a note: \u{201c}You're not alone.\u{201d}",
+            Some("ben_de_yasadim") => " They left you a note: \u{201c}I went through something similar.\u{201d}",
+            Some("tesekkurler") => " They left you a note: \u{201c}Thank you for sharing this.\u{201d}",
+            Some("guc_yolluyorum") => " They left you a note: \u{201c}Sending you strength.\u{201d}",
+            _ => "",
+        };
+        (
+            "Someone found themselves in your story".to_string(),
+            format!("A reader said this happened to them too.{note_line}"),
+        )
+    } else {
+        let note_line = match note {
+            Some("yalniz_degilsin") => " Sana bir not bıraktı: \u{201c}Yalnız değilsin.\u{201d}",
+            Some("ben_de_yasadim") => " Sana bir not bıraktı: \u{201c}Ben de benzerini yaşadım.\u{201d}",
+            Some("tesekkurler") => " Sana bir not bıraktı: \u{201c}Paylaştığın için teşekkürler.\u{201d}",
+            Some("guc_yolluyorum") => " Sana bir not bıraktı: \u{201c}Sana güç yolluyorum.\u{201d}",
+            _ => "",
+        };
+        (
+            "Biri hikayende kendini buldu".to_string(),
+            format!("Bir okur bunun kendisinin de başından geçtiğini söyledi.{note_line}"),
+        )
+    }
+}
+
 
 #[derive(Debug, Serialize)]
 struct TranslationResponse {
@@ -325,14 +460,45 @@ async fn translate(
 async fn mine(
     State(state): State<AppState>,
     auth: AuthUser,
-) -> Result<Json<Vec<LifeStory>>, (StatusCode, String)> {
+) -> Result<Json<Vec<MineStory>>, (StatusCode, String)> {
     let stories = state
         .life_stories
         .list_for_user(auth.user_id)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    Ok(Json(stories))
+    // A failed tally must not hide someone's own stories from them: they
+    // just show without counts until the next load.
+    let metoo = state.life_stories.metoo_for_author(auth.user_id).await.unwrap_or_default();
+    let mut tallies: HashMap<Uuid, (u32, HashMap<String, u32>)> = HashMap::new();
+    for (story_id, note) in metoo {
+        let tally = tallies.entry(story_id).or_default();
+        tally.0 += 1;
+        if let Some(note) = note {
+            *tally.1.entry(note).or_default() += 1;
+        }
+    }
+
+    Ok(Json(
+        stories
+            .into_iter()
+            .map(|story| {
+                let (metoo_count, metoo_notes) = tallies.remove(&story.id).unwrap_or_default();
+                MineStory { story, metoo_count, metoo_notes }
+            })
+            .collect(),
+    ))
+}
+
+/// The author's own copy of a story: the full record (status included)
+/// plus how many readers said "Bende de oldu" and which notes they left.
+/// Counts only, never who.
+#[derive(Debug, Serialize)]
+struct MineStory {
+    #[serde(flatten)]
+    story: LifeStory,
+    metoo_count: u32,
+    metoo_notes: HashMap<String, u32>,
 }
 
 /// Withdraws the caller's own story, at any status. Scoped to the caller

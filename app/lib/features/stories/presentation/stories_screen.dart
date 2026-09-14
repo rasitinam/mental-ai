@@ -16,6 +16,7 @@ import '../../insights/presentation/insights_screen.dart' show SearchField, Cate
 import '../../social/presentation/user_profile_screen.dart' show UserAvatar;
 import '../data/life_stories_api.dart' show storyTranslationProvider;
 import '../domain/life_story.dart';
+import 'metoo.dart';
 import 'stories_controller.dart';
 
 /// Where a story's `diagnosisSlug` sits in the catalog tree — resolved
@@ -363,6 +364,27 @@ class _StoryCard extends ConsumerStatefulWidget {
 class _StoryCardState extends ConsumerState<_StoryCard> {
   bool _showOriginal = false;
 
+  Future<void> _toggleMetoo() async {
+    final l10n = widget.l10n;
+    final controller = ref.read(storiesControllerProvider.notifier);
+    final story = widget.story;
+
+    if (story.viewerMetoo) {
+      await controller.setMetoo(story.id, on: false);
+      return;
+    }
+
+    final note = await showMetooSheet(context);
+    if (note == null || !mounted) return;
+
+    final ok = await controller.setMetoo(story.id, on: true, note: note == metooNoNote ? null : note);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(ok ? l10n.metooSent : l10n.commonError)));
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final story = widget.story;
@@ -433,6 +455,10 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
             l10n: l10n,
             onTap: (reaction) => widget.onReact(story.id, reaction),
           ),
+          if (!story.isMine) ...[
+            const SizedBox(height: 10),
+            MetooStrip(count: story.metooCount, active: story.viewerMetoo, onTap: _toggleMetoo),
+          ],
           const SizedBox(height: 10),
           Row(
             children: [

@@ -49,6 +49,16 @@ pub trait UserRepository: Send + Sync {
     /// with, or clears it (`None`) — the image bytes themselves are written
     /// straight to disk by the route handler, not through this trait.
     async fn set_avatar(&self, user_id: Uuid, content_type: Option<&str>) -> anyhow::Result<()>;
+    /// Turns the evening check-in reminder on or off and sets the local
+    /// hour it goes out at.
+    async fn set_checkin_reminder(&self, user_id: Uuid, enabled: bool, hour: u8) -> anyhow::Result<()>;
+    /// Stores the device's current offset from UTC, in minutes.
+    async fn set_utc_offset(&self, user_id: Uuid, minutes: i32) -> anyhow::Result<()>;
+    /// Atomically marks today's reminder as sent for `local_date`,
+    /// returning `false` if it already was — what stops an hourly job (or
+    /// a restart, or a second server process) from sending one day twice.
+    async fn claim_checkin_reminder(&self, user_id: Uuid, local_date: NaiveDate) -> anyhow::Result<bool>;
+
     /// Permanently erases the account and everything it owns — every mood
     /// entry, journal entry, chat message, story, DM, reaction, follow,
     /// credential and session — in one transaction. There is no undo; the
@@ -282,6 +292,11 @@ pub trait LifeStoryRepository: Send + Sync {
     async fn feed_for(&self, viewer: Uuid, limit: u32) -> anyhow::Result<Vec<StoryFeedItem>>;
     /// How many approved stories one author has in the public feed.
     async fn approved_count_for(&self, user_id: Uuid) -> anyhow::Result<u32>;
+    /// Every "Bende de oldu" left on this author's stories, as (story,
+    /// note). Deliberately no reader id: the author gets counts and
+    /// notes, never who.
+    async fn metoo_for_author(&self, author_id: Uuid) -> anyhow::Result<Vec<(Uuid, Option<String>)>>;
+
     /// A cached translation, if this story has already been translated
     /// into `target_language` for a previous reader.
     async fn get_translation(
@@ -320,6 +335,14 @@ pub trait SocialRepository: Send + Sync {
     async fn react(&self, story_id: Uuid, user_id: Uuid, reaction: &str) -> anyhow::Result<()>;
     /// Clears the caller's reaction on a story, if they had one.
     async fn remove_reaction(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()>;
+    /// Records that the reader recognizes their own experience in a story
+    /// ("Bende de oldu"), with an optional note from
+    /// [`crate::life_story::METOO_NOTES`]. Returns `true` only the first
+    /// time for this (story, reader): changing the note later must not
+    /// notify the author a second time.
+    async fn set_metoo(&self, story_id: Uuid, user_id: Uuid, note: Option<&str>) -> anyhow::Result<bool>;
+    async fn remove_metoo(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()>;
+
 }
 
 /// Direct messages, with the request gate built into the thread's own
@@ -377,4 +400,11 @@ pub trait SubscriptionRepository: Send + Sync {
 pub trait ChatUsageRepository: Send + Sync {
     async fn add_tokens(&self, user_id: Uuid, date: NaiveDate, tokens: i64) -> anyhow::Result<()>;
     async fn tokens_used(&self, user_id: Uuid, date: NaiveDate) -> anyhow::Result<i64>;
+}
+
+/// Cached "Seni iyi hissettirenler" cards — see [`crate::discovery`].
+#[async_trait]
+pub trait DiscoveryRepository: Send + Sync {
+    async fn get(&self, user_id: Uuid) -> anyhow::Result<Option<crate::discovery::CachedDiscoveries>>;
+    async fn save(&self, user_id: Uuid, cached: &crate::discovery::CachedDiscoveries) -> anyhow::Result<()>;
 }

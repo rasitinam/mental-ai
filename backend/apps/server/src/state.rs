@@ -8,6 +8,7 @@ use crate::rate_limit::LoginRateLimiter;
 use mental_storage::{
     SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository,
     SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
+    SqliteDiscoveryRepository,
     SqliteDmRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
@@ -47,6 +48,8 @@ pub struct AppState {
     pub subscriptions: Arc<SqliteSubscriptionRepository>,
     /// Free-tier daily chat token budget tracking — see `routes::chat`.
     pub chat_usage: Arc<SqliteChatUsageRepository>,
+    /// Cached "Seni iyi hissettirenler" cards — see `routes::discoveries`.
+    pub discoveries: Arc<SqliteDiscoveryRepository>,
     /// Login brute-force guard — see `rate_limit::LoginRateLimiter`.
     pub login_rate_limiter: Arc<LoginRateLimiter>,
     /// App Store receipt validation config — the shared secret (empty when

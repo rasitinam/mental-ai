@@ -69,6 +69,9 @@ dependencies:
   # Wraps StoreKit (iOS) / Play Billing (Android) behind one API for the
   # Hearth Plus subscription.
   in_app_purchase: ^3.2.3
+  speech_to_text: ^7.5.0
+  flutter_tts: ^4.2.5
+  pdf: ^3.13.0
 
 dev_dependencies:
   flutter_test:

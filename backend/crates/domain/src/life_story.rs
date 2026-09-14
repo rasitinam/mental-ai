@@ -123,6 +123,15 @@ pub fn detect_language(text: &str) -> String {
 /// last rather than stacking (see `migrations/0018_story_reactions.sql`).
 pub const REACTIONS: [&str; 3] = ["destek", "guclusun", "anliyorum"];
 
+/// The notes a reader can leave when they say a story happened to them
+/// too ("Bende de oldu"). Keys only — the client owns the wording in each
+/// language — and a closed list on purpose: a free-text message to a
+/// stranger about their mental illness is exactly what would need a
+/// moderation queue of its own, and these four cover what people want to
+/// say.
+pub const METOO_NOTES: [&str; 4] = ["yalniz_degilsin", "ben_de_yasadim", "tesekkurler", "guc_yolluyorum"];
+
+
 /// A feed row: the story plus everything the reader's copy of it needs —
 /// reaction tallies, which one *they* picked (if any), and the author's
 /// identity when the story isn't anonymous. Assembled in one query rather
@@ -133,6 +142,10 @@ pub struct StoryFeedItem {
     /// Count per entry of [`REACTIONS`], in that order.
     pub reaction_counts: [u32; 3],
     pub viewer_reaction: Option<String>,
+    /// How many readers said "Bende de oldu", and whether the viewer is
+    /// one of them — see [`METOO_NOTES`].
+    pub metoo_count: u32,
+    pub viewer_metoo: bool,
     pub author_display_name: String,
     pub author_has_avatar: bool,
 }

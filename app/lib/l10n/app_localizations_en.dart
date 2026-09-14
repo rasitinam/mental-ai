@@ -1627,4 +1627,257 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatQuotaExceeded =>
       'You\'ve used today\'s free chat limit. Get Hearth Plus for unlimited chat.';
+
+  @override
+  String get voiceDictate => 'Dictate';
+
+  @override
+  String get voiceListening => 'Listening…';
+
+  @override
+  String get voiceUnavailable =>
+      'Dictation isn\'t available on this device right now.';
+
+  @override
+  String get voicePermissionDenied =>
+      'Dictation needs microphone access. You can allow it for Hearth in your phone\'s settings.';
+
+  @override
+  String get voiceSpeak => 'Read aloud';
+
+  @override
+  String get voiceStopSpeaking => 'Stop reading';
+
+  @override
+  String get discoveriesTitle => 'What lifts you';
+
+  @override
+  String get discoveriesSeeAll => 'See all';
+
+  @override
+  String get discoveriesKindLifts => 'Helps';
+
+  @override
+  String get discoveriesKindDrains => 'Wears you down';
+
+  @override
+  String get discoveriesKindRhythm => 'Rhythm';
+
+  @override
+  String get discoveriesError => 'Couldn\'t load your discoveries right now.';
+
+  @override
+  String get discoveriesEmptyTitle => 'Nothing clear yet';
+
+  @override
+  String get discoveriesEmptyBody =>
+      'There\'s no repeating pattern in your records just yet. Adding a few words or a short note to your check-ins will fill this in.';
+
+  @override
+  String get discoveriesFootnote =>
+      'This is a tendency seen in your own records only — not a firm conclusion or a diagnosis.';
+
+  @override
+  String get discoveriesLockedTitle => 'Your discoveries are on the way';
+
+  @override
+  String get discoveriesLockedBody =>
+      'A few more days of mood check-ins and I can show you what tends to lift you.';
+
+  @override
+  String discoveriesLockedProgress(int logged, int needed) {
+    return '$logged/$needed days';
+  }
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsCheckinTitle => 'Evening check-in';
+
+  @override
+  String get notificationsCheckinBody =>
+      'If you haven\'t logged your mood that day, one gentle reminder arrives at the time you pick. If you have, it never bothers you.';
+
+  @override
+  String get notificationsTimeLabel => 'Time';
+
+  @override
+  String get notificationsPreviewLabel => 'What it looks like';
+
+  @override
+  String get notificationsPreviewTitle => 'How was today?';
+
+  @override
+  String get notificationsPreviewBody =>
+      'Half a minute is enough — how today felt shapes tomorrow\'s note.';
+
+  @override
+  String get notificationsWebNote =>
+      'Notifications only arrive in the phone app for now; your choice is still saved.';
+
+  @override
+  String get settingsNotifications => 'Notifications';
+
+  @override
+  String settingsNotificationsOn(String time) {
+    return 'Evening check-in · $time';
+  }
+
+  @override
+  String get settingsNotificationsOff => 'Evening check-in is off';
+
+  @override
+  String get metooButton => 'This happened to me too';
+
+  @override
+  String metooCount(int count) {
+    return '$count people';
+  }
+
+  @override
+  String metooWithYou(int count) {
+    return 'You and $count others';
+  }
+
+  @override
+  String get metooYouSaidIt => 'Sent to the author';
+
+  @override
+  String get metooSheetTitle => 'Is this your story too?';
+
+  @override
+  String get metooSheetBody =>
+      'The author is never shown who you are. You can leave them a short note if you like.';
+
+  @override
+  String get metooNoteNotAlone => 'You\'re not alone';
+
+  @override
+  String get metooNoteSameHere => 'I went through something similar';
+
+  @override
+  String get metooNoteThanks => 'Thank you for sharing this';
+
+  @override
+  String get metooNoteStrength => 'Sending you strength';
+
+  @override
+  String get metooJustMark => 'Mark it without a note';
+
+  @override
+  String get metooSent => 'Sent to the author. Your identity wasn\'t shown.';
+
+  @override
+  String metooOwnCount(int count) {
+    return '$count people found themselves in this story';
+  }
+
+  @override
+  String get metooOwnPrivacy =>
+      'You\'re never shown who they are — only the notes they left.';
+
+  @override
+  String get sessionEntryTitle => 'My pre-session summary';
+
+  @override
+  String get sessionEntryBody =>
+      'Put your recent weeks on one page to bring to your therapist.';
+
+  @override
+  String get sessionTitle => 'Pre-session summary';
+
+  @override
+  String get sessionIntro =>
+      'A one-page summary to bring to your therapist or psychiatrist: how this stretch went, what kept coming up, what was hard, what helped. Built only from your own records.';
+
+  @override
+  String get sessionPeriodLabel => 'Which period should it cover?';
+
+  @override
+  String get sessionPeriodWeek => 'Last week';
+
+  @override
+  String get sessionPeriodTwoWeeks => 'Last 2 weeks';
+
+  @override
+  String get sessionPeriodMonth => 'Last month';
+
+  @override
+  String get sessionNoteLabel =>
+      'Anything you want to talk about in this session?';
+
+  @override
+  String get sessionNoteHint => 'Optional. e.g. my sleep, tension at work';
+
+  @override
+  String get sessionGenerate => 'Prepare summary';
+
+  @override
+  String get sessionRegenerate => 'Prepare again';
+
+  @override
+  String get sessionGenerating => 'Reading your records…';
+
+  @override
+  String get sessionGeneratingBody =>
+      'Bringing together your check-ins, journal and conversations. This can take about half a minute.';
+
+  @override
+  String get sessionDocTitle => 'Pre-session summary';
+
+  @override
+  String sessionStats(int moodDays, int journals) {
+    return '$moodDays days of check-ins · $journals journal entries';
+  }
+
+  @override
+  String get sessionOverview => 'Overview';
+
+  @override
+  String get sessionMoodCourse => 'How my mood moved';
+
+  @override
+  String get sessionThemes => 'What kept coming up';
+
+  @override
+  String get sessionHardMoments => 'Hard moments';
+
+  @override
+  String get sessionWhatHelped => 'What helped';
+
+  @override
+  String get sessionQuestions => 'What I want to talk about';
+
+  @override
+  String get sessionScreening => 'Latest self-assessment';
+
+  @override
+  String sessionScreeningAgo(int days) {
+    return '$days days ago';
+  }
+
+  @override
+  String get sessionScreeningDepression => 'Depression (PHQ-9)';
+
+  @override
+  String get sessionScreeningAnxiety => 'Anxiety (GAD-7)';
+
+  @override
+  String get sessionScreeningWellbeing => 'Wellbeing (WHO-5)';
+
+  @override
+  String get sessionShare => 'Share as PDF';
+
+  @override
+  String get sessionNotEnough =>
+      'There are no check-ins or journal entries in this period. Pick a longer period, or log a few days and try again.';
+
+  @override
+  String get sessionDisclaimer =>
+      'Prepared from your own records; not a diagnosis or a medical assessment.';
+
+  @override
+  String get sessionPdfFooter =>
+      'Hearth · prepared from the person\'s own records, not a diagnosis';
 }

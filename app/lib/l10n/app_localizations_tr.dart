@@ -1625,4 +1625,257 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get chatQuotaExceeded =>
       'Bugünkü ücretsiz sohbet hakkın doldu. Hearth Plus ile sınırsız sohbet edebilirsin.';
+
+  @override
+  String get voiceDictate => 'Sesle yaz';
+
+  @override
+  String get voiceListening => 'Dinliyorum…';
+
+  @override
+  String get voiceUnavailable => 'Bu cihazda sesle yazma şu an kullanılamıyor.';
+
+  @override
+  String get voicePermissionDenied =>
+      'Sesle yazmak için mikrofon izni gerekiyor. Telefonunun ayarlarından Hearth\'e izin verebilirsin.';
+
+  @override
+  String get voiceSpeak => 'Sesli oku';
+
+  @override
+  String get voiceStopSpeaking => 'Okumayı durdur';
+
+  @override
+  String get discoveriesTitle => 'Seni iyi hissettirenler';
+
+  @override
+  String get discoveriesSeeAll => 'Tümü';
+
+  @override
+  String get discoveriesKindLifts => 'İyi geliyor';
+
+  @override
+  String get discoveriesKindDrains => 'Yoruyor';
+
+  @override
+  String get discoveriesKindRhythm => 'Döngü';
+
+  @override
+  String get discoveriesError => 'Keşiflerin şu an yüklenemedi.';
+
+  @override
+  String get discoveriesEmptyTitle => 'Henüz belirgin bir şey yok';
+
+  @override
+  String get discoveriesEmptyBody =>
+      'Kayıtlarında şimdilik tekrar eden net bir örüntü görünmüyor. Ruh haline birkaç kelime ya da kısa bir not ekledikçe burası dolacak.';
+
+  @override
+  String get discoveriesFootnote =>
+      'Bu, yalnızca senin kayıtlarında görülen bir eğilim; kesin bir sonuç ya da tanı değil.';
+
+  @override
+  String get discoveriesLockedTitle => 'Keşiflerin yolda';
+
+  @override
+  String get discoveriesLockedBody =>
+      'Seni neyin iyi hissettirdiğini görebilmem için birkaç gün daha ruh hali kaydı gerekiyor.';
+
+  @override
+  String discoveriesLockedProgress(int logged, int needed) {
+    return '$logged/$needed gün';
+  }
+
+  @override
+  String get notificationsTitle => 'Bildirimler';
+
+  @override
+  String get notificationsCheckinTitle => 'Akşam kontrolü';
+
+  @override
+  String get notificationsCheckinBody =>
+      'O gün ruh halini kaydetmediysen, seçtiğin saatte tek bir nazik hatırlatma gelir. Kaydettiysen hiç rahatsız etmez.';
+
+  @override
+  String get notificationsTimeLabel => 'Saat';
+
+  @override
+  String get notificationsPreviewLabel => 'Bildirim böyle görünür';
+
+  @override
+  String get notificationsPreviewTitle => 'Bugün nasıldı?';
+
+  @override
+  String get notificationsPreviewBody =>
+      'Yarım dakika yeter — bugün nasıl hissettiğin, yarınki notunu şekillendirir.';
+
+  @override
+  String get notificationsWebNote =>
+      'Bildirimler şimdilik yalnızca telefon uygulamasında gelir; tercihin yine de kaydedilir.';
+
+  @override
+  String get settingsNotifications => 'Bildirimler';
+
+  @override
+  String settingsNotificationsOn(String time) {
+    return 'Akşam kontrolü · $time';
+  }
+
+  @override
+  String get settingsNotificationsOff => 'Akşam kontrolü kapalı';
+
+  @override
+  String get metooButton => 'Bende de oldu';
+
+  @override
+  String metooCount(int count) {
+    return '$count kişi';
+  }
+
+  @override
+  String metooWithYou(int count) {
+    return 'Sen ve $count kişi daha';
+  }
+
+  @override
+  String get metooYouSaidIt => 'Yazana iletildi';
+
+  @override
+  String get metooSheetTitle => 'Bu senin de hikayen mi?';
+
+  @override
+  String get metooSheetBody =>
+      'Yazana kim olduğun asla gösterilmez. İstersen ona kısa bir not bırakabilirsin.';
+
+  @override
+  String get metooNoteNotAlone => 'Yalnız değilsin';
+
+  @override
+  String get metooNoteSameHere => 'Ben de benzerini yaşadım';
+
+  @override
+  String get metooNoteThanks => 'Paylaştığın için teşekkürler';
+
+  @override
+  String get metooNoteStrength => 'Sana güç yolluyorum';
+
+  @override
+  String get metooJustMark => 'Not bırakmadan işaretle';
+
+  @override
+  String get metooSent => 'Yazana iletildi. Kim olduğun gösterilmedi.';
+
+  @override
+  String metooOwnCount(int count) {
+    return '$count kişi bu hikayede kendini buldu';
+  }
+
+  @override
+  String get metooOwnPrivacy =>
+      'Kim oldukları sana gösterilmez; yalnızca bıraktıkları notları görürsün.';
+
+  @override
+  String get sessionEntryTitle => 'Seans öncesi özetim';
+
+  @override
+  String get sessionEntryBody =>
+      'Terapistine götürmek için son dönemini tek sayfada hazırla.';
+
+  @override
+  String get sessionTitle => 'Seans öncesi özet';
+
+  @override
+  String get sessionIntro =>
+      'Terapistine ya da psikiyatristine götürebileceğin tek sayfalık bir özet: bu dönem nasıl geçti, neler tekrar etti, neler zorladı, neler iyi geldi. Yalnızca senin kendi kayıtlarından hazırlanır.';
+
+  @override
+  String get sessionPeriodLabel => 'Hangi dönemi özetleyelim?';
+
+  @override
+  String get sessionPeriodWeek => 'Son 1 hafta';
+
+  @override
+  String get sessionPeriodTwoWeeks => 'Son 2 hafta';
+
+  @override
+  String get sessionPeriodMonth => 'Son 1 ay';
+
+  @override
+  String get sessionNoteLabel =>
+      'Bu seansta konuşmak istediğin bir şey var mı?';
+
+  @override
+  String get sessionNoteHint =>
+      'İsteğe bağlı. Örn. uyku sorunlarım, işteki gerginlik';
+
+  @override
+  String get sessionGenerate => 'Özeti hazırla';
+
+  @override
+  String get sessionRegenerate => 'Yeniden hazırla';
+
+  @override
+  String get sessionGenerating => 'Kayıtların okunuyor…';
+
+  @override
+  String get sessionGeneratingBody =>
+      'Ruh hali kayıtların, günlüklerin ve sohbetlerin bir araya getiriliyor. Bu yarım dakika kadar sürebilir.';
+
+  @override
+  String get sessionDocTitle => 'Seans öncesi özet';
+
+  @override
+  String sessionStats(int moodDays, int journals) {
+    return '$moodDays gün ruh hali kaydı · $journals günlük';
+  }
+
+  @override
+  String get sessionOverview => 'Genel tablo';
+
+  @override
+  String get sessionMoodCourse => 'Ruh hali seyri';
+
+  @override
+  String get sessionThemes => 'Öne çıkan konular';
+
+  @override
+  String get sessionHardMoments => 'Zorlayan anlar';
+
+  @override
+  String get sessionWhatHelped => 'İyi gelenler';
+
+  @override
+  String get sessionQuestions => 'Konuşmak istediklerim';
+
+  @override
+  String get sessionScreening => 'Son öz değerlendirme';
+
+  @override
+  String sessionScreeningAgo(int days) {
+    return '$days gün önce';
+  }
+
+  @override
+  String get sessionScreeningDepression => 'Depresyon (PHQ-9)';
+
+  @override
+  String get sessionScreeningAnxiety => 'Kaygı (GAD-7)';
+
+  @override
+  String get sessionScreeningWellbeing => 'İyi oluş (WHO-5)';
+
+  @override
+  String get sessionShare => 'PDF olarak paylaş';
+
+  @override
+  String get sessionNotEnough =>
+      'Bu dönemde hiç ruh hali ya da günlük kaydın yok. Daha uzun bir dönem seç ya da birkaç gün kayıt girip tekrar dene.';
+
+  @override
+  String get sessionDisclaimer =>
+      'Bu özet senin kendi kayıtlarından hazırlandı; tanı ya da tıbbi değerlendirme değildir.';
+
+  @override
+  String get sessionPdfFooter =>
+      'Hearth · kişinin kendi kayıtlarından hazırlanmıştır, tanı değildir';
 }
