@@ -5,6 +5,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/network/error_messages.dart';
+import '../../../core/onboarding/first_run.dart';
 import '../../../core/widgets/countdown_text.dart';
 import '../../../l10n/app_localizations.dart';
 import '../domain/mood_emotion.dart';
@@ -28,6 +29,24 @@ class MoodScreen extends ConsumerStatefulWidget {
 }
 
 class _MoodScreenState extends ConsumerState<MoodScreen> {
+  /// Saves, then — the very first time it works — marks the milestone.
+  /// Keyed off `submitted` rather than the absence of an error so a
+  /// rejected check-in (cooldown, network) never spends the moment.
+  Future<void> _submit() async {
+    await ref.read(moodControllerProvider.notifier).submit();
+    if (!mounted || !ref.read(moodControllerProvider).submitted) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    await celebrateFirst(
+      context,
+      ref,
+      key: FirstRun.firstMood,
+      icon: Icons.favorite_rounded,
+      title: l10n.milestoneFirstMoodTitle,
+      body: l10n.milestoneFirstMoodBody,
+    );
+  }
+
   String _formatRemaining(AppLocalizations l10n, Duration d) {
     final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60);
@@ -76,6 +95,12 @@ class _MoodScreenState extends ConsumerState<MoodScreen> {
                     .copyWith(color: palette.textSecondary, fontSize: 13.5),
               ),
               const SizedBox(height: 22),
+              FeatureIntroCard(
+                introKey: FirstRun.moodIntro,
+                icon: Icons.favorite_rounded,
+                title: l10n.introMoodTitle,
+                body: l10n.introMoodBody,
+              ),
               Opacity(
                 opacity: onCooldown ? 0.45 : 1,
                 child: IgnorePointer(
@@ -150,7 +175,7 @@ class _MoodScreenState extends ConsumerState<MoodScreen> {
                 label: onCooldown ? l10n.moodTryTomorrow : l10n.commonSave,
                 loading: state.submitting || state.loadingCooldown,
                 icon: onCooldown ? Icons.schedule_rounded : null,
-                onPressed: onCooldown ? null : () => controller.submit(),
+                onPressed: onCooldown ? null : _submit,
               ),
               const SizedBox(height: 12),
               // The countdown owns its own ticker so a second passing

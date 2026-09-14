@@ -58,8 +58,8 @@ impl SqliteUserRepository {
 #[async_trait]
 impl UserRepository for SqliteUserRepository {
     async fn get(&self, id: Uuid) -> anyhow::Result<Option<User>> {
-        let row = sqlx::query_as::<_, (String, String, String, String, String, Option<i32>, bool, Option<String>, String, DateTime<Utc>)>(
-            "SELECT id, display_name, timezone, diagnoses, language, birth_year, is_admin, avatar_content_type, dm_policy, created_at
+        let row = sqlx::query_as::<_, (String, String, String, String, String, Option<i32>, bool, Option<String>, String, String, Option<String>, DateTime<Utc>)>(
+            "SELECT id, display_name, timezone, diagnoses, language, birth_year, is_admin, avatar_content_type, dm_policy, chat_boundaries, chat_boundary_note, created_at
              FROM users WHERE id = ?1",
         )
         .bind(id.to_string())
@@ -67,7 +67,7 @@ impl UserRepository for SqliteUserRepository {
         .await?;
 
         Ok(row.map(
-            |(id, display_name, timezone, diagnoses, language, birth_year, is_admin, avatar_content_type, dm_policy, created_at)| User {
+            |(id, display_name, timezone, diagnoses, language, birth_year, is_admin, avatar_content_type, dm_policy, chat_boundaries, chat_boundary_note, created_at)| User {
                 id: Uuid::parse_str(&id).unwrap_or_default(),
                 display_name,
                 timezone,
@@ -77,6 +77,8 @@ impl UserRepository for SqliteUserRepository {
                 is_admin,
                 avatar_content_type,
                 dm_policy: DmPolicy::parse(&dm_policy),
+                chat_boundaries: tags_from_json(&chat_boundaries),
+                chat_boundary_note,
                 created_at,
             },
         ))
@@ -114,6 +116,22 @@ impl UserRepository for SqliteUserRepository {
     async fn set_diagnoses(&self, user_id: Uuid, diagnoses: &[String]) -> anyhow::Result<()> {
         sqlx::query("UPDATE users SET diagnoses = ?1 WHERE id = ?2")
             .bind(tags_to_json(diagnoses))
+            .bind(user_id.to_string())
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn set_chat_boundaries(
+        &self,
+        user_id: Uuid,
+        boundaries: &[String],
+        note: Option<&str>,
+    ) -> anyhow::Result<()> {
+        sqlx::query("UPDATE users SET chat_boundaries = ?1, chat_boundary_note = ?2 WHERE id = ?3")
+            .bind(tags_to_json(boundaries))
+            .bind(note)
             .bind(user_id.to_string())
             .execute(&self.pool)
             .await?;
@@ -240,6 +258,11 @@ impl UserRepository for SqliteUserRepository {
             "daily_reports",
             "life_analyses",
             "chat_messages",
+            // The free-tier quota counter (see `routes::chat`). It has a
+            // foreign key to `users` like everything else here, so an
+            // account that had ever sent one chat message could not be
+            // deleted at all while this was missing from the list.
+            "chat_token_usage",
             "wellbeing_assessments",
             "user_states",
             "subscriptions",

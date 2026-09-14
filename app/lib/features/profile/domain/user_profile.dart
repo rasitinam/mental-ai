@@ -18,6 +18,14 @@ class UserProfile {
   /// show which of two rows is ticked and send the other one back.
   final String dmPolicy;
 
+  /// What this person asked the app *not* to do in conversation — slugs
+  /// from `mental_domain::chat_boundary`, mirrored in
+  /// `chatBoundaryOptions`. Set during onboarding, editable afterwards.
+  final List<String> chatBoundaries;
+
+  /// Anything the fixed list didn't cover, in their own words.
+  final String? chatBoundaryNote;
+
   const UserProfile({
     required this.id,
     required this.displayName,
@@ -29,6 +37,8 @@ class UserProfile {
     required this.isAdmin,
     required this.hasAvatar,
     required this.dmPolicy,
+    this.chatBoundaries = const [],
+    this.chatBoundaryNote,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -42,5 +52,7 @@ class UserProfile {
         isAdmin: json['is_admin'] as bool? ?? false,
         hasAvatar: json['has_avatar'] as bool? ?? false,
         dmPolicy: json['dm_policy'] as String? ?? 'everyone',
+        chatBoundaries: (json['chat_boundaries'] as List<dynamic>? ?? []).cast<String>(),
+        chatBoundaryNote: json['chat_boundary_note'] as String?,
       );
 }

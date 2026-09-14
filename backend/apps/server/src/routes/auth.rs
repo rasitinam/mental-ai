@@ -89,6 +89,10 @@ async fn register(
             is_admin: false,
             avatar_content_type: None,
             dm_policy: mental_domain::DmPolicy::Everyone,
+            // Asked during onboarding, right after this — see
+            // `routes::profile::set_chat_boundaries`.
+            chat_boundaries: vec![],
+            chat_boundary_note: None,
             created_at: now,
         })
         .await

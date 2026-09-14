@@ -37,6 +37,20 @@ class ProfileApi {
     return UserProfile.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Replaces the conversation ground rules — what the person asked the
+  /// app not to do. Sent as a whole set (never merged), so clearing every
+  /// box is a meaningful answer rather than a no-op.
+  Future<UserProfile> setChatBoundaries({
+    required List<String> boundaries,
+    String? note,
+  }) async {
+    final response = await _dio.put('/profile/chat-boundaries', data: {
+      'boundaries': boundaries,
+      'note': note,
+    });
+    return UserProfile.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// Display name, language and birth year. All three are optional and
   /// omitted fields keep their stored value, so changing the language
   /// doesn't require the screen to resend a birth year — or a name — the

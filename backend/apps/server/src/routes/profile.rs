@@ -7,8 +7,8 @@ use axum::{
     Json, Router,
 };
 use chrono::Utc;
-use mental_domain::catalog;
 use mental_domain::repository::{AuthRepository, PushTokenRepository, UserRepository};
+use mental_domain::{catalog, chat_boundary};
 use mental_domain::{DmPolicy, PushToken};
 use serde::{Deserialize, Serialize};
 
@@ -26,6 +26,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/profile", get(profile))
         .route("/profile/diagnoses", put(set_diagnoses))
+        .route("/profile/chat-boundaries", put(set_chat_boundaries))
         .route("/profile/preferences", put(set_preferences))
         .route("/profile/avatar", put(upload_avatar).get(get_avatar))
         .layer(DefaultBodyLimit::max(MAX_AVATAR_BYTES + 1024))
@@ -49,11 +50,23 @@ struct ProfileResponse {
     is_admin: bool,
     has_avatar: bool,
     dm_policy: String,
+    chat_boundaries: Vec<String>,
+    chat_boundary_note: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct SetDiagnosesRequest {
     diagnoses: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SetChatBoundariesRequest {
+    /// Slugs from `mental_domain::chat_boundary`. Replaces the whole set,
+    /// so an empty list is a valid answer: "nothing in particular".
+    #[serde(default)]
+    boundaries: Vec<String>,
+    #[serde(default)]
+    note: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -98,6 +111,8 @@ async fn profile(
         is_admin: user.is_admin,
         has_avatar: user.avatar_content_type.is_some(),
         dm_policy: user.dm_policy.as_str().to_string(),
+        chat_boundaries: user.chat_boundaries.clone(),
+        chat_boundary_note: user.chat_boundary_note.clone(),
     }))
 }
 
@@ -121,6 +136,42 @@ async fn set_diagnoses(
         .set_diagnoses(auth.user_id, &req.diagnoses)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    profile(State(state), auth).await
+}
+
+/// Replaces the conversation ground rules — what this person asked the
+/// app *not* to do (see `mental_domain::chat_boundary`). Slugs are
+/// validated for the same reason diagnoses are: an unrecognized one
+/// would be silently dropped when the prompt is assembled, leaving
+/// someone believing they'd set a rule that never applied. The free-text
+/// note is trimmed and length-capped — it goes into every prompt, so it
+/// can't be allowed to grow into one.
+async fn set_chat_boundaries(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(req): Json<SetChatBoundariesRequest>,
+) -> Result<Json<ProfileResponse>, (axum::http::StatusCode, String)> {
+    if let Some(unknown) = req.boundaries.iter().find(|slug| chat_boundary::boundary(slug).is_none())
+    {
+        return Err((StatusCode::BAD_REQUEST, format!("unknown chat boundary: {unknown}")));
+    }
+
+    let note = req.note.as_deref().map(str::trim).filter(|n| !n.is_empty());
+    if let Some(note) = note {
+        if note.chars().count() > chat_boundary::MAX_BOUNDARY_NOTE_LEN {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!("note is longer than {} characters", chat_boundary::MAX_BOUNDARY_NOTE_LEN),
+            ));
+        }
+    }
+
+    state
+        .users
+        .set_chat_boundaries(auth.user_id, &req.boundaries, note)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     profile(State(state), auth).await
 }

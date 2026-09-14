@@ -7,6 +7,7 @@ pub mod assessment;
 pub mod auth;
 pub mod catalog;
 pub mod chat;
+pub mod chat_boundary;
 pub mod explainer;
 pub mod insight;
 pub mod journal;

@@ -1490,6 +1490,336 @@ abstract class AppLocalizations {
   /// **'Hikayelerim'**
   String get settingsMyStories;
 
+  /// No description provided for @settingsChatBoundaries.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbet tercihlerim'**
+  String get settingsChatBoundaries;
+
+  /// No description provided for @settingsChatBoundariesBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbetlerde neyi istemediğini belirle'**
+  String get settingsChatBoundariesBody;
+
+  /// No description provided for @onboardingSkipTour.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tanıtımı atla'**
+  String get onboardingSkipTour;
+
+  /// No description provided for @onboardingSkipStep.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu adımı atla'**
+  String get onboardingSkipStep;
+
+  /// No description provided for @tourNext.
+  ///
+  /// In tr, this message translates to:
+  /// **'Devam'**
+  String get tourNext;
+
+  /// No description provided for @tourStart.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hadi başlayalım'**
+  String get tourStart;
+
+  /// No description provided for @tourWelcomeTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth\'e hoş geldin'**
+  String get tourWelcomeTitle;
+
+  /// No description provided for @tourWelcomeBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth, ruh haline zamanla eşlik eden bir alan. Ne kadar çok şey paylaşırsan, sana o kadar özel cevaplar verir. Terapistin yerini tutmaz — ama arada geçen günlerde yanında olur.\n\nBirkaç adımda neler yapabileceğini göstereyim; istediğin an atlayabilirsin.'**
+  String get tourWelcomeBody;
+
+  /// No description provided for @tourChatTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'İstediğin saatte konuş'**
+  String get tourChatTitle;
+
+  /// No description provided for @tourChatBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbet, gecenin üçünde de açık. Konuştuklarını hatırlar, ruh hali kayıtlarını ve günlüklerini bilir — yani her seferinde baştan anlatmak zorunda değilsin.\n\nBir sonraki adımda, bu sohbetlerde neyi istemediğini soracağız. Cevabın her yanıtı şekillendirir.'**
+  String get tourChatBody;
+
+  /// No description provided for @tourMoodJournalTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh hali ve günlük'**
+  String get tourMoodJournalTitle;
+
+  /// No description provided for @tourMoodJournalBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Günde bir kez nasıl hissettiğini birkaç kelimeyle işaretle, istersen gününü günlüğe yaz. İkisi de bir dakikadan kısa sürer.\n\nBunlar sadece kayıt değil: haftalar içinde nelerin seni iyi ya da kötü hissettirdiği buradan çıkıyor.'**
+  String get tourMoodJournalBody;
+
+  /// No description provided for @tourReportTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bugünün notu'**
+  String get tourReportTitle;
+
+  /// No description provided for @tourReportBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ana ekranda her gün, o güne dair kısa bir özet ve birkaç küçük öneri bulursun — ruh halinden, günlüğünden ve konuştuklarından derlenir.\n\nHaftalık özet ve yaşam analizi ise daha geniş resmi gösterir: neyin tekrar ettiğini, neyin değiştiğini.'**
+  String get tourReportBody;
+
+  /// No description provided for @tourCommunityTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yalnız değilsin'**
+  String get tourCommunityTitle;
+
+  /// No description provided for @tourCommunityBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikayeler\'de başkalarının kendi deneyimlerini okuyabilir, istersen kendi hikayeni (istersen isimsiz) paylaşabilirsin. Her hikaye yayınlanmadan önce incelenir.\n\nRehber\'de ise tanılar hakkında araştırmaya dayalı, sade anlatımlar var.'**
+  String get tourCommunityBody;
+
+  /// No description provided for @tourPrivacyTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Verilerin ve güvenliğin'**
+  String get tourPrivacyTitle;
+
+  /// No description provided for @tourPrivacyBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yazdıkların hesabına özeldir; hikaye olarak paylaşmadıkça kimse göremez. Hesabını ve tüm verilerini istediğin an tek adımda silebilirsin.\n\nCiddi bir risk söz konusu olduğunda uygulama bunu görmezden gelmez — acil durumda 112\'yi aramanı hatırlatır. Hearth tıbbi tavsiye vermez, teşhis koymaz.'**
+  String get tourPrivacyBody;
+
+  /// No description provided for @boundariesTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbetlerde neyi istemezsin?'**
+  String get boundariesTitle;
+
+  /// No description provided for @boundariesIntro.
+  ///
+  /// In tr, this message translates to:
+  /// **'Herkesin konuşulmasını istemediği bir şey vardır. Sana nasıl yaklaşılmasını istemediğini şimdi söyle; gerisini sormaya ondan sonra geçelim.'**
+  String get boundariesIntro;
+
+  /// No description provided for @boundariesEffectNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Seçtiklerin doğrudan sohbete işler: Hearth bundan sonra bu sınırların içinde konuşur. Tek istisna, hayati bir risk söz konusu olduğunda güvenliğini önceliklendirmesidir.'**
+  String get boundariesEffectNote;
+
+  /// No description provided for @boundariesContinue.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaydet ve devam et'**
+  String get boundariesContinue;
+
+  /// No description provided for @boundariesNoteLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Eklemek istediğin bir şey var mı?'**
+  String get boundariesNoteLabel;
+
+  /// No description provided for @boundariesNoteHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Örn. bana acıyan bir dille yaklaşılmasını istemiyorum'**
+  String get boundariesNoteHint;
+
+  /// No description provided for @boundariesChangeLater.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bunları istediğin zaman Ayarlar > Sohbet tercihlerim\'den değiştirebilirsin.'**
+  String get boundariesChangeLater;
+
+  /// No description provided for @boundaryNoAdvice.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bana tavsiye verilmesin'**
+  String get boundaryNoAdvice;
+
+  /// No description provided for @boundaryNoAdviceBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'İstemediğim sürece öneri, teknik ya da \"şunu dene\" yok. Sadece dinlensin.'**
+  String get boundaryNoAdviceBody;
+
+  /// No description provided for @boundaryNoReferrals.
+  ///
+  /// In tr, this message translates to:
+  /// **'\"Bir uzmana görün\" denmesin'**
+  String get boundaryNoReferrals;
+
+  /// No description provided for @boundaryNoReferralsBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu seçeneği zaten biliyorum; her konuşmada hatırlatılmasını istemiyorum.'**
+  String get boundaryNoReferralsBody;
+
+  /// No description provided for @boundaryNoToxicPositivity.
+  ///
+  /// In tr, this message translates to:
+  /// **'Aşırı pozitif konuşulmasın'**
+  String get boundaryNoToxicPositivity;
+
+  /// No description provided for @boundaryNoToxicPositivityBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'\"Her şey güzel olacak\" tarzı motivasyon cümleleri yerine olduğu gibi konuşulsun.'**
+  String get boundaryNoToxicPositivityBody;
+
+  /// No description provided for @boundaryNoQuestions.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bana çok soru sorulmasın'**
+  String get boundaryNoQuestions;
+
+  /// No description provided for @boundaryNoQuestionsBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sorgu gibi hissettirmesin; peş peşe sorular yerine sade cevaplar olsun.'**
+  String get boundaryNoQuestionsBody;
+
+  /// No description provided for @boundaryNoClinicalTerms.
+  ///
+  /// In tr, this message translates to:
+  /// **'Klinik terimler kullanılmasın'**
+  String get boundaryNoClinicalTerms;
+
+  /// No description provided for @boundaryNoClinicalTermsBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tanı isimleri ve terapi jargonu yerine günlük dille konuşulsun.'**
+  String get boundaryNoClinicalTermsBody;
+
+  /// No description provided for @boundaryNoReligious.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dini/manevi çerçeve olmasın'**
+  String get boundaryNoReligious;
+
+  /// No description provided for @boundaryNoReligiousBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'İnanç temelli teselli ya da benzetmeler kullanılmasın.'**
+  String get boundaryNoReligiousBody;
+
+  /// No description provided for @boundaryNoToughLove.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sert/yüzleştirici bir ton olmasın'**
+  String get boundaryNoToughLove;
+
+  /// No description provided for @boundaryNoToughLoveBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'\"Kendine gel\" tarzı zorlayıcı bir yaklaşım istemiyorum.'**
+  String get boundaryNoToughLoveBody;
+
+  /// No description provided for @boundaryNoHistoryCallbacks.
+  ///
+  /// In tr, this message translates to:
+  /// **'Geçmiş kayıtlarım hatırlatılmasın'**
+  String get boundaryNoHistoryCallbacks;
+
+  /// No description provided for @boundaryNoHistoryCallbacksBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Eski günlüklerim ve kayıtlarım ben açmadıkça konuşmaya getirilmesin.'**
+  String get boundaryNoHistoryCallbacksBody;
+
+  /// No description provided for @introGotIt.
+  ///
+  /// In tr, this message translates to:
+  /// **'Anladım'**
+  String get introGotIt;
+
+  /// No description provided for @introMoodTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh hali kaydı nedir?'**
+  String get introMoodTitle;
+
+  /// No description provided for @introMoodBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Günde bir kez, o an nasıl hissettiğini birkaç kelimeyle işaretliyorsun. Altındaki iki çubuğu elinle de oynatabilirsin.\n\nBu kayıtlar, bugünün notunu ve haftalık özetini oluşturan ana veri — birkaç gün üst üste girdiğinde örüntüler görünmeye başlar.'**
+  String get introMoodBody;
+
+  /// No description provided for @introJournalTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Günlük nasıl işler?'**
+  String get introJournalTitle;
+
+  /// No description provided for @introJournalBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Günde bir giriş yazabilirsin: aklından geçenler, o gün yaşadıkların, kimseye söylemediklerin. Yazdıkların yalnızca sana ait; paylaşılmaz.\n\nYarım kalan yazın taslak olarak saklanır, istersen sonra devam edersin. Geçmiş girişlerin aşağıdaki arşivde durur.'**
+  String get introJournalBody;
+
+  /// No description provided for @introChatTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbet hakkında'**
+  String get introChatTitle;
+
+  /// No description provided for @introChatBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Buraya istediğini yazabilirsin — dertleşmek, bir şeyi anlamaya çalışmak ya da sadece günü anlatmak için.\n\nHearth ruh hali kayıtlarını, günlüklerini ve sohbet tercihlerini bilerek cevap verir. Tıbbi tavsiye vermez; acil bir durumda 112\'yi hatırlatır.'**
+  String get introChatBody;
+
+  /// No description provided for @milestoneContinue.
+  ///
+  /// In tr, this message translates to:
+  /// **'Devam et'**
+  String get milestoneContinue;
+
+  /// No description provided for @milestoneFirstMoodTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'İlk ruh hali kaydın alındı'**
+  String get milestoneFirstMoodTitle;
+
+  /// No description provided for @milestoneFirstMoodBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Güzel bir başlangıç. Birkaç gün daha işaretlersen, ana ekranındaki not ve grafikler senin örüntülerini göstermeye başlayacak.'**
+  String get milestoneFirstMoodBody;
+
+  /// No description provided for @milestoneFirstJournalTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'İlk günlük girişin hazır'**
+  String get milestoneFirstJournalTitle;
+
+  /// No description provided for @milestoneFirstJournalBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yazdıkların yalnızca sana ait. Yarın yeni bir giriş yazabilirsin; eskiler arşivinde seni bekliyor.'**
+  String get milestoneFirstJournalBody;
+
+  /// No description provided for @milestoneFirstChatTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'İlk sohbetin başladı'**
+  String get milestoneFirstChatTitle;
+
+  /// No description provided for @milestoneFirstChatBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Konuştuklarınız hatırlanır, yani bir dahaki sefere baştan anlatmana gerek yok. Nasıl konuşulmasını istediğini Ayarlar\'dan her zaman değiştirebilirsin.'**
+  String get milestoneFirstChatBody;
+
   /// No description provided for @assessmentOnboardTitle.
   ///
   /// In tr, this message translates to:

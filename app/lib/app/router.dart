@@ -15,6 +15,8 @@ import '../features/insights/presentation/insights_screen.dart';
 import '../features/journal/presentation/journal_screen.dart';
 import '../features/life_analysis/presentation/life_analysis_screen.dart';
 import '../features/mood_tracking/presentation/mood_screen.dart';
+import '../features/onboarding/presentation/chat_boundaries_screen.dart';
+import '../features/onboarding/presentation/onboarding_flow_screen.dart';
 import '../features/premium/presentation/premium_screen.dart';
 import '../features/profile/presentation/diagnoses_screen.dart';
 import '../features/profile/presentation/my_profile_screen.dart';
@@ -79,9 +81,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) => AssessmentScreen(
-          skippable: true,
-          onDone: () {
+        builder: (context, state) => OnboardingFlowScreen(
+          onFinished: () {
             ref.read(justRegisteredProvider.notifier).state = false;
             context.go('/stories');
           },
@@ -161,6 +162,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               routes: [
                 GoRoute(path: 'list', builder: (context, state) => const SettingsScreen()),
                 GoRoute(path: 'profile', builder: (context, state) => const ProfileScreen()),
+                GoRoute(
+                  path: 'chat-boundaries',
+                  builder: (context, state) => const ChatBoundariesScreen(),
+                ),
                 GoRoute(path: 'diagnoses', builder: (context, state) => const DiagnosesScreen()),
                 GoRoute(
                   path: 'assessment',

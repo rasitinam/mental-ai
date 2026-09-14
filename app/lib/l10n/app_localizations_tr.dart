@@ -763,6 +763,196 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsMyStories => 'Hikayelerim';
 
   @override
+  String get settingsChatBoundaries => 'Sohbet tercihlerim';
+
+  @override
+  String get settingsChatBoundariesBody =>
+      'Sohbetlerde neyi istemediğini belirle';
+
+  @override
+  String get onboardingSkipTour => 'Tanıtımı atla';
+
+  @override
+  String get onboardingSkipStep => 'Bu adımı atla';
+
+  @override
+  String get tourNext => 'Devam';
+
+  @override
+  String get tourStart => 'Hadi başlayalım';
+
+  @override
+  String get tourWelcomeTitle => 'Hearth\'e hoş geldin';
+
+  @override
+  String get tourWelcomeBody =>
+      'Hearth, ruh haline zamanla eşlik eden bir alan. Ne kadar çok şey paylaşırsan, sana o kadar özel cevaplar verir. Terapistin yerini tutmaz — ama arada geçen günlerde yanında olur.\n\nBirkaç adımda neler yapabileceğini göstereyim; istediğin an atlayabilirsin.';
+
+  @override
+  String get tourChatTitle => 'İstediğin saatte konuş';
+
+  @override
+  String get tourChatBody =>
+      'Sohbet, gecenin üçünde de açık. Konuştuklarını hatırlar, ruh hali kayıtlarını ve günlüklerini bilir — yani her seferinde baştan anlatmak zorunda değilsin.\n\nBir sonraki adımda, bu sohbetlerde neyi istemediğini soracağız. Cevabın her yanıtı şekillendirir.';
+
+  @override
+  String get tourMoodJournalTitle => 'Ruh hali ve günlük';
+
+  @override
+  String get tourMoodJournalBody =>
+      'Günde bir kez nasıl hissettiğini birkaç kelimeyle işaretle, istersen gününü günlüğe yaz. İkisi de bir dakikadan kısa sürer.\n\nBunlar sadece kayıt değil: haftalar içinde nelerin seni iyi ya da kötü hissettirdiği buradan çıkıyor.';
+
+  @override
+  String get tourReportTitle => 'Bugünün notu';
+
+  @override
+  String get tourReportBody =>
+      'Ana ekranda her gün, o güne dair kısa bir özet ve birkaç küçük öneri bulursun — ruh halinden, günlüğünden ve konuştuklarından derlenir.\n\nHaftalık özet ve yaşam analizi ise daha geniş resmi gösterir: neyin tekrar ettiğini, neyin değiştiğini.';
+
+  @override
+  String get tourCommunityTitle => 'Yalnız değilsin';
+
+  @override
+  String get tourCommunityBody =>
+      'Hikayeler\'de başkalarının kendi deneyimlerini okuyabilir, istersen kendi hikayeni (istersen isimsiz) paylaşabilirsin. Her hikaye yayınlanmadan önce incelenir.\n\nRehber\'de ise tanılar hakkında araştırmaya dayalı, sade anlatımlar var.';
+
+  @override
+  String get tourPrivacyTitle => 'Verilerin ve güvenliğin';
+
+  @override
+  String get tourPrivacyBody =>
+      'Yazdıkların hesabına özeldir; hikaye olarak paylaşmadıkça kimse göremez. Hesabını ve tüm verilerini istediğin an tek adımda silebilirsin.\n\nCiddi bir risk söz konusu olduğunda uygulama bunu görmezden gelmez — acil durumda 112\'yi aramanı hatırlatır. Hearth tıbbi tavsiye vermez, teşhis koymaz.';
+
+  @override
+  String get boundariesTitle => 'Sohbetlerde neyi istemezsin?';
+
+  @override
+  String get boundariesIntro =>
+      'Herkesin konuşulmasını istemediği bir şey vardır. Sana nasıl yaklaşılmasını istemediğini şimdi söyle; gerisini sormaya ondan sonra geçelim.';
+
+  @override
+  String get boundariesEffectNote =>
+      'Seçtiklerin doğrudan sohbete işler: Hearth bundan sonra bu sınırların içinde konuşur. Tek istisna, hayati bir risk söz konusu olduğunda güvenliğini önceliklendirmesidir.';
+
+  @override
+  String get boundariesContinue => 'Kaydet ve devam et';
+
+  @override
+  String get boundariesNoteLabel => 'Eklemek istediğin bir şey var mı?';
+
+  @override
+  String get boundariesNoteHint =>
+      'Örn. bana acıyan bir dille yaklaşılmasını istemiyorum';
+
+  @override
+  String get boundariesChangeLater =>
+      'Bunları istediğin zaman Ayarlar > Sohbet tercihlerim\'den değiştirebilirsin.';
+
+  @override
+  String get boundaryNoAdvice => 'Bana tavsiye verilmesin';
+
+  @override
+  String get boundaryNoAdviceBody =>
+      'İstemediğim sürece öneri, teknik ya da \"şunu dene\" yok. Sadece dinlensin.';
+
+  @override
+  String get boundaryNoReferrals => '\"Bir uzmana görün\" denmesin';
+
+  @override
+  String get boundaryNoReferralsBody =>
+      'Bu seçeneği zaten biliyorum; her konuşmada hatırlatılmasını istemiyorum.';
+
+  @override
+  String get boundaryNoToxicPositivity => 'Aşırı pozitif konuşulmasın';
+
+  @override
+  String get boundaryNoToxicPositivityBody =>
+      '\"Her şey güzel olacak\" tarzı motivasyon cümleleri yerine olduğu gibi konuşulsun.';
+
+  @override
+  String get boundaryNoQuestions => 'Bana çok soru sorulmasın';
+
+  @override
+  String get boundaryNoQuestionsBody =>
+      'Sorgu gibi hissettirmesin; peş peşe sorular yerine sade cevaplar olsun.';
+
+  @override
+  String get boundaryNoClinicalTerms => 'Klinik terimler kullanılmasın';
+
+  @override
+  String get boundaryNoClinicalTermsBody =>
+      'Tanı isimleri ve terapi jargonu yerine günlük dille konuşulsun.';
+
+  @override
+  String get boundaryNoReligious => 'Dini/manevi çerçeve olmasın';
+
+  @override
+  String get boundaryNoReligiousBody =>
+      'İnanç temelli teselli ya da benzetmeler kullanılmasın.';
+
+  @override
+  String get boundaryNoToughLove => 'Sert/yüzleştirici bir ton olmasın';
+
+  @override
+  String get boundaryNoToughLoveBody =>
+      '\"Kendine gel\" tarzı zorlayıcı bir yaklaşım istemiyorum.';
+
+  @override
+  String get boundaryNoHistoryCallbacks => 'Geçmiş kayıtlarım hatırlatılmasın';
+
+  @override
+  String get boundaryNoHistoryCallbacksBody =>
+      'Eski günlüklerim ve kayıtlarım ben açmadıkça konuşmaya getirilmesin.';
+
+  @override
+  String get introGotIt => 'Anladım';
+
+  @override
+  String get introMoodTitle => 'Ruh hali kaydı nedir?';
+
+  @override
+  String get introMoodBody =>
+      'Günde bir kez, o an nasıl hissettiğini birkaç kelimeyle işaretliyorsun. Altındaki iki çubuğu elinle de oynatabilirsin.\n\nBu kayıtlar, bugünün notunu ve haftalık özetini oluşturan ana veri — birkaç gün üst üste girdiğinde örüntüler görünmeye başlar.';
+
+  @override
+  String get introJournalTitle => 'Günlük nasıl işler?';
+
+  @override
+  String get introJournalBody =>
+      'Günde bir giriş yazabilirsin: aklından geçenler, o gün yaşadıkların, kimseye söylemediklerin. Yazdıkların yalnızca sana ait; paylaşılmaz.\n\nYarım kalan yazın taslak olarak saklanır, istersen sonra devam edersin. Geçmiş girişlerin aşağıdaki arşivde durur.';
+
+  @override
+  String get introChatTitle => 'Sohbet hakkında';
+
+  @override
+  String get introChatBody =>
+      'Buraya istediğini yazabilirsin — dertleşmek, bir şeyi anlamaya çalışmak ya da sadece günü anlatmak için.\n\nHearth ruh hali kayıtlarını, günlüklerini ve sohbet tercihlerini bilerek cevap verir. Tıbbi tavsiye vermez; acil bir durumda 112\'yi hatırlatır.';
+
+  @override
+  String get milestoneContinue => 'Devam et';
+
+  @override
+  String get milestoneFirstMoodTitle => 'İlk ruh hali kaydın alındı';
+
+  @override
+  String get milestoneFirstMoodBody =>
+      'Güzel bir başlangıç. Birkaç gün daha işaretlersen, ana ekranındaki not ve grafikler senin örüntülerini göstermeye başlayacak.';
+
+  @override
+  String get milestoneFirstJournalTitle => 'İlk günlük girişin hazır';
+
+  @override
+  String get milestoneFirstJournalBody =>
+      'Yazdıkların yalnızca sana ait. Yarın yeni bir giriş yazabilirsin; eskiler arşivinde seni bekliyor.';
+
+  @override
+  String get milestoneFirstChatTitle => 'İlk sohbetin başladı';
+
+  @override
+  String get milestoneFirstChatBody =>
+      'Konuştuklarınız hatırlanır, yani bir dahaki sefere baştan anlatmana gerek yok. Nasıl konuşulmasını istediğini Ayarlar\'dan her zaman değiştirebilirsin.';
+
+  @override
   String get assessmentOnboardTitle => 'Seni biraz tanıyalım';
 
   @override

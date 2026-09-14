@@ -763,6 +763,195 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMyStories => 'My stories';
 
   @override
+  String get settingsChatBoundaries => 'Conversation preferences';
+
+  @override
+  String get settingsChatBoundariesBody =>
+      'Set what you don\'t want in conversations';
+
+  @override
+  String get onboardingSkipTour => 'Skip the tour';
+
+  @override
+  String get onboardingSkipStep => 'Skip this step';
+
+  @override
+  String get tourNext => 'Next';
+
+  @override
+  String get tourStart => 'Let\'s start';
+
+  @override
+  String get tourWelcomeTitle => 'Welcome to Hearth';
+
+  @override
+  String get tourWelcomeBody =>
+      'Hearth is a space that keeps you company over time. The more you share, the more its answers are actually about you. It isn\'t a replacement for a therapist — but it\'s here on the days in between.\n\nLet me show you what\'s here in a few steps; you can skip whenever you like.';
+
+  @override
+  String get tourChatTitle => 'Talk whenever you need to';
+
+  @override
+  String get tourChatBody =>
+      'Chat is open at three in the morning too. It remembers what you\'ve said and knows your check-ins and journal entries — so you don\'t have to start from the beginning every time.\n\nIn the next step we\'ll ask what you *don\'t* want from these conversations. Your answer shapes every reply.';
+
+  @override
+  String get tourMoodJournalTitle => 'Mood and journal';
+
+  @override
+  String get tourMoodJournalBody =>
+      'Once a day, mark how you feel in a few words, and write about your day if you want to. Both take under a minute.\n\nThese aren\'t just records: they\'re where the picture of what lifts you and what wears you down comes from.';
+
+  @override
+  String get tourReportTitle => 'Today\'s note';
+
+  @override
+  String get tourReportBody =>
+      'Every day the home screen carries a short summary of your day and a couple of small suggestions — drawn from your mood, your journal and your conversations.\n\nThe weekly recap and life analysis show the wider picture: what keeps repeating, what\'s changing.';
+
+  @override
+  String get tourCommunityTitle => 'You\'re not alone in this';
+
+  @override
+  String get tourCommunityBody =>
+      'In Stories you can read other people\'s own accounts, and share yours (anonymously if you prefer). Every story is reviewed before it\'s published.\n\nThe Guide has plain, research-backed explanations of conditions.';
+
+  @override
+  String get tourPrivacyTitle => 'Your data and your safety';
+
+  @override
+  String get tourPrivacyBody =>
+      'What you write belongs to your account; nobody sees it unless you share it as a story. You can delete your account and all of your data in one step, any time.\n\nWhen there\'s a real risk, the app won\'t look away — it will point you to emergency help. Hearth doesn\'t give medical advice or diagnose.';
+
+  @override
+  String get boundariesTitle => 'What don\'t you want in these conversations?';
+
+  @override
+  String get boundariesIntro =>
+      'Everyone has something they\'d rather not hear. Tell us how you don\'t want to be approached first — the rest of the questions can wait until after that.';
+
+  @override
+  String get boundariesEffectNote =>
+      'What you pick goes straight into the conversation: Hearth will stay inside these limits from now on. The only exception is a real risk to your safety, which always comes first.';
+
+  @override
+  String get boundariesContinue => 'Save and continue';
+
+  @override
+  String get boundariesNoteLabel => 'Anything else you\'d like to add?';
+
+  @override
+  String get boundariesNoteHint => 'e.g. don\'t talk to me like you pity me';
+
+  @override
+  String get boundariesChangeLater =>
+      'You can change these any time under Settings > Conversation preferences.';
+
+  @override
+  String get boundaryNoAdvice => 'Don\'t give me advice';
+
+  @override
+  String get boundaryNoAdviceBody =>
+      'No tips, techniques or \"try this\" unless I ask. Just listen.';
+
+  @override
+  String get boundaryNoReferrals => 'Don\'t tell me to see a professional';
+
+  @override
+  String get boundaryNoReferralsBody =>
+      'I already know that option exists; I don\'t want it raised every conversation.';
+
+  @override
+  String get boundaryNoToxicPositivity => 'No relentless positivity';
+
+  @override
+  String get boundaryNoToxicPositivityBody =>
+      'Skip the \"everything will be fine\" framing and talk to me plainly.';
+
+  @override
+  String get boundaryNoQuestions => 'Don\'t ask me a lot of questions';
+
+  @override
+  String get boundaryNoQuestionsBody =>
+      'It shouldn\'t feel like an interview — fewer questions, plainer answers.';
+
+  @override
+  String get boundaryNoClinicalTerms => 'No clinical language';
+
+  @override
+  String get boundaryNoClinicalTermsBody =>
+      'Everyday words instead of diagnosis names and therapy jargon.';
+
+  @override
+  String get boundaryNoReligious => 'No religious or spiritual framing';
+
+  @override
+  String get boundaryNoReligiousBody =>
+      'Don\'t reach for faith-based comfort or imagery.';
+
+  @override
+  String get boundaryNoToughLove => 'No tough-love tone';
+
+  @override
+  String get boundaryNoToughLoveBody =>
+      'I don\'t want a confronting \"pull yourself together\" approach.';
+
+  @override
+  String get boundaryNoHistoryCallbacks => 'Don\'t bring up my past entries';
+
+  @override
+  String get boundaryNoHistoryCallbacksBody =>
+      'Leave my older journals and check-ins alone unless I raise them.';
+
+  @override
+  String get introGotIt => 'Got it';
+
+  @override
+  String get introMoodTitle => 'What is a mood check-in?';
+
+  @override
+  String get introMoodBody =>
+      'Once a day, you mark how you feel right now in a few words. You can also nudge the two bars underneath by hand.\n\nThese entries are the main input behind today\'s note and your weekly recap — after a few days in a row, patterns start to show.';
+
+  @override
+  String get introJournalTitle => 'How the journal works';
+
+  @override
+  String get introJournalBody =>
+      'One entry a day: what\'s on your mind, what happened, what you haven\'t told anyone. What you write stays yours; it\'s never shared.\n\nAn unfinished entry is kept as a draft, so you can come back to it. Past entries live in the archive below.';
+
+  @override
+  String get introChatTitle => 'About chat';
+
+  @override
+  String get introChatBody =>
+      'Write whatever you want here — to get something off your chest, to make sense of something, or just to talk about your day.\n\nHearth answers knowing your check-ins, your journal and your conversation preferences. It doesn\'t give medical advice, and in an emergency it will point you to help.';
+
+  @override
+  String get milestoneContinue => 'Continue';
+
+  @override
+  String get milestoneFirstMoodTitle => 'Your first check-in is saved';
+
+  @override
+  String get milestoneFirstMoodBody =>
+      'Good start. Mark a few more days and the note and charts on your home screen will start showing your own patterns.';
+
+  @override
+  String get milestoneFirstJournalTitle => 'Your first journal entry is in';
+
+  @override
+  String get milestoneFirstJournalBody =>
+      'What you wrote is yours alone. You can write a new entry tomorrow; the old ones are waiting in your archive.';
+
+  @override
+  String get milestoneFirstChatTitle => 'Your first conversation has started';
+
+  @override
+  String get milestoneFirstChatBody =>
+      'What you talk about is remembered, so you won\'t have to start over next time. You can change how you want to be spoken to any time in Settings.';
+
+  @override
   String get assessmentOnboardTitle => 'Let\'s get to know you a bit';
 
   @override

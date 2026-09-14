@@ -66,6 +66,12 @@ pub struct PersonContext<'a> {
     /// ISO-639-1 code the generated text must come back in.
     pub language: &'a str,
     pub assessment: Option<AssessmentSummary>,
+    /// What they asked the app *not* to do — slugs from
+    /// `mental_domain::chat_boundary`, plus their own note. Unlike every
+    /// other field here (context the model reads), these are binding
+    /// instructions, so `prompt_block` emits them last and loudest.
+    pub chat_boundaries: &'a [String],
+    pub chat_boundary_note: Option<&'a str>,
 }
 
 impl<'a> PersonContext<'a> {
@@ -77,6 +83,8 @@ impl<'a> PersonContext<'a> {
             age: user.age(),
             language: &user.language,
             assessment: None,
+            chat_boundaries: &user.chat_boundaries,
+            chat_boundary_note: user.chat_boundary_note.as_deref(),
         }
     }
 
@@ -89,6 +97,8 @@ impl<'a> PersonContext<'a> {
             age: None,
             language: "tr",
             assessment: None,
+            chat_boundaries: &[],
+            chat_boundary_note: None,
         }
     }
 
@@ -160,6 +170,16 @@ impl<'a> PersonContext<'a> {
                  back at them like a lab result.",
                 a.days_ago, a.phq9_score, a.depression_band, a.gad7_score, a.anxiety_band
             ));
+        }
+
+        // Last, and deliberately after the clinical context: everything
+        // above describes them, this part tells the model how it is
+        // allowed to talk to them — the closer to the end of the block
+        // it sits, the less the surrounding description can dilute it.
+        let boundaries =
+            mental_domain::chat_boundary::directives_block(self.chat_boundaries, self.chat_boundary_note);
+        if !boundaries.is_empty() {
+            lines.push(boundaries);
         }
 
         if lines.is_empty() {

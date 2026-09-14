@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
+import '../../../core/onboarding/first_run.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../streak/data/streak_api.dart';
 import '../domain/chat_message.dart';
@@ -56,6 +57,32 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final state = ref.watch(chatControllerProvider);
     final palette = AppPalette.of(context);
 
+    // The first reply that actually lands is the moment the app stops
+    // being a form and starts being a conversation — worth marking, once.
+    // The guards matter: a reply arriving appends to a transcript that
+    // ended on the person's own message (so this can't fire on the
+    // history load, which goes from empty to many at once), and a
+    // two-message transcript is the only one that can be a first
+    // exchange (so an account that was already chatting before this
+    // existed never gets congratulated on its hundredth message).
+    ref.listen(chatControllerProvider.select((s) => s.messages), (previous, next) {
+      final justReplied = previous != null &&
+          previous.isNotEmpty &&
+          previous.last.sender == ChatSender.user &&
+          next.length > previous.length &&
+          next.last.sender == ChatSender.assistant;
+      if (!justReplied || next.length > 2) return;
+
+      celebrateFirst(
+        context,
+        ref,
+        key: FirstRun.firstChat,
+        icon: Icons.forum_rounded,
+        title: l10n.milestoneFirstChatTitle,
+        body: l10n.milestoneFirstChatBody,
+      );
+    });
+
     // Free daily chat budget hit (see `PremiumRequiredException`): tell the
     // person why, then send them straight to the paywall instead of
     // leaving them stuck in front of a chat that just stopped replying.
@@ -93,14 +120,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               child: state.loadingHistory && state.messages.isEmpty
                   ? Center(child: CircularProgressIndicator(color: palette.accent))
                   : state.messages.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(32),
-                            child: Text(
-                              l10n.chatEmptyPrompt,
-                              style: AppTypography.body.copyWith(color: palette.textTertiary),
-                              textAlign: TextAlign.center,
-                            ),
+                      ? SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(22, 8, 22, 8),
+                          child: Column(
+                            children: [
+                              FeatureIntroCard(
+                                introKey: FirstRun.chatIntro,
+                                icon: Icons.forum_rounded,
+                                title: l10n.introChatTitle,
+                                body: l10n.introChatBody,
+                              ),
+                              const SizedBox(height: 24),
+                              Text(
+                                l10n.chatEmptyPrompt,
+                                style: AppTypography.body.copyWith(color: palette.textTertiary),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         )
                       : ListView.builder(

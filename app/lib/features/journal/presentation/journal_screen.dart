@@ -6,6 +6,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/network/error_messages.dart';
+import '../../../core/onboarding/first_run.dart';
 import '../../../core/storage/local_prefs.dart';
 import '../../../core/widgets/countdown_text.dart';
 import '../../../core/widgets/skeleton.dart';
@@ -66,6 +67,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         ref.invalidate(streakProvider);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.journalSaved)));
         journalController.acknowledgeSubmitted();
+        celebrateFirst(
+          context,
+          ref,
+          key: FirstRun.firstJournal,
+          icon: Icons.menu_book_rounded,
+          title: l10n.milestoneFirstJournalTitle,
+          body: l10n.milestoneFirstJournalBody,
+        );
       }
     });
 
@@ -117,6 +126,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       ],
                     ),
                     const SizedBox(height: 18),
+                    FeatureIntroCard(
+                      introKey: FirstRun.journalIntro,
+                      icon: Icons.menu_book_rounded,
+                      title: l10n.introJournalTitle,
+                      body: l10n.introJournalBody,
+                    ),
                     if (onCooldown)
                       _CooldownCard(
                         until: state.cooldownUntil!,

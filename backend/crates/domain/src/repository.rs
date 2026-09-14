@@ -35,6 +35,16 @@ pub trait UserRepository: Send + Sync {
         birth_year: Option<i32>,
         dm_policy: Option<DmPolicy>,
     ) -> anyhow::Result<()>;
+    /// Replaces both halves of the conversation ground rules at once
+    /// (see [`crate::chat_boundary`]) — the screen edits them as one set,
+    /// and "cleared everything" has to be expressible, which a
+    /// merge-on-`None` update couldn't say.
+    async fn set_chat_boundaries(
+        &self,
+        user_id: Uuid,
+        boundaries: &[String],
+        note: Option<&str>,
+    ) -> anyhow::Result<()>;
     /// Records which Content-Type the just-uploaded avatar file was saved
     /// with, or clears it (`None`) — the image bytes themselves are written
     /// straight to disk by the route handler, not through this trait.

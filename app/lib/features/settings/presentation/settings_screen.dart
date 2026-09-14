@@ -157,6 +157,11 @@ class SettingsScreen extends ConsumerWidget {
               title: l10n.settingsAccount,
               children: [
                 _Row(label: l10n.settingsProfile, onTap: () => context.go('/settings/profile')),
+                _Row(
+                  label: l10n.settingsChatBoundaries,
+                  description: l10n.settingsChatBoundariesBody,
+                  onTap: () => context.go('/settings/chat-boundaries'),
+                ),
                 _Row(label: l10n.settingsAssessment, onTap: () => context.go('/settings/assessment')),
                 _Row(label: l10n.settingsMyStories, onTap: () => context.go('/settings/my-stories')),
                 _Row(

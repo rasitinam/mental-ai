@@ -39,6 +39,15 @@ pub struct User {
     /// request — see [`crate::social::DmPolicy`].
     #[serde(default = "default_dm_policy")]
     pub dm_policy: DmPolicy,
+    /// What they asked the app *not* to do in conversation, as slugs from
+    /// [`crate::chat_boundary`]. Unlike `diagnoses` (context the model
+    /// reads), these are instructions the model must obey — see
+    /// [`crate::chat_boundary::directives_block`].
+    #[serde(default)]
+    pub chat_boundaries: Vec<String>,
+    /// Anything the fixed list above didn't cover, in their own words.
+    #[serde(default)]
+    pub chat_boundary_note: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
