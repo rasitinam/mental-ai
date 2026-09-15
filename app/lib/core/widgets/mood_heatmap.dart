@@ -1,133 +1,149 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
 import '../../features/mood_tracking/domain/mood_entry.dart';
 import '../../l10n/app_localizations.dart';
 
-/// A GitHub-contributions-style grid of the last several weeks, one cell
-/// per day, shaded by that day's valence — reading the whole history at a
-/// glance instead of as a list of numbers. Once-a-day check-ins mean a
-/// filled cell is unambiguous: at most one entry to color it by.
+/// The last five weeks as a calendar: one row per week starting Monday, one
+/// cell per day shaded by that day's valence. A day with no check-in is an
+/// outlined empty cell, the rest of this week is left blank, and today is
+/// ringed. Once-a-day check-ins mean a cell is never ambiguous.
 class MoodHeatmap extends StatelessWidget {
   final List<MoodEntry> entries;
-
-  /// How many weeks of columns to draw. 12 weeks fits comfortably next to
-  /// the life-analysis screen's other cards without scrolling.
   final int weeks;
 
-  const MoodHeatmap({super.key, required this.entries, this.weeks = 12});
+  const MoodHeatmap({super.key, required this.entries, this.weeks = 5});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
+    final locale = Localizations.localeOf(context).toString();
+
     final byDay = <DateTime, double>{};
     for (final entry in entries) {
-      final day = DateTime(entry.recordedAt.year, entry.recordedAt.month, entry.recordedAt.day);
-      byDay[day] = entry.valence;
+      final local = entry.recordedAt.toLocal();
+      byDay[DateTime(local.year, local.month, local.day)] = entry.valence;
     }
 
-    final today = DateTime.now();
-    final todayDay = DateTime(today.year, today.month, today.day);
-    // Sunday-ending columns: today's weekday (1=Mon..7=Sun) tells us how
-    // many days into the current week we are, so the grid always ends on
-    // the most recent Sunday-aligned column rather than a partial one.
-    final daysAfterLastSunday = today.weekday % 7;
-    final gridEnd = todayDay.subtract(Duration(days: daysAfterLastSunday));
-    final gridStart = gridEnd.subtract(Duration(days: weeks * 7 - 1));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: today.weekday - 1));
+    final start = monday.subtract(Duration(days: 7 * (weeks - 1)));
+    // 1 January 2024 was a Monday.
+    final initials = [
+      for (var i = 0; i < 7; i++) DateFormat('EEEEE', locale).format(DateTime(2024, 1, 1 + i)),
+    ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cell = ((constraints.maxWidth - (weeks - 1) * 3) / weeks).clamp(8.0, 20.0);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    Widget row(List<Widget> cells) => Row(
           children: [
-            Row(
-              children: [
-                for (var week = 0; week < weeks; week++) ...[
-                  if (week > 0) const SizedBox(width: 3),
-                  Column(
-                    children: [
-                      for (var day = 0; day < 7; day++) ...[
-                        if (day > 0) const SizedBox(height: 3),
-                        _Cell(
-                          size: cell,
-                          valence: byDay[gridStart.add(Duration(days: week * 7 + day))],
-                          isFuture: gridStart.add(Duration(days: week * 7 + day)).isAfter(todayDay),
-                          palette: palette,
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(l10n.lifeMoodHistoryLegendLow,
-                    style: AppTypography.caption.copyWith(color: palette.textTertiary)),
-                const SizedBox(width: 6),
-                // -1..1 across five swatches, through the same mapping the
-                // cells use, so the legend is an honest key rather than a
-                // decorative gradient.
-                for (final sample in const [-1.0, -0.5, 0.0, 0.5, 1.0])
-                  Container(
-                    width: 10,
-                    height: 10,
-                    margin: const EdgeInsets.only(right: 3),
-                    decoration: BoxDecoration(
-                      color: moodCellColor(palette, sample),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                Text(l10n.lifeMoodHistoryLegendHigh,
-                    style: AppTypography.caption.copyWith(color: palette.textTertiary)),
-              ],
-            ),
+            for (var i = 0; i < cells.length; i++) ...[
+              if (i > 0) const SizedBox(width: 6),
+              Expanded(child: cells[i]),
+            ],
           ],
         );
-      },
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        row([
+          for (final initial in initials)
+            Text(
+              initial,
+              textAlign: TextAlign.center,
+              style: AppTypography.caption.copyWith(color: palette.textTertiary, fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+        ]),
+        for (var week = 0; week < weeks; week++) ...[
+          const SizedBox(height: 6),
+          row([
+            for (var day = 0; day < 7; day++)
+              _Cell(
+                date: start.add(Duration(days: week * 7 + day)),
+                today: today,
+                valence: byDay[start.add(Duration(days: week * 7 + day))],
+                palette: palette,
+              ),
+          ]),
+        ],
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Text(l10n.lifeMoodHistoryLegendLow, style: AppTypography.footnote.copyWith(color: palette.textSecondary, fontSize: 13)),
+            const SizedBox(width: 5),
+            for (final sample in const [-1.0, -0.4, 0.0, 0.4, 1.0]) ...[
+              Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(color: moodCellColor(palette, sample), borderRadius: BorderRadius.circular(4)),
+              ),
+              const SizedBox(width: 4),
+            ],
+            const SizedBox(width: 1),
+            Text(l10n.lifeMoodHistoryLegendHigh, style: AppTypography.footnote.copyWith(color: palette.textSecondary, fontSize: 13)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                l10n.pathTodayOutlined,
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.footnote.copyWith(color: palette.textSecondary, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
 
-/// A day with no check-in stays [AppPalette.separator] (the grid's own
-/// "empty" gray/black, not a mood reading) — everything else runs on a
-/// diverging scale from [AppPalette.moodLow] at the worst valence through
-/// to [AppPalette.moodHigh] at the best, so "zorlu" and "keyifli" read as two
-/// different colors, not two intensities of the same one.
-Color moodCellColor(AppPalette palette, double? valence) {
-  if (valence == null) return palette.separator;
-
-  final magnitude = valence.abs().clamp(0.0, 1.0);
-  return Color.lerp(palette.moodMid, valence >= 0 ? palette.moodHigh : palette.moodLow, magnitude)!;
+/// Five steps from the hardest day to the best, so a glance lands on a
+/// clear color rather than a subtly different shade.
+Color moodCellColor(AppPalette palette, double valence) {
+  if (valence <= -0.55) return palette.moodLow;
+  if (valence < -0.15) return palette.peach;
+  if (valence <= 0.15) return palette.moodMid;
+  if (valence < 0.55) return palette.mint;
+  return palette.moodHigh;
 }
 
 class _Cell extends StatelessWidget {
-  final double size;
+  final DateTime date;
+  final DateTime today;
   final double? valence;
-  final bool isFuture;
   final AppPalette palette;
 
-  const _Cell({
-    required this.size,
-    required this.valence,
-    required this.isFuture,
-    required this.palette,
-  });
+  const _Cell({required this.date, required this.today, required this.valence, required this.palette});
 
   @override
   Widget build(BuildContext context) {
-    final color = isFuture ? Colors.transparent : moodCellColor(palette, valence);
+    if (date.isAfter(today)) return const AspectRatio(aspectRatio: 1, child: SizedBox());
 
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+    final isToday = date == today;
+    final fill = valence == null ? null : moodCellColor(palette, valence!);
+    final cell = Container(
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: BorderRadius.circular(9),
+        border: fill == null ? Border.all(color: palette.separator, width: 1.5) : null,
+      ),
+    );
+
+    return AspectRatio(
+      aspectRatio: 1,
+      child: isToday
+          ? Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(color: palette.textPrimary, width: 2),
+              ),
+              child: cell,
+            )
+          : cell,
     );
   }
 }

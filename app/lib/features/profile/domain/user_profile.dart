@@ -31,6 +31,9 @@ class UserProfile {
   final bool checkinReminderEnabled;
   final int checkinReminderHour;
 
+  /// When the account was created, for "Hearth'te N aydır".
+  final DateTime? createdAt;
+
   const UserProfile({
     required this.id,
     required this.displayName,
@@ -46,6 +49,7 @@ class UserProfile {
     this.chatBoundaryNote,
     this.checkinReminderEnabled = true,
     this.checkinReminderHour = 21,
+    this.createdAt,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -63,6 +67,7 @@ class UserProfile {
         chatBoundaryNote: json['chat_boundary_note'] as String?,
         checkinReminderEnabled: json['checkin_reminder_enabled'] as bool? ?? true,
         checkinReminderHour: json['checkin_reminder_hour'] as int? ?? 21,
+        createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
 
       );
 }

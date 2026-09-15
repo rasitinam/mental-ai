@@ -37,8 +37,19 @@ import 'stories_controller.dart';
   return null;
 }
 
+/// "bugün", "dün", "3 gün önce", then the date.
+String relativeDay(AppLocalizations l10n, DateTime date, String locale) {
+  final now = DateTime.now();
+  final local = date.toLocal();
+  final days = DateTime(now.year, now.month, now.day).difference(DateTime(local.year, local.month, local.day)).inDays;
+  if (days <= 0) return l10n.storiesToday;
+  if (days == 1) return l10n.storiesYesterday;
+  if (days < 7) return l10n.storiesDaysAgo(days);
+  return DateFormat.MMMMd(locale).format(local);
+}
+
 /// Hikayeler — the public story feed. Messages sit in its header with
-/// their unread dot, and an admin sees the approval queue at the top of
+/// their unread count, and an admin sees the approval queue at the top of
 /// the feed instead of hunting for it in settings.
 class StoriesScreen extends ConsumerStatefulWidget {
   const StoriesScreen({super.key});
@@ -110,7 +121,7 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
     final myUserId = ref.watch(currentUserIdProvider);
     final isAdmin = ref.watch(myProfileProvider).valueOrNull?.isAdmin ?? false;
     final moderation = isAdmin ? ref.watch(moderationControllerProvider) : null;
-    final dmBadge = ref.watch(dmBadgeProvider.select((s) => s.visible));
+    final unread = ref.watch(dmBadgeProvider.select((s) => s.count));
 
     // Only categories a story actually exists in.
     final availableCategories = <DisorderCategory>[];
@@ -130,16 +141,12 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
           (resolved?.category.name.toLowerCase().contains(query) ?? false);
     }).toList();
 
-    // The feed's own most-reacted-to stories, from the page already loaded.
-    final highlights = [...state.feed.where((s) => s.reactionCount > 0)]
-      ..sort((a, b) => b.reactionCount.compareTo(a.reactionCount));
-
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/stories/new'),
         backgroundColor: palette.accent,
         foregroundColor: palette.onAccent,
-        elevation: 2,
+        elevation: 3,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         icon: const Icon(Icons.add_rounded, size: 24),
         label: Text(l10n.storiesWriteCta,
@@ -148,7 +155,7 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
-          color: palette.accent,
+          color: palette.textPrimary,
           onRefresh: () async {
             await controller.loadFeed();
             if (isAdmin) await ref.read(moderationControllerProvider.notifier).load();
@@ -169,7 +176,7 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
                         PillButton(
                           icon: Icons.mail_outline_rounded,
                           label: l10n.dmTitle,
-                          showDot: dmBadge,
+                          count: unread,
                           onTap: () => context.go('/dm'),
                         ),
                       ],
@@ -187,7 +194,7 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
                     ),
                     if (moderation != null &&
                         (moderation.pending.isNotEmpty || moderation.reports.isNotEmpty)) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       _AdminBanner(pending: moderation.pending.length, reports: moderation.reports.length),
                     ],
                     const SizedBox(height: 14),
@@ -202,17 +209,9 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
                       categories: availableCategories,
                       selected: _selectedCategory,
                       palette: palette,
-                      allLabel: l10n.guideCategoryAll,
+                      allLabel: l10n.storiesFilterAll,
                       onSelect: (slug) => setState(() => _selectedCategory = slug),
                     ),
-                  ),
-                ),
-              if (highlights.isNotEmpty && _query.isEmpty)
-                SliverToBoxAdapter(
-                  child: _HighlightsStrip(
-                    stories: highlights.take(5).toList(),
-                    categories: categories,
-                    onSelectCategory: (slug) => setState(() => _selectedCategory = slug),
                   ),
                 ),
               if (state.loadingFeed)
@@ -250,7 +249,7 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
                     itemBuilder: (context, i) {
                       final story = visibleFeed[i];
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.only(bottom: 14),
                         child: _StoryCard(
                           story: story,
                           resolved: _resolve(categories, story.diagnosisSlug),
@@ -279,46 +278,53 @@ class _AdminBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final count = pending > 0 ? pending : reports;
-    final title = pending > 0 ? l10n.storiesPendingBanner(pending) : l10n.storiesReportsBanner(reports);
-    final subtitle = pending > 0 && reports > 0 ? l10n.storiesReportsBanner(reports) : l10n.storiesAdminOnly;
+    final hasPending = pending > 0;
+    final count = hasPending ? pending : reports;
+    final label = hasPending ? l10n.storiesPendingLabel : l10n.storiesReportsLabel;
+    final subtitle = hasPending && reports > 0 ? l10n.storiesReportsBanner(reports) : l10n.storiesAdminOnly;
 
-    return Material(
-      color: palette.glassFill,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: palette.textPrimary, width: 2),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.go('/stories/moderation'),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: palette.accent, borderRadius: BorderRadius.circular(12)),
-                child: Text('$count',
-                    style: AppTypography.label.copyWith(color: palette.onAccent, fontSize: 16, fontWeight: FontWeight.w700)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: AppTypography.label.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700)),
-                    Text(subtitle, style: AppTypography.caption.copyWith(color: palette.textSecondary)),
-                  ],
+    return Semantics(
+      button: true,
+      label: '$count $label',
+      child: Material(
+        color: palette.glassFill,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: palette.textPrimary, width: 2),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.go('/stories/moderation'),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 56),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: palette.accent, borderRadius: BorderRadius.circular(11)),
+                  child: Text('$count',
+                      style: AppTypography.label.copyWith(color: palette.onAccent, fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
-              ),
-              Text(l10n.storiesReview,
-                  style: AppTypography.label.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700)),
-              Icon(Icons.chevron_right_rounded, color: palette.textPrimary),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label,
+                          style: AppTypography.label.copyWith(color: palette.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+                      Text(subtitle, style: AppTypography.footnote.copyWith(color: palette.textSecondary, fontSize: 13)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(l10n.storiesReview,
+                    style: AppTypography.label.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700)),
+                Icon(Icons.chevron_right_rounded, size: 20, color: palette.textPrimary),
+              ],
+            ),
           ),
         ),
       ),
@@ -332,13 +338,13 @@ class _StoryCardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: 14),
       child: GlassSurface(
         radius: 26,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SkeletonBox(width: 150, height: 24, radius: 8),
+            SkeletonBox(width: 150, height: 26, radius: 8),
             SizedBox(height: 14),
             SkeletonBox(height: 14),
             SizedBox(height: 8),
@@ -354,8 +360,8 @@ class _StoryCardSkeleton extends StatelessWidget {
   }
 }
 
-/// One card in the feed, with its own "show original" toggle and — only
-/// when the story's language differs from the app's — its own translation.
+/// One card in the feed: the diagnosis and when, who (or "isimsiz"), four
+/// lines of the story — tap to read it all — reactions, and "Bende de oldu".
 class _StoryCard extends ConsumerStatefulWidget {
   final LifeStory story;
   final ({DisorderCategory category, Disorder disorder})? resolved;
@@ -377,6 +383,7 @@ class _StoryCard extends ConsumerStatefulWidget {
 
 class _StoryCardState extends ConsumerState<_StoryCard> {
   bool _showOriginal = false;
+  bool _expanded = false;
 
   Future<void> _toggleMetoo() async {
     final l10n = AppLocalizations.of(context)!;
@@ -411,7 +418,7 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
     final translatedBody = translation?.valueOrNull;
     final showingOriginal = !needsTranslation || _showOriginal || translatedBody == null;
     final bodyToShow = showingOriginal ? story.body : translatedBody;
-    final date = DateFormat.MMMMd(appLanguage).format(story.createdAt);
+    final bodyStyle = AppTypography.body.copyWith(color: palette.textPrimary);
 
     return GlassSurface(
       radius: 26,
@@ -420,26 +427,31 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
         children: [
           Row(
             children: [
-              if (resolved != null)
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(color: palette.peach, borderRadius: BorderRadius.circular(8)),
-                    child: Text(
-                      resolved.disorder.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.caption.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                )
-              else
-                const Spacer(),
-              const SizedBox(width: 10),
-              Text(date, style: AppTypography.caption.copyWith(color: palette.textSecondary)),
+              Expanded(
+                child: Row(
+                  children: [
+                    if (resolved != null) ...[
+                      Flexible(child: TintTag(label: resolved.disorder.name, color: palette.peach)),
+                      const SizedBox(width: 10),
+                    ],
+                    Text(relativeDay(l10n, story.createdAt, appLanguage),
+                        style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                  ],
+                ),
+              ),
+              SizedBox(
+                width: 36,
+                height: 36,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  tooltip: l10n.storiesReport,
+                  onPressed: () => widget.onReport(story.id),
+                  icon: Icon(Icons.flag_outlined, size: 18, color: palette.textTertiary),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
           if (story.authorUserId == null)
             Text(l10n.storiesAnonymous, style: AppTypography.footnote.copyWith(color: palette.textSecondary))
           else
@@ -451,19 +463,19 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
                   : context.push('/users/${story.authorUserId}'),
               borderRadius: BorderRadius.circular(8),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    UserAvatar(userId: story.authorUserId!, size: 26, hasAvatar: story.authorHasAvatar),
+                    UserAvatar(userId: story.authorUserId!, size: 22, hasAvatar: story.authorHasAvatar),
                     const SizedBox(width: 8),
                     Text(story.authorDisplayName ?? '',
-                        style: AppTypography.label.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700)),
+                        style: AppTypography.footnote.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 11),
           if (needsTranslation && translatedBody != null) ...[
             InkWell(
               onTap: () => setState(() => _showOriginal = !_showOriginal),
@@ -475,7 +487,49 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
             ),
             const SizedBox(height: 6),
           ],
-          Text(bodyToShow, style: AppTypography.body.copyWith(color: palette.textPrimary)),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final painter = TextPainter(
+                text: TextSpan(text: bodyToShow, style: DefaultTextStyle.of(context).style.merge(bodyStyle)),
+                maxLines: 4,
+                textDirection: Directionality.of(context),
+                textScaler: MediaQuery.textScalerOf(context),
+              )..layout(maxWidth: constraints.maxWidth);
+              final overflows = painter.didExceedMaxLines;
+              painter.dispose();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: overflows ? () => setState(() => _expanded = !_expanded) : null,
+                    child: Text(
+                      bodyToShow,
+                      maxLines: _expanded ? null : 4,
+                      overflow: _expanded ? null : TextOverflow.ellipsis,
+                      style: bodyStyle,
+                    ),
+                  ),
+                  if (overflows && !_expanded)
+                    InkWell(
+                      onTap: () => setState(() => _expanded = true),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Text(
+                          l10n.pathReadFull,
+                          style: AppTypography.footnote.copyWith(
+                            color: palette.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           if (needsTranslation && translatedBody != null && !showingOriginal) ...[
             const SizedBox(height: 6),
             InkWell(
@@ -491,32 +545,28 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
               ),
             ),
           ],
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final reaction in storyReactions)
-                _ReactionChip(
-                  label: _reactionLabel(l10n, reaction),
-                  count: story.reactions[reaction] ?? 0,
-                  selected: story.viewerReaction == reaction,
-                  onTap: () => widget.onReact(story.id, reaction),
-                ),
-            ],
-          ),
-          if (!story.isMine) ...[
-            const SizedBox(height: 10),
-            MetooStrip(count: story.metooCount, active: story.viewerMetoo, onTap: _toggleMetoo),
-          ],
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => widget.onReport(story.id),
-              child: Text(l10n.storiesReport,
-                  style: AppTypography.footnote.copyWith(color: palette.textSecondary, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 11),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            child: Row(
+              children: [
+                for (final reaction in storyReactions) ...[
+                  if (reaction != storyReactions.first) const SizedBox(width: 6),
+                  _ReactionChip(
+                    label: _reactionLabel(l10n, reaction),
+                    count: story.reactions[reaction] ?? 0,
+                    selected: story.viewerReaction == reaction,
+                    onTap: () => widget.onReact(story.id, reaction),
+                  ),
+                ],
+              ],
             ),
           ),
+          if (!story.isMine) ...[
+            const SizedBox(height: 11),
+            MetooStrip(count: story.metooCount, active: story.viewerMetoo, onTap: _toggleMetoo),
+          ],
         ],
       ),
     );
@@ -530,8 +580,8 @@ String _reactionLabel(AppLocalizations l10n, String reaction) => switch (reactio
       _ => reaction,
     };
 
-/// A reaction by name, not by emoji: picking a different one swaps rather
-/// than stacks, and the reader's own pick is filled.
+/// A reaction by name: picking a different one swaps rather than stacks,
+/// and the reader's own pick is filled.
 class _ReactionChip extends StatelessWidget {
   final String label;
   final int count;
@@ -555,8 +605,8 @@ class _ReactionChip extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 40),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 11),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -573,88 +623,6 @@ class _ReactionChip extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// The feed's most-reacted-to stories. Tapping one filters the feed to its
-/// condition — "show me more like this".
-class _HighlightsStrip extends StatelessWidget {
-  final List<LifeStory> stories;
-  final List<DisorderCategory> categories;
-  final ValueChanged<String> onSelectCategory;
-
-  const _HighlightsStrip({required this.stories, required this.categories, required this.onSelectCategory});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    final l10n = AppLocalizations.of(context)!;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(22, 0, 22, 8),
-            child: Text(l10n.storiesHighlightsTitle,
-                style: AppTypography.headline.copyWith(color: palette.textPrimary)),
-          ),
-          SizedBox(
-            height: 118,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              itemCount: stories.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (context, i) {
-                final story = stories[i];
-                final resolved = _resolve(categories, story.diagnosisSlug);
-                return Material(
-                  color: palette.glassFill,
-                  borderRadius: BorderRadius.circular(20),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: resolved == null ? null : () => onSelectCategory(resolved.category.slug),
-                    child: Container(
-                      width: 224,
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (resolved != null)
-                            Text(resolved.disorder.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTypography.caption.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 4),
-                          Expanded(
-                            child: Text(
-                              story.body,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.footnote.copyWith(color: palette.textPrimary),
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              Icon(Icons.favorite_border_rounded, size: 15, color: palette.textSecondary),
-                              const SizedBox(width: 4),
-                              Text('${story.reactionCount}',
-                                  style: AppTypography.caption.copyWith(color: palette.textSecondary, fontWeight: FontWeight.w700)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
       ),
     );
   }

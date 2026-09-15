@@ -6,8 +6,7 @@ import 'app_colors.dart';
 import 'app_typography.dart';
 
 /// The app's one card surface: an opaque panel with a soft continuous
-/// corner, separated from the stone ground by fill alone — no border, no
-/// shadow stack.
+/// corner, separated from the stone ground by fill alone.
 ///
 /// [blur] stays opt-in: `BackdropFilter` forces a save-layer per surface
 /// per frame, which dropped frames on a mid-range phone when every card
@@ -30,7 +29,7 @@ class GlassSurface extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(18),
-    this.radius = 22,
+    this.radius = 24,
     this.blurSigma = 24,
     this.blur = false,
     this.bordered = false,
@@ -46,12 +45,19 @@ class GlassSurface extends StatelessWidget {
     );
     final fill = color ?? palette.glassFill;
 
+    // The transparent Material gives rows inside the card (ListTile, InkWell)
+    // somewhere to paint their ripples above the card's own fill.
     final surface = DecoratedBox(
       decoration: ShapeDecoration(
         color: blur ? fill.withValues(alpha: 0.86) : fill,
         shape: shape,
       ),
-      child: Padding(padding: padding, child: child),
+      child: Material(
+        type: MaterialType.transparency,
+        shape: shape,
+        clipBehavior: Clip.antiAlias,
+        child: Padding(padding: padding, child: child),
+      ),
     );
 
     if (!blur) return surface;
@@ -84,12 +90,16 @@ class AppBackground extends StatelessWidget {
   }
 }
 
-/// The primary call to action: an ink block, 56 tall.
+/// The primary call to action: an ink block. 56 tall by default; the
+/// buttons inside a tile use 52.
 class AppPrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final bool loading;
   final IconData? icon;
+  final double height;
+  final double radius;
+  final double fontSize;
 
   const AppPrimaryButton({
     super.key,
@@ -97,6 +107,9 @@ class AppPrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.loading = false,
     this.icon,
+    this.height = 56,
+    this.radius = 18,
+    this.fontSize = 17,
   });
 
   @override
@@ -105,10 +118,10 @@ class AppPrimaryButton extends StatelessWidget {
     final disabled = loading || onPressed == null;
 
     return SizedBox(
-      height: 56,
+      height: height,
       child: Material(
         color: disabled ? palette.accent.withValues(alpha: 0.45) : palette.accent,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(radius),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: disabled ? null : onPressed,
@@ -119,25 +132,28 @@ class AppPrimaryButton extends StatelessWidget {
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2, color: palette.onAccent),
                   )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (icon != null) ...[
-                        Icon(icon, size: 20, color: palette.onAccent),
-                        const SizedBox(width: 9),
-                      ],
-                      Flexible(
-                        child: Text(
-                          label,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.label.copyWith(
-                            color: palette.onAccent,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
+                : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (icon != null) ...[
+                          Icon(icon, size: 20, color: palette.onAccent),
+                          const SizedBox(width: 9),
+                        ],
+                        Flexible(
+                          child: Text(
+                            label,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.label.copyWith(
+                              color: palette.onAccent,
+                              fontSize: fontSize,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
           ),
         ),

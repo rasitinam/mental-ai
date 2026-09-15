@@ -58,9 +58,9 @@ class AppTheme {
       dividerColor: palette.separator,
       iconTheme: IconThemeData(color: palette.textPrimary, size: 22),
       textSelectionTheme: TextSelectionThemeData(
-        cursorColor: palette.accent,
-        selectionColor: palette.sky,
-        selectionHandleColor: palette.accent,
+        cursorColor: palette.textPrimary,
+        selectionColor: palette.sky.withValues(alpha: 0.6),
+        selectionHandleColor: palette.textPrimary,
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
@@ -80,20 +80,25 @@ class AppTheme {
           textStyle: _font(AppTypography.label),
         ),
       ),
-      switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected) ? palette.onAccent : palette.textTertiary,
-        ),
-        trackColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected) ? palette.accent : palette.surfaceMuted,
-        ),
-        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-      ),
       bottomSheetTheme: const BottomSheetThemeData(backgroundColor: Colors.transparent),
-      progressIndicatorTheme: ProgressIndicatorThemeData(color: palette.accent),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: palette.textPrimary),
     );
   }
 
-  static ThemeData get light => _build(AppPalette.light, Brightness.light);
-  static ThemeData get dark => _build(AppPalette.dark, Brightness.dark);
+  static final ThemeData light = _build(AppPalette.light, Brightness.light);
+  static final ThemeData dark = _build(AppPalette.dark, Brightness.dark);
+}
+
+/// Renders its subtree with the light theme. Tab-colored tiles look the same
+/// in both themes, so what sits on them — ink buttons, chips, dark text —
+/// has to as well.
+class LightSurface extends StatelessWidget {
+  final Widget child;
+  const LightSurface({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (Theme.of(context).brightness == Brightness.light) return child;
+    return Theme(data: AppTheme.light, child: child);
+  }
 }

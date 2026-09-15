@@ -55,6 +55,7 @@ struct ProfileResponse {
     chat_boundary_note: Option<String>,
     checkin_reminder_enabled: bool,
     checkin_reminder_hour: u8,
+    created_at: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -122,6 +123,7 @@ async fn profile(
         chat_boundary_note: user.chat_boundary_note.clone(),
         checkin_reminder_enabled: user.checkin_reminder_enabled,
         checkin_reminder_hour: user.checkin_reminder_hour,
+        created_at: user.created_at.to_rfc3339(),
     }))
 }
 

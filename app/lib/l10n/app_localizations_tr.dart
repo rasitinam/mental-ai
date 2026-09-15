@@ -1393,7 +1393,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileNobodyYet => 'Henüz kimse yok';
 
   @override
-  String get myProfileEdit => 'Profili Düzenle';
+  String get myProfileEdit => 'Profili düzenle';
 
   @override
   String get myProfileStories => 'Hikayelerim';
@@ -1985,7 +1985,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String meReminderOn(String time) {
-    return 'Saat $time';
+    return 'Kayıt girmediğin günlerde · $time';
   }
 
   @override
@@ -2025,6 +2025,79 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String quickCheckinFootnoteReminder(String time) {
-    return 'Günde bir kez kaydedilir. Kaydetmezsen saat $time olunca tek bir hatırlatma gelir.';
+    return 'Günde bir kez kaydedilir. Kaydetmezsen akşam $time tek bir hatırlatma gelir.';
   }
+
+  @override
+  String get quickCheckinDragHint => 'Noktayı sürükleyebilirsin';
+
+  @override
+  String todayMetooCardOne(int count) {
+    return '$count kişi hikayende kendini buldu';
+  }
+
+  @override
+  String get storiesPendingLabel => 'hikaye onayını bekliyor';
+
+  @override
+  String get storiesReportsLabel => 'bildirilen hikaye';
+
+  @override
+  String get storiesFilterAll => 'Tümü';
+
+  @override
+  String get storiesToday => 'bugün';
+
+  @override
+  String get storiesYesterday => 'dün';
+
+  @override
+  String storiesDaysAgo(int count) {
+    return '$count gün önce';
+  }
+
+  @override
+  String get pathRecapTitle => 'Haftalık özet';
+
+  @override
+  String pathRecapBody(int entries, int streak) {
+    return '$entries kayıt · $streak gün seri';
+  }
+
+  @override
+  String get pathMoodHistory => 'Ruh hali geçmişin';
+
+  @override
+  String get pathLastFiveWeeks => 'son 5 hafta';
+
+  @override
+  String get pathTodayOutlined => 'çerçeveli: bugün';
+
+  @override
+  String get pathAnalysisNote => 'haftada bir yenilenir';
+
+  @override
+  String get pathReadFull => 'Tamamını oku';
+
+  @override
+  String pathScreeningAgo(int days) {
+    return '$days gün önce';
+  }
+
+  @override
+  String meMemberMonths(int months) {
+    return 'Hearth\'te $months aydır';
+  }
+
+  @override
+  String get meMemberNew => 'Hearth\'e yeni katıldın';
+
+  @override
+  String get meAdminTag => 'Yönetici';
+
+  @override
+  String get mePrivacyTitle => 'Gizlilik ve güvenlik';
+
+  @override
+  String get meStoryNew => 'Yeni';
 }

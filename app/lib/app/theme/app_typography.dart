@@ -19,10 +19,10 @@ class AppTypography {
   static const largeTitle = TextStyle(
     fontFamily: displayFamily,
     fontFamilyFallback: _fallback,
-    fontSize: 34,
-    height: 1.05,
+    fontSize: 35,
+    height: 1.02,
     fontWeight: FontWeight.w700,
-    letterSpacing: -0.9,
+    letterSpacing: -0.98,
   );
 
   /// The condition name on a reference card.
@@ -39,10 +39,10 @@ class AppTypography {
   static const title2 = TextStyle(
     fontFamily: displayFamily,
     fontFamilyFallback: _fallback,
-    fontSize: 30,
-    height: 1.08,
+    fontSize: 32,
+    height: 1.02,
     fontWeight: FontWeight.w700,
-    letterSpacing: -0.7,
+    letterSpacing: -0.8,
   );
 
   /// Pushed-screen titles, next to a back button.

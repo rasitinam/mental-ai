@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
+import '../../../app/theme/components.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../social/data/dm_badge.dart';
 
@@ -36,7 +37,7 @@ class HomeShell extends ConsumerWidget {
     final current = navigationShell.currentIndex;
     final parent = _parentBranch[current];
     final selectedTab = _tabBranches.indexOf(parent ?? current);
-    final badgeVisible = ref.watch(dmBadgeProvider.select((s) => s.visible));
+    final unread = ref.watch(dmBadgeProvider.select((s) => s.count));
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     final tabs = [
@@ -66,23 +67,25 @@ class HomeShell extends ConsumerWidget {
                 ),
                 child: SafeArea(
                   top: false,
-                  minimum: const EdgeInsets.only(bottom: 6),
+                  minimum: const EdgeInsets.only(bottom: 16),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
+                    padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
                     child: Row(
                       children: [
-                        for (var i = 0; i < tabs.length; i++)
+                        for (var i = 0; i < tabs.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 4),
                           Expanded(
                             child: _Tab(
                               data: tabs[i],
                               selected: i == selectedTab,
-                              showBadge: i == _storiesTab && badgeVisible,
+                              badge: i == _storiesTab ? unread : 0,
                               onTap: () {
                                 final branch = _tabBranches[i];
                                 navigationShell.goBranch(branch, initialLocation: branch == current);
                               },
                             ),
                           ),
+                        ],
                       ],
                     ),
                   ),
@@ -104,69 +107,58 @@ class _TabData {
 class _Tab extends StatelessWidget {
   final _TabData data;
   final bool selected;
-  final bool showBadge;
+  final int badge;
   final VoidCallback onTap;
 
-  const _Tab({required this.data, required this.selected, required this.showBadge, required this.onTap});
+  const _Tab({required this.data, required this.selected, required this.badge, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final foreground = selected ? palette.textPrimary : palette.textSecondary;
+    final foreground = selected ? palette.onTint : palette.textTertiary;
 
     return Semantics(
       button: true,
       selected: selected,
-      label: data.label,
+      label: badge > 0 ? '${data.label}, $badge' : data.label,
       excludeSemantics: true,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: Material(
-          color: selected ? data.color : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            child: SizedBox(
-              height: 58,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(selected ? data.activeIcon : data.icon, size: 24, color: foreground),
-                      if (showBadge)
-                        Positioned(
-                          top: -2,
-                          right: -5,
-                          child: Container(
-                            width: 11,
-                            height: 11,
-                            decoration: BoxDecoration(
-                              color: palette.ember,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: selected ? data.color : palette.canvasTop, width: 2),
-                            ),
-                          ),
-                        ),
-                    ],
+      child: Material(
+        color: selected ? data.color : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            height: 56,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(selected ? data.activeIcon : data.icon, size: 24, color: foreground),
+                    if (badge > 0)
+                      Positioned(
+                        top: -6,
+                        left: 13,
+                        child: CountBadge(count: badge, ring: selected ? data.color : palette.canvasTop),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  data.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  softWrap: false,
+                  style: AppTypography.caption.copyWith(
+                    fontSize: 12,
+                    height: 1,
+                    color: foreground,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    data.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.fade,
-                    softWrap: false,
-                    style: AppTypography.caption.copyWith(
-                      fontSize: 12,
-                      height: 1,
-                      color: foreground,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

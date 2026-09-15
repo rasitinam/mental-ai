@@ -320,20 +320,20 @@ class _CooldownCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          Icon(Icons.check_circle_rounded, size: 28, color: palette.textPrimary),
+          Icon(Icons.check_circle_rounded, size: 28, color: palette.onTint),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(l10n.journalDoneToday,
-                    style: AppTypography.headline.copyWith(color: palette.textPrimary)),
+                    style: AppTypography.headline.copyWith(color: palette.onTint)),
                 const SizedBox(height: 4),
                 CountdownText(
                   until: until,
                   onFinished: onFinished,
                   format: (remaining) => l10n.journalNextIn(format(remaining)),
-                  style: AppTypography.subheadline.copyWith(color: palette.textPrimary),
+                  style: AppTypography.subheadline.copyWith(color: palette.onTint),
                 ),
               ],
             ),

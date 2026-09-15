@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,28 +9,25 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/components.dart';
 import '../../../app/theme/glass.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/network/error_messages.dart';
 import '../../../core/storage/local_prefs.dart';
 import '../../../core/theme/theme_mode_controller.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/data/auth_api.dart';
-import '../../catalog/data/catalog_api.dart';
-import '../../catalog/domain/disorder_category.dart';
 import '../../notifications/push_service.dart';
 import '../../settings/presentation/notification_settings_screen.dart' show reminderTimeLabel;
 import '../../social/data/social_api.dart';
-import '../../stories/domain/life_story.dart';
 import '../../stories/presentation/moderation_controller.dart';
 import '../../stories/presentation/stories_controller.dart';
 import '../../stories/presentation/story_detail_screen.dart';
 import '../../stories/presentation/story_grid_tile.dart';
 import '../../stories/presentation/story_submit_screen.dart';
 import '../data/profile_api.dart';
+import '../domain/user_profile.dart';
 
 /// Ben — the profile and every setting, in one scrolling page. Nothing
-/// sits behind a gear icon any more: the reminder switch, chat and message
+/// sits behind a gear icon: the reminder switch, chat and message
 /// preferences, appearance, Hearth Plus and moderation are all rows here.
 class MyProfileScreen extends ConsumerStatefulWidget {
   const MyProfileScreen({super.key});
@@ -58,6 +53,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     try {
       await ref.read(profileApiProvider).setCheckinReminder(enabled: enabled, hour: hour);
       ref.invalidate(myProfileProvider);
+      await ref.read(myProfileProvider.future);
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
@@ -73,7 +69,11 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     // about to be cleared, or this device keeps getting pushes for an
     // account no longer signed in on it.
     if (!kIsWeb) {
-      await ref.read(pushServiceProvider).unregister();
+      try {
+        await ref.read(pushServiceProvider).unregister();
+      } catch (_) {
+        // A push service that can't be reached must not keep someone signed in.
+      }
     }
     try {
       await ref.read(authApiProvider).logout();
@@ -161,6 +161,36 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     ref.read(sessionTokenProvider.notifier).state = null;
   }
 
+  void _showInfo(String title, String body) {
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final palette = AppPalette.of(sheetContext);
+        final l10n = AppLocalizations.of(sheetContext)!;
+        return SheetFrame(
+          children: [
+            Text(title, style: AppTypography.title3.copyWith(color: palette.textPrimary)),
+            const SizedBox(height: 10),
+            Text(body, style: AppTypography.body.copyWith(color: palette.textSecondary)),
+            const SizedBox(height: 20),
+            AppPrimaryButton(label: l10n.commonClose, onPressed: () => Navigator.of(sheetContext).pop()),
+          ],
+        );
+      },
+    );
+  }
+
+  String? _memberLine(AppLocalizations l10n, UserProfile? profile) {
+    final created = profile?.createdAt?.toLocal();
+    if (created == null) return profile?.email;
+    final now = DateTime.now();
+    var months = (now.year - created.year) * 12 + now.month - created.month;
+    if (now.day < created.day) months--;
+    return months < 1 ? l10n.meMemberNew : l10n.meMemberMonths(months);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -171,13 +201,13 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     final avatar = ref.watch(avatarBytesProvider);
     final stats = myUserId == null ? null : ref.watch(publicProfileProvider(myUserId)).valueOrNull;
     final stories = ref.watch(storiesControllerProvider);
-    final categories = ref.watch(categoriesProvider).valueOrNull ?? const <DisorderCategory>[];
     final themeMode = ref.watch(themeModeControllerProvider);
     final isAdmin = data?.isAdmin ?? false;
     final moderation = isAdmin ? ref.watch(moderationControllerProvider) : null;
 
     final reminderOn = _reminderOverride ?? data?.checkinReminderEnabled ?? false;
     final reminderHour = data?.checkinReminderHour ?? 21;
+    final initial = (data?.displayName.trim().isNotEmpty ?? false) ? data!.displayName.trim().characters.first.toUpperCase() : '';
 
     return Scaffold(
       body: SafeArea(
@@ -186,59 +216,58 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
           padding: EdgeInsets.fromLTRB(22, 10, 22, bottomClearance(context)),
           children: [
             Text(l10n.navMe, style: AppTypography.title2.copyWith(color: palette.textPrimary)),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             Row(
               children: [
-                GestureDetector(
-                  onTap: () => context.push('/settings/profile'),
-                  child: Container(
-                    width: 76,
-                    height: 76,
-                    clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: palette.lilac),
-                    child: avatar.when(
-                      data: (bytes) => bytes != null
-                          ? Image.memory(bytes, fit: BoxFit.cover, width: 76, height: 76)
-                          : Center(
-                              child: Text(
-                                (data?.displayName.isNotEmpty ?? false) ? data!.displayName.characters.first.toUpperCase() : '',
-                                style: AppTypography.title1.copyWith(color: palette.textPrimary),
-                              ),
-                            ),
-                      loading: () => const SkeletonBox(width: 76, height: 76, radius: 38),
-                      error: (_, _) => Icon(Icons.person_rounded, size: 38, color: palette.textPrimary),
+                Semantics(
+                  button: true,
+                  label: l10n.myProfileEdit,
+                  child: GestureDetector(
+                    onTap: () => context.push('/settings/profile'),
+                    child: Container(
+                      width: 76,
+                      height: 76,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: palette.lilac),
+                      alignment: Alignment.center,
+                      child: avatar.when(
+                        data: (bytes) => bytes != null
+                            ? Image.memory(bytes, fit: BoxFit.cover, width: 76, height: 76)
+                            : Text(initial, style: AppTypography.title1.copyWith(color: palette.onTint, fontSize: 34)),
+                        loading: () => const SkeletonBox(width: 76, height: 76, radius: 38),
+                        error: (_, _) => Text(initial, style: AppTypography.title1.copyWith(color: palette.onTint, fontSize: 34)),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: profile.when(
-                    data: (p) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(p.displayName, style: AppTypography.title3.copyWith(color: palette.textPrimary)),
-                        if (p.email != null) ...[
-                          const SizedBox(height: 2),
-                          Text(p.email!,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                    data: (p) {
+                      final line = _memberLine(l10n, p);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(p.displayName, style: AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 23)),
+                          if (line != null) ...[
+                            const SizedBox(height: 2),
+                            Text(line,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.subheadline.copyWith(color: palette.textSecondary, fontSize: 14.5)),
+                          ],
                         ],
-                      ],
-                    ),
+                      );
+                    },
                     loading: () => const SkeletonBox(width: 140, height: 22, radius: 6),
                     error: (_, _) => Text(l10n.commonError, style: TextStyle(color: palette.warning)),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Row(
               children: [
-                _StatCard(
-                  value: stats?.storyCount,
-                  label: l10n.profileStatStories,
-                  onTap: () => context.push('/settings/my-stories'),
-                ),
+                _StatCard(value: stats?.storyCount, label: l10n.profileStatStories, onTap: () => context.push('/settings/my-stories')),
                 const SizedBox(width: 8),
                 _StatCard(
                   value: stats?.followerCount,
@@ -253,53 +282,70 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             OutlineBlockButton(
               icon: Icons.edit_outlined,
               label: l10n.myProfileEdit,
               height: 48,
               onTap: () => context.push('/settings/profile'),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 30),
             SectionHeader(
               title: l10n.myProfileStories,
               action: l10n.discoveriesSeeAll,
               onAction: () => context.push('/settings/my-stories'),
             ),
             const SizedBox(height: 8),
-            _StoryGrid(
-              loading: stories.loadingMine,
-              stories: stories.mine,
-              categories: categories,
-              onAdd: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StorySubmitScreen())),
-              onOpen: (id) =>
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => StoryDetailScreen(storyId: id))),
+            Row(
+              children: [
+                for (var i = 0; i < 3; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  Expanded(
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: i == 0
+                          ? AddStoryTile(
+                              palette: palette,
+                              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StorySubmitScreen())),
+                            )
+                          : stories.loadingMine
+                              ? const SkeletonBox(radius: 18, height: double.infinity)
+                              : i - 1 < stories.mine.length
+                                  ? StoryGridTile(
+                                      story: stories.mine[i - 1],
+                                      palette: palette,
+                                      onTap: () => Navigator.of(context).push(
+                                        MaterialPageRoute(builder: (_) => StoryDetailScreen(storyId: stories.mine[i - 1].id)),
+                                      ),
+                                    )
+                                  : const SizedBox(),
+                    ),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 30),
             SectionHeader(title: l10n.meReminders),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             ListGroup(
               children: [
                 ListRow(
                   icon: Icons.notifications_none_rounded,
                   tint: palette.sun,
                   label: l10n.notificationsCheckinTitle,
-                  subtitle: data == null
-                      ? null
-                      : (reminderOn ? l10n.meReminderOn(reminderTimeLabel(reminderHour)) : l10n.meReminderOff),
-                  trailing: Switch(
+                  subtitle: data == null ? null : (reminderOn ? l10n.meReminderOn(reminderTimeLabel(reminderHour)) : l10n.meReminderOff),
+                  trailing: AppToggle(
                     value: reminderOn,
-                    onChanged: data == null || _reminderOverride != null
-                        ? null
-                        : (value) => _setReminder(value, reminderHour),
+                    semanticLabel: l10n.notificationsCheckinTitle,
+                    onChanged: data == null || _reminderOverride != null ? null : (value) => _setReminder(value, reminderHour),
                   ),
                   onTap: () => context.push('/settings/notifications'),
                 ),
               ],
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 30),
             SectionHeader(title: l10n.meChatAndMessages),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             ListGroup(
               children: [
                 ListRow(
@@ -318,48 +364,54 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 30),
             SectionHeader(title: l10n.settingsAppearance),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             _ThemeSegments(
               mode: themeMode,
               onChanged: (mode) => ref.read(themeModeControllerProvider.notifier).setMode(mode),
             ),
-            const SizedBox(height: 28),
-            Material(
-              color: palette.lilac,
-              borderRadius: BorderRadius.circular(22),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () => context.push('/premium'),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 16, 12, 16),
-                  child: Row(
-                    children: [
-                      Icon(Icons.workspace_premium_outlined, size: 28, color: palette.textPrimary),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.settingsPremiumRow,
-                                style: AppTypography.label.copyWith(color: palette.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-                            Text(l10n.mePlusBody, style: AppTypography.footnote.copyWith(color: palette.textPrimary)),
-                          ],
+            const SizedBox(height: 30),
+            Semantics(
+              button: true,
+              child: Material(
+                color: palette.lilac,
+                borderRadius: BorderRadius.circular(28),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => context.push('/premium'),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                    child: Row(
+                      children: [
+                        Icon(Icons.star_outline_rounded, size: 28, color: palette.onTint),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(l10n.settingsPremiumRow,
+                                  style: AppTypography.label.copyWith(color: palette.onTint, fontSize: 16, fontWeight: FontWeight.w700)),
+                              Text(l10n.mePlusBody,
+                                  style: AppTypography.subheadline.copyWith(color: palette.onTint.withValues(alpha: 0.8), fontSize: 14.5)),
+                            ],
+                          ),
                         ),
-                      ),
-                      Text(l10n.mePlusCta,
-                          style: AppTypography.label.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700)),
-                      Icon(Icons.chevron_right_rounded, color: palette.textPrimary),
-                    ],
+                        Text(l10n.mePlusCta,
+                            style: AppTypography.label.copyWith(color: palette.onTint, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
             if (isAdmin) ...[
-              const SizedBox(height: 28),
-              SectionHeader(title: l10n.settingsCommunity),
-              const SizedBox(height: 10),
+              const SizedBox(height: 30),
+              SectionHeader(
+                title: l10n.settingsCommunity,
+                trailing: TintTag(label: l10n.meAdminTag, color: palette.glassFill, outlined: true),
+              ),
+              const SizedBox(height: 8),
               ListGroup(
                 children: [
                   ListRow(
@@ -373,45 +425,28 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 ],
               ),
             ],
-            const SizedBox(height: 28),
-            SectionHeader(title: l10n.settingsPrivacy),
-            const SizedBox(height: 10),
+            const SizedBox(height: 30),
+            SectionHeader(title: l10n.mePrivacyTitle),
+            const SizedBox(height: 8),
             ListGroup(
               children: [
                 ListRow(
                   icon: Icons.lock_outline_rounded,
                   label: l10n.settingsDataLocation,
-                  subtitle: l10n.settingsDataLocationBody,
+                  onTap: () => _showInfo(l10n.settingsDataLocation, l10n.settingsDataLocationBody),
                 ),
                 ListRow(
                   icon: Icons.shield_outlined,
                   label: l10n.settingsLegal,
-                  subtitle: l10n.settingsLegalBody,
+                  onTap: () => _showInfo(l10n.settingsLegal, l10n.settingsLegalBody),
                 ),
               ],
             ),
-            const SizedBox(height: 28),
-            SectionHeader(title: l10n.settingsConnection),
-            const SizedBox(height: 10),
+            const SizedBox(height: 30),
             ListGroup(
               children: [
-                ListRow(label: l10n.settingsServer, subtitle: AppConstants.apiBaseUrl),
-                ListRow(label: l10n.settingsDeviceId, subtitle: myUserId ?? '—'),
-              ],
-            ),
-            const SizedBox(height: 28),
-            SectionHeader(title: l10n.settingsAccount),
-            const SizedBox(height: 10),
-            ListGroup(
-              children: [
-                ListRow(icon: Icons.logout_rounded, label: l10n.settingsLogout, onTap: _logout),
-                ListRow(
-                  icon: Icons.delete_outline_rounded,
-                  tint: palette.warningSoft,
-                  label: l10n.settingsDeleteAccount,
-                  labelColor: palette.warning,
-                  onTap: _deleteAccount,
-                ),
+                ListRow(icon: Icons.logout_rounded, label: l10n.settingsLogout, onTap: _logout, showChevron: false),
+                ListRow(label: l10n.settingsDeleteAccount, labelColor: palette.warning, onTap: _deleteAccount, showChevron: false),
               ],
             ),
           ],
@@ -440,7 +475,7 @@ class _StatCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 66),
+            constraints: const BoxConstraints(minHeight: 64),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,7 +483,7 @@ class _StatCard extends StatelessWidget {
               children: [
                 value == null
                     ? const SkeletonBox(width: 26, height: 20, radius: 6)
-                    : Text('$value', style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 22)),
+                    : Text('$value', style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 22, height: 1.1)),
                 Text(label, style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
               ],
             ),
@@ -476,28 +511,30 @@ class _ThemeSegments extends StatelessWidget {
     ];
 
     return GlassSurface(
-      radius: 18,
+      radius: 16,
       padding: const EdgeInsets.all(4),
       child: Row(
         children: [
-          for (final (value, label) in options)
+          for (final (value, label) in options) ...[
+            if (value != ThemeMode.system) const SizedBox(width: 4),
             Expanded(
               child: Semantics(
                 selected: value == mode,
                 button: true,
                 child: Material(
                   color: value == mode ? palette.accent : Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     onTap: () => onChanged(value),
                     child: SizedBox(
-                      height: 46,
+                      height: 44,
                       child: Center(
                         child: Text(
                           label,
                           style: AppTypography.label.copyWith(
                             color: value == mode ? palette.onAccent : palette.textSecondary,
+                            fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -507,64 +544,9 @@ class _ThemeSegments extends StatelessWidget {
                 ),
               ),
             ),
+          ],
         ],
       ),
-    );
-  }
-}
-
-/// The first few of the person's own stories, with the "write a new one"
-/// tile first; "Tümü" opens the full list.
-class _StoryGrid extends StatelessWidget {
-  final bool loading;
-  final List<LifeStory> stories;
-  final List<DisorderCategory> categories;
-  final VoidCallback onAdd;
-  final void Function(String storyId) onOpen;
-
-  const _StoryGrid({
-    required this.loading,
-    required this.stories,
-    required this.categories,
-    required this.onAdd,
-    required this.onOpen,
-  });
-
-  ({String emoji, String name})? _resolve(String diagnosisSlug) {
-    for (final category in categories) {
-      for (final disorder in category.disorders) {
-        if (disorder.slug == diagnosisSlug) return (emoji: category.emoji, name: disorder.name);
-      }
-    }
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    final shown = loading ? 2 : math.min(stories.length, 5);
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: 1 + shown,
-      itemBuilder: (context, i) {
-        if (i == 0) return AddStoryTile(palette: palette, onTap: onAdd);
-        if (loading) return const SkeletonBox(radius: 14, height: double.infinity);
-
-        final story = stories[i - 1];
-        return StoryGridTile(
-          story: story,
-          tag: _resolve(story.diagnosisSlug),
-          palette: palette,
-          onTap: () => onOpen(story.id),
-        );
-      },
     );
   }
 }

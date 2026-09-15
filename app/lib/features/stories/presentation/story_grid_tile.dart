@@ -1,90 +1,102 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_typography.dart';
+import '../../../l10n/app_localizations.dart';
 import '../domain/life_story.dart';
-import 'story_detail_screen.dart';
+import 'story_detail_screen.dart' show storyStatusLabel;
 
-/// One square preview in a "post grid" of a person's own stories —
-/// shared between [MyProfileScreen]'s embedded grid and the dedicated
-/// [MyStoriesScreen], so the two read as the same object rather than two
-/// slightly different reimplementations of it. Text stands in for the
-/// photo a real post grid would show: the diagnosis category's emoji, a
-/// status dot, and a few lines of the body.
+/// One square preview of a person's own story: its status on a small pill
+/// and the first lines of the text, on a color that says the same thing —
+/// peach once it's published, lilac while it's being reviewed.
 class StoryGridTile extends StatelessWidget {
   final LifeStory story;
-  final ({String emoji, String name})? tag;
   final AppPalette palette;
   final VoidCallback onTap;
+
+  /// The diagnosis this story is about; kept for callers that resolve it.
+  final ({String emoji, String name})? tag;
 
   const StoryGridTile({
     super.key,
     required this.story,
-    required this.tag,
     required this.palette,
     required this.onTap,
+    this.tag,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: palette.glassFill,
-      borderRadius: BorderRadius.circular(14),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      if (tag != null) Text(tag!.emoji, style: const TextStyle(fontSize: 14)),
-                      const Spacer(),
-                      Container(
-                        width: 7,
-                        height: 7,
+    final l10n = AppLocalizations.of(context)!;
+    final background = switch (story.status) {
+      StoryStatus.approved => palette.peach,
+      StoryStatus.pending => palette.lilac,
+      StoryStatus.rejected => palette.surfaceMuted,
+    };
+    final foreground = AppPalette.inkOn(background);
+
+    return Semantics(
+      button: true,
+      label: '${storyStatusLabel(l10n, story.status)}: ${story.body}',
+      excludeSemantics: true,
+      child: Material(
+        color: background,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(11),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Container(
+                        height: 22,
+                        padding: const EdgeInsets.symmetric(horizontal: 7),
+                        alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: storyStatusColor(palette, story.status),
+                          color: AppPalette.light.glassFill,
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        child: Text(
+                          storyStatusLabel(l10n, story.status),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.caption.copyWith(
+                            color: AppPalette.light.textPrimary,
+                            fontSize: 11.5,
+                            height: 1,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Expanded(
-                    child: Text(
-                      story.body,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.35,
-                        fontWeight: FontWeight.w400,
-                        color: palette.textSecondary,
-                      ),
                     ),
-                  ),
-                ],
-              ),
+                    if (story.anonymous) ...[
+                      const SizedBox(width: 4),
+                      Icon(Icons.visibility_off_outlined, size: 14, color: foreground.withValues(alpha: 0.7)),
+                    ],
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  story.body,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.caption.copyWith(color: foreground, fontSize: 13, height: 1.3),
+                ),
+              ],
             ),
-            if (story.anonymous)
-              Positioned(
-                right: 6,
-                bottom: 6,
-                child: Icon(Icons.visibility_off_rounded, size: 12, color: palette.textTertiary),
-              ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// The grid's own "write a new one" tile — square, styled to sit flush
-/// among [StoryGridTile]s rather than as a separate floating control.
+/// The "write a new one" tile, first in the grid.
 class AddStoryTile extends StatelessWidget {
   final AppPalette palette;
   final VoidCallback onTap;
@@ -93,14 +105,30 @@ class AddStoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: palette.glassFill,
-      borderRadius: BorderRadius.circular(14),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Center(
-          child: Icon(Icons.add_rounded, size: 26, color: palette.accent),
+    final l10n = AppLocalizations.of(context)!;
+
+    return Semantics(
+      button: true,
+      label: l10n.storiesWriteCta,
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: palette.textPrimary, width: 1.5),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_rounded, size: 24, color: palette.textPrimary),
+              const SizedBox(height: 6),
+              Text(l10n.meStoryNew,
+                  style: AppTypography.label.copyWith(color: palette.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
+            ],
+          ),
         ),
       ),
     );

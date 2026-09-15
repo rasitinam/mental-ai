@@ -19,6 +19,10 @@ import '../data/discoveries_api.dart';
       DiscoveryKind.rhythm => (tint: palette.sky, label: l10n.discoveriesKindRhythm),
     };
 
+/// The sentence a card shows: the observation itself, or its title when a
+/// card came back without one.
+String _sentence(Discovery discovery) => discovery.body.trim().isNotEmpty ? discovery.body : discovery.title;
+
 /// Bugün's version: a sideways row of cards, each wide enough that the
 /// next one peeks in from the edge. Takes no room when there's nothing.
 class DiscoveriesStrip extends ConsumerWidget {
@@ -34,20 +38,20 @@ class DiscoveriesStrip extends ConsumerWidget {
       // screen; Yolum's list is where a failure is shown.
       error: (_, _) => const SizedBox.shrink(),
       loading: () => const Padding(
-        padding: EdgeInsets.only(bottom: 14),
+        padding: EdgeInsets.only(bottom: 18),
         child: SkeletonBox(height: 150, radius: 22),
       ),
       data: (data) {
         if (data.locked) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.only(bottom: 18),
             child: _LockedCard(result: data),
           );
         }
         if (data.cards.isEmpty) return const SizedBox.shrink();
 
         return Padding(
-          padding: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.only(bottom: 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -57,25 +61,18 @@ class DiscoveriesStrip extends ConsumerWidget {
                 onAction: () => context.go('/life-analysis'),
               ),
               const SizedBox(height: 6),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final cardWidth = data.cards.length == 1
-                      ? constraints.maxWidth
-                      : (constraints.maxWidth * 0.8).clamp(240.0, 320.0);
-                  return SizedBox(
-                    height: 158,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      clipBehavior: Clip.none,
-                      itemCount: data.cards.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 10),
-                      itemBuilder: (context, i) => SizedBox(
-                        width: cardWidth,
-                        child: _DiscoveryCard(discovery: data.cards[i], compact: true),
-                      ),
-                    ),
-                  );
-                },
+              SizedBox(
+                height: 132,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  itemCount: data.cards.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 10),
+                  itemBuilder: (context, i) => SizedBox(
+                    width: data.cards.length == 1 ? MediaQuery.sizeOf(context).width - 44 : 252,
+                    child: _DiscoveryCard(discovery: data.cards[i], compact: true),
+                  ),
+                ),
               ),
             ],
           ),
@@ -97,18 +94,18 @@ class DiscoveriesList extends ConsumerWidget {
     final result = ref.watch(discoveriesProvider);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 28),
+      padding: const EdgeInsets.only(bottom: 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SectionHeader(title: l10n.discoveriesTitle),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           result.when(
             loading: () => const Column(
               children: [
-                SkeletonBox(height: 96, radius: 22),
+                SkeletonBox(height: 96, radius: 24),
                 SizedBox(height: 8),
-                SkeletonBox(height: 96, radius: 22),
+                SkeletonBox(height: 96, radius: 24),
               ],
             ),
             error: (_, _) => GlassSurface(
@@ -166,8 +163,8 @@ class DiscoveriesList extends ConsumerWidget {
 class _DiscoveryCard extends StatelessWidget {
   final Discovery discovery;
 
-  /// The strip's fixed-height card clips the body and opens the full text
-  /// on tap; the list shows everything inline.
+  /// The strip's fixed-height card clips the sentence and opens the full
+  /// card on tap; the list shows everything inline.
   final bool compact;
 
   const _DiscoveryCard({required this.discovery, required this.compact});
@@ -184,14 +181,15 @@ class _DiscoveryCard extends StatelessWidget {
         return SheetFrame(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Tag(label: style.label, tint: style.tint),
+            TintTag(label: style.label, color: style.tint),
             const SizedBox(height: 14),
-            Text(discovery.title, style: AppTypography.title3.copyWith(color: palette.textPrimary)),
-            const SizedBox(height: 8),
+            if (discovery.title.trim().isNotEmpty) ...[
+              Text(discovery.title, style: AppTypography.title3.copyWith(color: palette.textPrimary)),
+              const SizedBox(height: 8),
+            ],
             Text(discovery.body, style: AppTypography.body.copyWith(color: palette.textSecondary)),
             const SizedBox(height: 18),
-            Text(l10n.discoveriesFootnote,
-                style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+            Text(l10n.discoveriesFootnote, style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
           ],
         );
       },
@@ -206,7 +204,7 @@ class _DiscoveryCard extends StatelessWidget {
 
     return Material(
       color: palette.glassFill,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(compact ? 22 : 24),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: compact ? () => _openFull(context) : null,
@@ -216,49 +214,22 @@ class _DiscoveryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _Tag(label: style.label, tint: style.tint),
-              const SizedBox(height: 10),
-              Text(
-                discovery.title,
-                maxLines: compact ? 2 : null,
-                overflow: compact ? TextOverflow.ellipsis : null,
-                style: AppTypography.label.copyWith(color: palette.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
+              TintTag(label: style.label, color: style.tint),
+              SizedBox(height: compact ? 9 : 8),
               if (compact)
                 Expanded(
                   child: Text(
-                    discovery.body,
-                    maxLines: 2,
+                    _sentence(discovery),
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
+                    style: AppTypography.body.copyWith(color: palette.textPrimary, height: 1.5),
                   ),
                 )
               else
-                Text(discovery.body, style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
+                Text(_sentence(discovery), style: AppTypography.body.copyWith(color: palette.textPrimary, height: 1.5)),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Tag extends StatelessWidget {
-  final String label;
-  final Color tint;
-  const _Tag({required this.label, required this.tint});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: tint, borderRadius: BorderRadius.circular(8)),
-      child: Text(
-        label,
-        style: AppTypography.caption.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700),
       ),
     );
   }

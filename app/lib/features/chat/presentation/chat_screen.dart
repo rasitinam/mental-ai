@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/components.dart';
+import '../../../app/theme/glass.dart';
 import '../../../core/onboarding/first_run.dart';
 import '../../../core/voice/voice.dart';
 import '../../../l10n/app_localizations.dart';
@@ -121,7 +122,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
             Expanded(
               child: state.loadingHistory && state.messages.isEmpty
-                  ? Center(child: CircularProgressIndicator(color: palette.accent))
+                  ? Center(child: CircularProgressIndicator(color: palette.textPrimary))
                   : state.messages.isEmpty
                       ? SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(22, 8, 22, 8),
@@ -145,9 +146,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       : ListView.builder(
                           controller: _scrollController,
                           padding: const EdgeInsets.fromLTRB(22, 0, 22, 8),
-                          itemCount: state.messages.length,
-                          itemBuilder: (context, index) =>
-                              _ChatBubble(message: state.messages[index]),
+                          itemCount: state.messages.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index == 0) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 14),
+                                child: Center(child: SectionLabel(l10n.chatToday, color: palette.textTertiary)),
+                              );
+                            }
+                            return _ChatBubble(message: state.messages[index - 1]);
+                          },
                         ),
             ),
             if (state.sending)
@@ -156,7 +164,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 child: LinearProgressIndicator(
                   minHeight: 2,
                   backgroundColor: Colors.transparent,
-                  color: palette.accent,
+                  color: palette.textPrimary,
                 ),
               ),
             Padding(
@@ -172,6 +180,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       decoration: BoxDecoration(
                         color: palette.glassFill,
                         borderRadius: BorderRadius.circular(18),
+                        boxShadow: [BoxShadow(color: palette.separator, offset: const Offset(0, 1))],
                       ),
                       child: TextField(
                         controller: _inputController,
@@ -180,7 +189,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         minLines: 1,
                         maxLines: 5,
                         style: AppTypography.body.copyWith(color: palette.textPrimary),
-                        cursorColor: palette.accent,
                         decoration: InputDecoration(
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(vertical: 15),
@@ -225,7 +233,7 @@ class _SendButton extends StatelessWidget {
           child: SizedBox(
             width: 54,
             height: 54,
-            child: Icon(Icons.arrow_upward_rounded, size: 24, color: palette.onAccent),
+            child: Icon(Icons.arrow_forward_rounded, size: 23, color: palette.onAccent),
           ),
         ),
       ),
@@ -251,91 +259,97 @@ class _ChatBubbleState extends State<_ChatBubble> {
     final palette = AppPalette.of(context);
     final l10n = AppLocalizations.of(context)!;
     final isUser = widget.message.sender == ChatSender.user;
+    final screenWidth = MediaQuery.sizeOf(context).width;
 
-    return Column(
-      crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        Align(
-          alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            margin: EdgeInsets.only(bottom: isUser ? 12 : 0),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width * (isUser ? 0.74 : 0.82),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          Align(
+            alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
+              constraints: BoxConstraints(maxWidth: isUser ? screenWidth * 0.7 : screenWidth * 0.78),
+              decoration: BoxDecoration(
+                color: isUser ? palette.sky : palette.glassFill,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(22),
+                  topRight: const Radius.circular(22),
+                  bottomLeft: Radius.circular(isUser ? 22 : 6),
+                  bottomRight: Radius.circular(isUser ? 6 : 22),
+                ),
+              ),
+              child: isUser
+                  ? Text(widget.message.text, style: AppTypography.body.copyWith(color: palette.onTint))
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(widget.message.text, style: AppTypography.body.copyWith(color: palette.textPrimary)),
+                        const SizedBox(height: 4),
+                        Transform.translate(
+                          offset: const Offset(-8, 2),
+                          child: SpeakButton(
+                            id: 'chat-${identityHashCode(widget.message)}',
+                            text: widget.message.text,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
-            decoration: BoxDecoration(
-              color: isUser ? palette.sky : palette.glassFill,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(22),
-                topRight: const Radius.circular(22),
-                bottomLeft: Radius.circular(isUser ? 22 : 6),
-                bottomRight: Radius.circular(isUser ? 6 : 22),
+          ),
+          if (widget.message.crisisFlag && !_dismissed)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: palette.warningSoft,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.support_rounded, size: 20, color: palette.warning),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          l10n.chatCrisisTitle,
+                          style: AppTypography.label.copyWith(color: palette.warning, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(l10n.chatCrisis, style: AppTypography.subheadline.copyWith(color: palette.warning)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _CrisisAction(
+                          label: l10n.chatCallEmergency,
+                          filled: true,
+                          onTap: () => launchUrl(Uri(scheme: 'tel', path: emergencyNumber)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _CrisisAction(
+                          label: l10n.chatContinue,
+                          filled: false,
+                          onTap: () => setState(() => _dismissed = true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            child: Text(
-              widget.message.text,
-              style: AppTypography.body.copyWith(color: palette.textPrimary),
-            ),
-          ),
-        ),
-        if (!isUser)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: SpeakButton(
-              id: 'chat-${identityHashCode(widget.message)}',
-              text: widget.message.text,
-            ),
-          ),
-        if (widget.message.crisisFlag && !_dismissed)
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: palette.warningSoft,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.support_rounded, size: 20, color: palette.warning),
-                    const SizedBox(width: 9),
-                    Expanded(
-                      child: Text(
-                        l10n.chatCrisisTitle,
-                        style: AppTypography.label.copyWith(color: palette.warning, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(l10n.chatCrisis, style: AppTypography.subheadline.copyWith(color: palette.warning)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _CrisisAction(
-                        label: l10n.chatCallEmergency,
-                        filled: true,
-                        onTap: () => launchUrl(Uri(scheme: 'tel', path: emergencyNumber)),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _CrisisAction(
-                        label: l10n.chatContinue,
-                        filled: false,
-                        onTap: () => setState(() => _dismissed = true),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

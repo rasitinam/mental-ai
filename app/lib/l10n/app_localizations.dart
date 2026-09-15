@@ -2639,7 +2639,7 @@ abstract class AppLocalizations {
   /// No description provided for @myProfileEdit.
   ///
   /// In tr, this message translates to:
-  /// **'Profili Düzenle'**
+  /// **'Profili düzenle'**
   String get myProfileEdit;
 
   /// No description provided for @myProfileStories.
@@ -3707,7 +3707,7 @@ abstract class AppLocalizations {
   /// No description provided for @meReminderOn.
   ///
   /// In tr, this message translates to:
-  /// **'Saat {time}'**
+  /// **'Kayıt girmediğin günlerde · {time}'**
   String meReminderOn(String time);
 
   /// No description provided for @meReminderOff.
@@ -3779,8 +3779,134 @@ abstract class AppLocalizations {
   /// No description provided for @quickCheckinFootnoteReminder.
   ///
   /// In tr, this message translates to:
-  /// **'Günde bir kez kaydedilir. Kaydetmezsen saat {time} olunca tek bir hatırlatma gelir.'**
+  /// **'Günde bir kez kaydedilir. Kaydetmezsen akşam {time} tek bir hatırlatma gelir.'**
   String quickCheckinFootnoteReminder(String time);
+
+  /// No description provided for @quickCheckinDragHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Noktayı sürükleyebilirsin'**
+  String get quickCheckinDragHint;
+
+  /// No description provided for @todayMetooCardOne.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} kişi hikayende kendini buldu'**
+  String todayMetooCardOne(int count);
+
+  /// No description provided for @storiesPendingLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'hikaye onayını bekliyor'**
+  String get storiesPendingLabel;
+
+  /// No description provided for @storiesReportsLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'bildirilen hikaye'**
+  String get storiesReportsLabel;
+
+  /// No description provided for @storiesFilterAll.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tümü'**
+  String get storiesFilterAll;
+
+  /// No description provided for @storiesToday.
+  ///
+  /// In tr, this message translates to:
+  /// **'bugün'**
+  String get storiesToday;
+
+  /// No description provided for @storiesYesterday.
+  ///
+  /// In tr, this message translates to:
+  /// **'dün'**
+  String get storiesYesterday;
+
+  /// No description provided for @storiesDaysAgo.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} gün önce'**
+  String storiesDaysAgo(int count);
+
+  /// No description provided for @pathRecapTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Haftalık özet'**
+  String get pathRecapTitle;
+
+  /// No description provided for @pathRecapBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'{entries} kayıt · {streak} gün seri'**
+  String pathRecapBody(int entries, int streak);
+
+  /// No description provided for @pathMoodHistory.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh hali geçmişin'**
+  String get pathMoodHistory;
+
+  /// No description provided for @pathLastFiveWeeks.
+  ///
+  /// In tr, this message translates to:
+  /// **'son 5 hafta'**
+  String get pathLastFiveWeeks;
+
+  /// No description provided for @pathTodayOutlined.
+  ///
+  /// In tr, this message translates to:
+  /// **'çerçeveli: bugün'**
+  String get pathTodayOutlined;
+
+  /// No description provided for @pathAnalysisNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'haftada bir yenilenir'**
+  String get pathAnalysisNote;
+
+  /// No description provided for @pathReadFull.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tamamını oku'**
+  String get pathReadFull;
+
+  /// No description provided for @pathScreeningAgo.
+  ///
+  /// In tr, this message translates to:
+  /// **'{days} gün önce'**
+  String pathScreeningAgo(int days);
+
+  /// No description provided for @meMemberMonths.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth\'te {months} aydır'**
+  String meMemberMonths(int months);
+
+  /// No description provided for @meMemberNew.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth\'e yeni katıldın'**
+  String get meMemberNew;
+
+  /// No description provided for @meAdminTag.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yönetici'**
+  String get meAdminTag;
+
+  /// No description provided for @mePrivacyTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gizlilik ve güvenlik'**
+  String get mePrivacyTitle;
+
+  /// No description provided for @meStoryNew.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeni'**
+  String get meStoryNew;
 }
 
 class _AppLocalizationsDelegate

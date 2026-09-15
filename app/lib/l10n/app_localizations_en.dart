@@ -1396,7 +1396,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileNobodyYet => 'Nobody yet';
 
   @override
-  String get myProfileEdit => 'Edit Profile';
+  String get myProfileEdit => 'Edit profile';
 
   @override
   String get myProfileStories => 'My Stories';
@@ -1987,7 +1987,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String meReminderOn(String time) {
-    return 'At $time';
+    return 'On days you haven\'t checked in · $time';
   }
 
   @override
@@ -2029,4 +2029,77 @@ class AppLocalizationsEn extends AppLocalizations {
   String quickCheckinFootnoteReminder(String time) {
     return 'Saved once a day. If you skip it, one reminder comes at $time.';
   }
+
+  @override
+  String get quickCheckinDragHint => 'You can drag the dot';
+
+  @override
+  String todayMetooCardOne(int count) {
+    return '$count people found themselves in your story';
+  }
+
+  @override
+  String get storiesPendingLabel => 'stories waiting for approval';
+
+  @override
+  String get storiesReportsLabel => 'reported stories';
+
+  @override
+  String get storiesFilterAll => 'All';
+
+  @override
+  String get storiesToday => 'today';
+
+  @override
+  String get storiesYesterday => 'yesterday';
+
+  @override
+  String storiesDaysAgo(int count) {
+    return '$count days ago';
+  }
+
+  @override
+  String get pathRecapTitle => 'Weekly recap';
+
+  @override
+  String pathRecapBody(int entries, int streak) {
+    return '$entries check-ins · $streak-day streak';
+  }
+
+  @override
+  String get pathMoodHistory => 'Your mood history';
+
+  @override
+  String get pathLastFiveWeeks => 'last 5 weeks';
+
+  @override
+  String get pathTodayOutlined => 'outlined: today';
+
+  @override
+  String get pathAnalysisNote => 'refreshes once a week';
+
+  @override
+  String get pathReadFull => 'Read it all';
+
+  @override
+  String pathScreeningAgo(int days) {
+    return '$days days ago';
+  }
+
+  @override
+  String meMemberMonths(int months) {
+    return 'On Hearth for $months months';
+  }
+
+  @override
+  String get meMemberNew => 'New to Hearth';
+
+  @override
+  String get meAdminTag => 'Admin';
+
+  @override
+  String get mePrivacyTitle => 'Privacy and security';
+
+  @override
+  String get meStoryNew => 'New';
 }

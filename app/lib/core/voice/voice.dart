@@ -10,8 +10,8 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Voice in and out, for the two places people write at length: the
-/// journal and the chat.
+/// Voice in and out, for the places people write at length: the journal,
+/// the check-in note and the chat.
 ///
 /// Speech recognition runs on the device's own recognizer (Android's
 /// speech service, Apple's Speech framework, the browser's Web Speech API)
@@ -83,8 +83,8 @@ class ReadAloud extends ChangeNotifier {
   }
 }
 
-/// "Sesli oku" under an assistant message: tap to hear it, tap again (or
-/// start another) to stop.
+/// "Sesli oku" at the foot of an assistant message: tap to hear it, tap
+/// again (or start another) to stop.
 class SpeakButton extends ConsumerWidget {
   final String id;
   final String text;
@@ -98,23 +98,26 @@ class SpeakButton extends ConsumerWidget {
     final speaking = ref.watch(readAloudProvider.select((r) => r.speakingId == id));
     final color = speaking ? palette.textPrimary : palette.textSecondary;
 
-    return InkWell(
-      onTap: () => ref.read(readAloudProvider).toggle(id, text, Localizations.localeOf(context).languageCode),
-      borderRadius: BorderRadius.circular(10),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 40),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined, size: 18, color: color),
-              const SizedBox(width: 6),
-              Text(
-                speaking ? l10n.voiceStopSpeaking : l10n.voiceSpeak,
-                style: AppTypography.footnote.copyWith(color: color, fontWeight: FontWeight.w700),
-              ),
-            ],
+    return Semantics(
+      button: true,
+      child: InkWell(
+        onTap: () => ref.read(readAloudProvider).toggle(id, text, Localizations.localeOf(context).languageCode),
+        borderRadius: BorderRadius.circular(10),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 32),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined, size: 17, color: color),
+                const SizedBox(width: 6),
+                Text(
+                  speaking ? l10n.voiceStopSpeaking : l10n.voiceSpeak,
+                  style: AppTypography.footnote.copyWith(color: color, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -123,11 +126,14 @@ class SpeakButton extends ConsumerWidget {
 }
 
 enum DictationStyle {
-  /// A 54px rounded square that sits next to a send button (chat).
+  /// A 54px rounded square in the sky color, next to a send button (chat).
   round,
 
-  /// A compact "Sesle yaz" pill that sits in a text card's footer (journal).
+  /// A "Sesle yaz" pill in a text card's footer (journal).
   pill,
+
+  /// A 40px icon square inside a single-line field (check-in note).
+  compact,
 }
 
 /// Dictates into [controller]. What was already typed is kept and the
@@ -252,55 +258,73 @@ class DictationButtonState extends ConsumerState<DictationButton> {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final label = _listening ? l10n.voiceListening : l10n.voiceDictate;
+    final icon = _listening ? Icons.stop_rounded : Icons.mic_none_rounded;
 
-    if (widget.style == DictationStyle.pill) {
-      final foreground = _listening ? palette.warningSoft : palette.textPrimary;
-      return Material(
-        color: _listening ? palette.warning : palette.sky,
-        borderRadius: BorderRadius.circular(100),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: _toggle,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 40),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 13),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(_listening ? Icons.stop_rounded : Icons.mic_none_rounded, size: 18, color: foreground),
-                  const SizedBox(width: 6),
-                  Text(
-                    _listening ? l10n.voiceListening : l10n.voiceDictate,
-                    style: AppTypography.footnote.copyWith(color: foreground, fontWeight: FontWeight.w700),
+    switch (widget.style) {
+      case DictationStyle.pill:
+        final foreground = _listening ? palette.warningSoft : palette.onTint;
+        return Semantics(
+          button: true,
+          child: Material(
+            color: _listening ? palette.warning : palette.sky,
+            borderRadius: BorderRadius.circular(100),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: _toggle,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 40),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 18, color: foreground),
+                      const SizedBox(width: 6),
+                      Text(label, style: AppTypography.footnote.copyWith(color: foreground, fontWeight: FontWeight.w700)),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      );
-    }
+        );
 
-    return Tooltip(
-      message: _listening ? l10n.voiceListening : l10n.voiceDictate,
-      child: Material(
-        color: _listening ? palette.warning : palette.sky,
-        borderRadius: BorderRadius.circular(18),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: _toggle,
-          child: SizedBox(
-            width: 54,
-            height: 54,
-            child: Icon(
-              _listening ? Icons.stop_rounded : Icons.mic_none_rounded,
-              size: 24,
-              color: _listening ? palette.warningSoft : palette.textPrimary,
+      case DictationStyle.compact:
+        return Tooltip(
+          message: label,
+          child: Material(
+            color: _listening ? palette.warning : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: _toggle,
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Icon(icon, size: 20, color: _listening ? palette.warningSoft : palette.textPrimary),
+              ),
             ),
           ),
-        ),
-      ),
-    );
+        );
+
+      case DictationStyle.round:
+        return Tooltip(
+          message: label,
+          child: Material(
+            color: _listening ? palette.warning : palette.sky,
+            borderRadius: BorderRadius.circular(18),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: _toggle,
+              child: SizedBox(
+                width: 54,
+                height: 54,
+                child: Icon(icon, size: 23, color: _listening ? palette.warningSoft : palette.onTint),
+              ),
+            ),
+          ),
+        );
+    }
   }
 }

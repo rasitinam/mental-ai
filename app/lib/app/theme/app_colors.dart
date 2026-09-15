@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 ///
 /// "Açık Ocak": a stone ground, ink for anything you press, and one soft
 /// color per tab ([sun] Bugün, [sky] Sohbet, [peach] Hikayeler, [mint]
-/// Yolum, [lilac] Ben) so the section you're in reads without looking at
-/// the bar. [ember] belongs to the streak flame alone. [warning] stays
-/// reserved for genuine crisis moments, separate from [surfaceMuted],
-/// which is for merely informational notices.
+/// Yolum, [lilac] Ben). The tab colors are the same in both themes — only
+/// the grounds, cards and text change — so a section keeps its identity in
+/// the dark. Anything drawn on a tab color uses [onTint]. [ember] belongs to
+/// the streak flame alone; [warning] stays reserved for crisis moments.
 class AppPalette {
   final Color canvasTop;
   final Color canvasBottom;
@@ -17,7 +17,7 @@ class AppPalette {
   final Color glassBorder;
   final Color glassShadow;
 
-  /// Ink: primary buttons, selected chips, the send button.
+  /// Primary buttons, selected chips, the send button.
   final Color accent;
 
   /// Text and icons drawn on top of [accent].
@@ -31,8 +31,7 @@ class AppPalette {
   final Color warningSoft;
   final Color surfaceMuted;
 
-  /// Reserved for anything clinical, so "what a clinician does" never
-  /// wears the same color as "what you did".
+  /// Reserved for anything clinical.
   final Color accentAlt;
 
   final Color sun;
@@ -40,9 +39,15 @@ class AppPalette {
   final Color peach;
   final Color mint;
   final Color lilac;
+
+  /// Text and icons on a tab color, in either theme.
+  final Color onTint;
   final Color ember;
 
-  /// The mood heatmap's diverging scale: hardest day, neutral, best day.
+  /// Count badges (unread messages).
+  final Color badge;
+
+  /// The mood grid's scale: hardest day, neutral, best day.
   final Color moodLow;
   final Color moodMid;
   final Color moodHigh;
@@ -69,7 +74,9 @@ class AppPalette {
     required this.peach,
     required this.mint,
     required this.lilac,
+    required this.onTint,
     required this.ember,
+    required this.badge,
     required this.moodLow,
     required this.moodMid,
     required this.moodHigh,
@@ -97,40 +104,50 @@ class AppPalette {
     peach: Color(0xFFF5C9AE),
     mint: Color(0xFFBDE3CC),
     lilac: Color(0xFFDCCDEB),
+    onTint: Color(0xFF1C1E24),
     ember: Color(0xFFE2622F),
-    moodLow: Color(0xFFE08A66),
+    badge: Color(0xFFB4412F),
+    moodLow: Color(0xFFEBA98A),
     moodMid: Color(0xFFE4E2D6),
-    moodHigh: Color(0xFF6FBF93),
+    moodHigh: Color(0xFF7FC49F),
   );
 
   static const dark = AppPalette(
-    canvasTop: Color(0xFF13151B),
-    canvasBottom: Color(0xFF13151B),
-    glassFill: Color(0xFF1D2029),
-    glassBorder: Color(0xFF2B2F39),
+    canvasTop: Color(0xFF14161C),
+    canvasBottom: Color(0xFF14161C),
+    glassFill: Color(0xFF20232B),
+    glassBorder: Color(0xFF30343D),
     glassShadow: Color(0x00000000),
-    accent: Color(0xFFEEEDE8),
-    onAccent: Color(0xFF13151B),
-    accentSoft: Color(0xFF243A30),
+    accent: Color(0xFFD4D7DD),
+    onAccent: Color(0xFF14161C),
+    accentSoft: Color(0xFF2B3A33),
     textPrimary: Color(0xFFEEEDE8),
     textSecondary: Color(0xFFB7B9C0),
-    textTertiary: Color(0xFF9699A3),
-    separator: Color(0xFF2B2F39),
+    textTertiary: Color(0xFF9A9DA6),
+    separator: Color(0xFF30343D),
     warning: Color(0xFFE39A86),
     warningSoft: Color(0xFF3A2320),
-    surfaceMuted: Color(0xFF252933),
+    surfaceMuted: Color(0xFF2A2D36),
     accentAlt: Color(0xFFA9C1E8),
-    sun: Color(0xFF574313),
-    sky: Color(0xFF263552),
-    peach: Color(0xFF4E3427),
-    mint: Color(0xFF204335),
-    lilac: Color(0xFF3B3049),
+    sun: Color(0xFFF3DC8C),
+    sky: Color(0xFFBFD3F2),
+    peach: Color(0xFFF5C9AE),
+    mint: Color(0xFFBDE3CC),
+    lilac: Color(0xFFDCCDEB),
+    onTint: Color(0xFF1C1E24),
     ember: Color(0xFFF07A4A),
-    moodLow: Color(0xFFA8593A),
-    moodMid: Color(0xFF2E3038),
-    moodHigh: Color(0xFF3F9468),
+    badge: Color(0xFFC44A36),
+    moodLow: Color(0xFFEBA98A),
+    moodMid: Color(0xFF3A3D46),
+    moodHigh: Color(0xFF7FC49F),
   );
 
   static AppPalette of(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark ? dark : light;
+
+  /// Ink or light text, whichever reads on [background].
+  static Color inkOn(Color background) =>
+      ThemeData.estimateBrightnessForColor(background) == Brightness.light
+          ? light.textPrimary
+          : dark.textPrimary;
 }

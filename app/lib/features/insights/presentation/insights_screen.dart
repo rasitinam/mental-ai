@@ -247,7 +247,7 @@ class SearchField extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.search_rounded, size: 18, color: palette.textTertiary),
+          Icon(Icons.search_rounded, size: 20, color: palette.textTertiary),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(

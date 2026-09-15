@@ -72,7 +72,7 @@ class MetooStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final foreground = active ? palette.onAccent : palette.textPrimary;
+    final foreground = active ? palette.onAccent : palette.onTint;
 
     final String trailing;
     if (active) {
@@ -104,20 +104,18 @@ class MetooStrip extends StatelessWidget {
                   style: AppTypography.label.copyWith(color: foreground, fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(width: 10),
-                if (trailing.isNotEmpty)
-                  Expanded(
-                    child: Text(
-                      trailing,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: AppTypography.footnote.copyWith(
-                        color: active ? palette.onAccent.withValues(alpha: 0.8) : palette.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                Expanded(
+                  child: Text(
+                    trailing,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: AppTypography.subheadline.copyWith(
+                      color: foreground.withValues(alpha: 0.75),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
                     ),
-                  )
-                else
-                  const Spacer(),
+                  ),
+                ),
               ],
             ),
           ),
@@ -150,16 +148,18 @@ Future<String?> showMetooSheet(BuildContext context) {
             children: [
               Row(
                 children: [
-                  MetooGlyph(size: 18, color: palette.textSecondary),
+                  MetooGlyph(size: 17, color: palette.textSecondary),
                   const SizedBox(width: 7),
                   SectionLabel(l10n.metooButton),
                 ],
               ),
               const SizedBox(height: 6),
-              Text(l10n.metooSheetTitle, style: AppTypography.title3.copyWith(color: palette.textPrimary)),
+              Text(l10n.metooSheetTitle,
+                  style: AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 23, height: 1.12)),
               const SizedBox(height: 8),
-              Text(l10n.metooSheetBody, style: AppTypography.body.copyWith(color: palette.textSecondary)),
-              const SizedBox(height: 18),
+              Text(l10n.metooSheetBody,
+                  style: AppTypography.subheadline.copyWith(color: palette.textSecondary, fontSize: 15.5)),
+              const SizedBox(height: 14),
               for (final note in metooNotes) ...[
                 _NoteOption(
                   label: metooNoteLabel(l10n, note),
@@ -168,12 +168,12 @@ Future<String?> showMetooSheet(BuildContext context) {
                 ),
                 const SizedBox(height: 8),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               AppPrimaryButton(
                 label: l10n.storiesSubmit,
                 onPressed: () => Navigator.of(sheetContext).pop(selected),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               TextButton(
                 onPressed: () => Navigator.of(sheetContext).pop(metooNoNote),
                 child: Text(l10n.metooJustMark,
@@ -212,7 +212,7 @@ class _NoteOption extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 54),
+            constraints: const BoxConstraints(minHeight: 52),
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(
               children: [
@@ -230,8 +230,7 @@ class _NoteOption extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(label,
-                      style: AppTypography.label.copyWith(color: palette.textPrimary, fontSize: 16)),
+                  child: Text(label, style: AppTypography.label.copyWith(color: palette.textPrimary, fontSize: 16)),
                 ),
               ],
             ),

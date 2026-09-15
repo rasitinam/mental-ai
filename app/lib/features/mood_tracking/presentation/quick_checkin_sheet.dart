@@ -29,6 +29,16 @@ String moodEmotionLabel(AppLocalizations l10n, String key) => switch (key) {
       _ => l10n.moodWordEmpty,
     };
 
+/// "21:00'de" in Turkish, where the suffix follows how the hour is read
+/// aloud (yirmi bir → -de, on dokuz → -da, yirmi üç → -te); the plain time
+/// elsewhere.
+String reminderTimeWithSuffix(String languageCode, int hour) {
+  final label = reminderTimeLabel(hour);
+  if (languageCode != 'tr') return label;
+  const suffixes = {17: "'de", 18: "'de", 19: "'da", 20: "'de", 21: "'de", 22: "'de", 23: "'te"};
+  return '$label${suffixes[hour] ?? "'de"}';
+}
+
 /// The whole check-in in one sheet over Bugün: words, the two-axis dot,
 /// one optional sentence and Save. Opens on the root navigator, so nothing
 /// in it can end up under the tab bar.
@@ -102,8 +112,9 @@ class _QuickCheckinSheetState extends ConsumerState<_QuickCheckinSheet> {
     final state = ref.watch(moodControllerProvider);
     final controller = ref.read(moodControllerProvider.notifier);
     final profile = ref.watch(myProfileProvider).valueOrNull;
+    final languageCode = Localizations.localeOf(context).languageCode;
     final footnote = profile != null && profile.checkinReminderEnabled
-        ? l10n.quickCheckinFootnoteReminder(reminderTimeLabel(profile.checkinReminderHour))
+        ? l10n.quickCheckinFootnoteReminder(reminderTimeWithSuffix(languageCode, profile.checkinReminderHour))
         : l10n.quickCheckinFootnote;
 
     return Padding(
@@ -112,8 +123,9 @@ class _QuickCheckinSheetState extends ConsumerState<_QuickCheckinSheet> {
         children: [
           SectionLabel(l10n.quickCheckinEyebrow),
           const SizedBox(height: 6),
-          Text(l10n.moodHowAreYou, style: AppTypography.title3.copyWith(color: palette.textPrimary)),
-          const SizedBox(height: 16),
+          Text(l10n.moodHowAreYou,
+              style: AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 23, height: 1.12)),
+          const SizedBox(height: 14),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -127,18 +139,18 @@ class _QuickCheckinSheetState extends ConsumerState<_QuickCheckinSheet> {
                 ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(l10n.moodWhereItLands,
-                  style: AppTypography.label.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700)),
+                  style: AppTypography.label.copyWith(color: palette.textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  l10n.moodDragHint,
+                  l10n.quickCheckinDragHint,
                   textAlign: TextAlign.right,
-                  style: AppTypography.caption.copyWith(color: palette.textSecondary),
+                  style: AppTypography.footnote.copyWith(color: palette.textSecondary),
                 ),
               ),
             ],
@@ -152,8 +164,8 @@ class _QuickCheckinSheetState extends ConsumerState<_QuickCheckinSheet> {
           const SizedBox(height: 14),
           Container(
             constraints: const BoxConstraints(minHeight: 54),
-            padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
-            decoration: BoxDecoration(color: palette.canvasTop, borderRadius: BorderRadius.circular(16)),
+            padding: const EdgeInsets.fromLTRB(16, 7, 7, 7),
+            decoration: BoxDecoration(color: palette.canvasTop, borderRadius: BorderRadius.circular(18)),
             child: Row(
               children: [
                 Expanded(
@@ -171,7 +183,7 @@ class _QuickCheckinSheetState extends ConsumerState<_QuickCheckinSheet> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                DictationButton(controller: _note, style: DictationStyle.pill),
+                DictationButton(controller: _note, style: DictationStyle.compact),
               ],
             ),
           ),
@@ -180,9 +192,9 @@ class _QuickCheckinSheetState extends ConsumerState<_QuickCheckinSheet> {
             Text(friendlyErrorMessage(l10n, state.error!),
                 style: AppTypography.footnote.copyWith(color: palette.warning)),
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           AppPrimaryButton(label: l10n.commonSave, loading: state.submitting, onPressed: _save),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(footnote,
               textAlign: TextAlign.center,
               style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
@@ -201,7 +213,8 @@ class MoodPad extends StatelessWidget {
 
   const MoodPad({super.key, required this.valence, required this.arousal, required this.onChanged});
 
-  static const _inset = 24.0;
+  static const _inset = 22.0;
+  static const _height = 132.0;
 
   @override
   Widget build(BuildContext context) {
@@ -211,14 +224,13 @@ class MoodPad extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        const height = 150.0;
         final width = constraints.maxWidth;
         final x = _inset + (valence.clamp(-1.0, 1.0) + 1) / 2 * (width - _inset * 2);
-        final y = _inset + (1 - (arousal.clamp(-1.0, 1.0) + 1) / 2) * (height - _inset * 2);
+        final y = _inset + (1 - (arousal.clamp(-1.0, 1.0) + 1) / 2) * (_height - _inset * 2);
 
         void handle(Offset p) {
           final v = ((p.dx - _inset) / (width - _inset * 2)) * 2 - 1;
-          final a = 1 - ((p.dy - _inset) / (height - _inset * 2)) * 2;
+          final a = 1 - ((p.dy - _inset) / (_height - _inset * 2)) * 2;
           onChanged(v.clamp(-1.0, 1.0), a.clamp(-1.0, 1.0));
         }
 
@@ -229,14 +241,14 @@ class MoodPad extends StatelessWidget {
             onPanDown: (d) => handle(d.localPosition),
             onPanUpdate: (d) => handle(d.localPosition),
             child: Container(
-              height: height,
+              height: _height,
               decoration: BoxDecoration(color: palette.canvasTop, borderRadius: BorderRadius.circular(20)),
               child: Stack(
                 children: [
                   Positioned(
                     left: 84,
                     right: 74,
-                    top: height / 2 - 0.75,
+                    top: _height / 2 - 0.75,
                     child: Container(height: 1.5, color: palette.separator),
                   ),
                   Positioned(
@@ -247,18 +259,18 @@ class MoodPad extends StatelessWidget {
                   ),
                   Positioned(top: 8, left: 0, right: 0, child: Text(l10n.moodEnergetic, textAlign: TextAlign.center, style: axisStyle)),
                   Positioned(bottom: 8, left: 0, right: 0, child: Text(l10n.moodCalm, textAlign: TextAlign.center, style: axisStyle)),
-                  Positioned(left: 12, top: height / 2 - 9, child: Text(l10n.moodUnpleasant, style: axisStyle)),
-                  Positioned(right: 12, top: height / 2 - 9, child: Text(l10n.moodPleasant, style: axisStyle)),
+                  Positioned(left: 12, top: _height / 2 - 9, child: Text(l10n.moodUnpleasant, style: axisStyle)),
+                  Positioned(right: 12, top: _height / 2 - 9, child: Text(l10n.moodPleasant, style: axisStyle)),
                   Positioned(
-                    left: x - 14,
-                    top: y - 14,
+                    left: x - 13,
+                    top: y - 13,
                     child: Container(
-                      width: 28,
-                      height: 28,
+                      width: 26,
+                      height: 26,
                       decoration: BoxDecoration(
                         color: palette.accent,
                         shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: palette.accent.withValues(alpha: 0.16), spreadRadius: 7)],
+                        boxShadow: [BoxShadow(color: palette.accent.withValues(alpha: 0.14), spreadRadius: 7)],
                       ),
                     ),
                   ),

@@ -8,11 +8,14 @@ import 'social_api.dart';
 
 /// What the Messages tab's red dot reflects: a pending request nobody has
 /// answered yet, or a message in an accepted thread since it was last
-/// opened. No count, no per-thread detail — just "there's something".
+/// opened, with how many are waiting and no per-thread detail.
 class DmBadgeState {
   final bool hasPendingRequest;
   final bool hasUnreadMessage;
-  const DmBadgeState({this.hasPendingRequest = false, this.hasUnreadMessage = false});
+
+  /// Unread conversations plus unanswered requests.
+  final int count;
+  const DmBadgeState({this.hasPendingRequest = false, this.hasUnreadMessage = false, this.count = 0});
 
   bool get visible => hasPendingRequest || hasUnreadMessage;
 }
@@ -58,7 +61,7 @@ class DmBadgeNotifier extends StateNotifier<DmBadgeState> {
       final requests = await api.requests();
 
       final lastSeen = _readLastSeen();
-      var unread = false;
+      var unreadThreads = 0;
       var changed = false;
       for (final thread in threads) {
         final at = thread.lastMessageAt.millisecondsSinceEpoch;
@@ -70,13 +73,17 @@ class DmBadgeNotifier extends StateNotifier<DmBadgeState> {
           lastSeen[thread.id] = at;
           changed = true;
         } else if (at > seen) {
-          unread = true;
+          unreadThreads++;
         }
       }
       if (changed) await _writeLastSeen(lastSeen);
 
       if (!mounted) return;
-      state = DmBadgeState(hasPendingRequest: requests.isNotEmpty, hasUnreadMessage: unread);
+      state = DmBadgeState(
+        hasPendingRequest: requests.isNotEmpty,
+        hasUnreadMessage: unreadThreads > 0,
+        count: unreadThreads + requests.length,
+      );
     } catch (_) {
       // A failed poll just leaves the badge as it was.
     }
