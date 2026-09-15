@@ -217,10 +217,10 @@ class _Composer extends StatelessWidget {
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: sending ? null : onSend,
-            child: const SizedBox(
+            child: SizedBox(
               width: 46,
               height: 46,
-              child: Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 21),
+              child: Icon(Icons.arrow_upward_rounded, color: AppPalette.of(context).onAccent, size: 21),
             ),
           ),
         ),
@@ -261,7 +261,7 @@ class _Bubble extends StatelessWidget {
           style: AppTypography.label.copyWith(
             fontWeight: FontWeight.w400,
             height: 1.55,
-            color: fromUser ? Colors.white : palette.textPrimary,
+            color: fromUser ? AppPalette.of(context).onAccent : palette.textPrimary,
           ),
         ),
       ),

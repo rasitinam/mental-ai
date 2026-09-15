@@ -1,3 +1,7 @@
+import 'dart:math' as math;
+
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,25 +9,31 @@ import 'package:go_router/go_router.dart';
 import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
+import '../../../app/theme/components.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/network/error_messages.dart';
 import '../../../core/storage/local_prefs.dart';
+import '../../../core/theme/theme_mode_controller.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../auth/data/auth_api.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
+import '../../notifications/push_service.dart';
+import '../../settings/presentation/notification_settings_screen.dart' show reminderTimeLabel;
 import '../../social/data/social_api.dart';
 import '../../stories/domain/life_story.dart';
+import '../../stories/presentation/moderation_controller.dart';
 import '../../stories/presentation/stories_controller.dart';
 import '../../stories/presentation/story_detail_screen.dart';
 import '../../stories/presentation/story_grid_tile.dart';
 import '../../stories/presentation/story_submit_screen.dart';
 import '../data/profile_api.dart';
 
-/// The account's own landing view for the tab that used to open straight
-/// into the settings list — a proper profile now, the way the story feed
-/// and follow system already read on everyone else's account (see
-/// `UserProfileScreen`), with the actual settings list one tap away
-/// behind the gear icon instead of being the first thing this tab shows.
+/// Ben — the profile and every setting, in one scrolling page. Nothing
+/// sits behind a gear icon any more: the reminder switch, chat and message
+/// preferences, appearance, Hearth Plus and moderation are all rows here.
 class MyProfileScreen extends ConsumerStatefulWidget {
   const MyProfileScreen({super.key});
 
@@ -32,16 +42,123 @@ class MyProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
+  /// The switch's position while its save is in flight.
+  bool? _reminderOverride;
+
   @override
   void initState() {
     super.initState();
-    // `storiesControllerProvider` already loads `mine` for the app's
-    // whole lifetime the first time anything reads it — usually this
-    // screen, since it's the tab a person lands on by reflex a lot less
-    // often than Stories itself. Asking again here just means a person
-    // who withdrew or edited a story elsewhere sees that reflected the
-    // next time they open this tab, not a stale first load.
+    // A story withdrawn or edited elsewhere shows up the next time this tab
+    // opens, not on a stale first load.
     Future.microtask(() => ref.read(storiesControllerProvider.notifier).loadMine());
+  }
+
+  Future<void> _setReminder(bool enabled, int hour) async {
+    setState(() => _reminderOverride = enabled);
+    try {
+      await ref.read(profileApiProvider).setCheckinReminder(enabled: enabled, hour: hour);
+      ref.invalidate(myProfileProvider);
+    } catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(l10n, e))));
+      }
+    } finally {
+      if (mounted) setState(() => _reminderOverride = null);
+    }
+  }
+
+  Future<void> _logout() async {
+    // Before the session goes away — unregistering needs the token that's
+    // about to be cleared, or this device keeps getting pushes for an
+    // account no longer signed in on it.
+    if (!kIsWeb) {
+      await ref.read(pushServiceProvider).unregister();
+    }
+    try {
+      await ref.read(authApiProvider).logout();
+    } catch (_) {
+      // Best-effort: clearing the local session still logs this device out.
+    }
+    final prefs = ref.read(sharedPreferencesProvider);
+    await clearSession(prefs);
+    ref.read(sessionTokenProvider.notifier).state = null;
+  }
+
+  Future<void> _deleteAccount() async {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+    final passwordController = TextEditingController();
+
+    final deleted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        String? error;
+        var busy = false;
+
+        return StatefulBuilder(
+          builder: (dialogContext, setState) {
+            Future<void> confirm() async {
+              setState(() {
+                busy = true;
+                error = null;
+              });
+              try {
+                await ref.read(authApiProvider).deleteAccount(password: passwordController.text);
+                if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+              } on DioException catch (e) {
+                setState(() {
+                  busy = false;
+                  error = e.response?.statusCode == 401 ? l10n.deleteAccountWrongPassword : l10n.commonError;
+                });
+              }
+            }
+
+            return AlertDialog(
+              title: Text(l10n.deleteAccountTitle, style: AppTypography.headline.copyWith(color: palette.textPrimary)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.deleteAccountBody, style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    onChanged: (_) => setState(() {}),
+                    style: AppTypography.body.copyWith(color: palette.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: l10n.deleteAccountPasswordHint,
+                      hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
+                      errorText: error,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: busy ? null : () => Navigator.pop(dialogContext, false),
+                  child: Text(l10n.commonCancel),
+                ),
+                TextButton(
+                  onPressed: busy || passwordController.text.isEmpty ? null : confirm,
+                  child: Text(l10n.deleteAccountConfirm, style: TextStyle(color: palette.warning)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    if (deleted != true || !mounted) return;
+
+    // Queued before the token clears, on this still-current screen, rather
+    // than racing the redirect to the login screen.
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.deleteAccountDone)));
+
+    final prefs = ref.read(sharedPreferencesProvider);
+    await clearSession(prefs);
+    ref.read(sessionTokenProvider.notifier).state = null;
   }
 
   @override
@@ -50,115 +167,252 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     final palette = AppPalette.of(context);
     final myUserId = ref.watch(currentUserIdProvider);
     final profile = ref.watch(myProfileProvider);
+    final data = profile.valueOrNull;
     final avatar = ref.watch(avatarBytesProvider);
-    final stats = myUserId == null ? null : ref.watch(publicProfileProvider(myUserId));
+    final stats = myUserId == null ? null : ref.watch(publicProfileProvider(myUserId)).valueOrNull;
     final stories = ref.watch(storiesControllerProvider);
     final categories = ref.watch(categoriesProvider).valueOrNull ?? const <DisorderCategory>[];
+    final themeMode = ref.watch(themeModeControllerProvider);
+    final isAdmin = data?.isAdmin ?? false;
+    final moderation = isAdmin ? ref.watch(moderationControllerProvider) : null;
+
+    final reminderOn = _reminderOverride ?? data?.checkinReminderEnabled ?? false;
+    final reminderHour = data?.checkinReminderHour ?? 21;
 
     return Scaffold(
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
+          padding: EdgeInsets.fromLTRB(22, 10, 22, bottomClearance(context)),
           children: [
+            Text(l10n.navMe, style: AppTypography.title2.copyWith(color: palette.textPrimary)),
+            const SizedBox(height: 18),
             Row(
               children: [
-                Text(l10n.navProfile, style: AppTypography.title2.copyWith(color: palette.textPrimary)),
-                const Spacer(),
-                SquareIconButton(
-                  icon: Icons.tune_rounded,
-                  onPressed: () => context.push('/settings/list'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 26),
-            Center(
-              child: GestureDetector(
-                onTap: () => context.push('/settings/profile'),
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: palette.accent, width: 2)),
-                  child: avatar.when(
-                    data: (bytes) => Container(
-                      width: 92,
-                      height: 92,
-                      clipBehavior: Clip.antiAlias,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: palette.surfaceMuted),
-                      child: bytes != null
-                          ? Image.memory(bytes, fit: BoxFit.cover, width: 92, height: 92)
-                          : Icon(Icons.person_rounded, size: 46, color: palette.textTertiary),
-                    ),
-                    loading: () => const SkeletonBox(width: 92, height: 92, radius: 46),
-                    error: (_, _) => Container(
-                      width: 92,
-                      height: 92,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: palette.surfaceMuted),
-                      child: Icon(Icons.person_rounded, size: 46, color: palette.textTertiary),
+                GestureDetector(
+                  onTap: () => context.push('/settings/profile'),
+                  child: Container(
+                    width: 76,
+                    height: 76,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: palette.lilac),
+                    child: avatar.when(
+                      data: (bytes) => bytes != null
+                          ? Image.memory(bytes, fit: BoxFit.cover, width: 76, height: 76)
+                          : Center(
+                              child: Text(
+                                (data?.displayName.isNotEmpty ?? false) ? data!.displayName.characters.first.toUpperCase() : '',
+                                style: AppTypography.title1.copyWith(color: palette.textPrimary),
+                              ),
+                            ),
+                      loading: () => const SkeletonBox(width: 76, height: 76, radius: 38),
+                      error: (_, _) => Icon(Icons.person_rounded, size: 38, color: palette.textPrimary),
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: profile.when(
+                    data: (p) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(p.displayName, style: AppTypography.title3.copyWith(color: palette.textPrimary)),
+                        if (p.email != null) ...[
+                          const SizedBox(height: 2),
+                          Text(p.email!,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                        ],
+                      ],
+                    ),
+                    loading: () => const SkeletonBox(width: 140, height: 22, radius: 6),
+                    error: (_, _) => Text(l10n.commonError, style: TextStyle(color: palette.warning)),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 14),
-            Center(
-              child: profile.when(
-                data: (data) => Text(data.displayName,
-                    style: AppTypography.headline.copyWith(color: palette.textPrimary)),
-                loading: () => const SkeletonBox(width: 140, height: 19, radius: 6),
-                error: (_, _) => Text(l10n.commonError, style: TextStyle(color: palette.warning)),
-              ),
-            ),
-            if (profile.valueOrNull?.email != null) ...[
-              const SizedBox(height: 4),
-              Center(
-                child: Text(profile.value!.email!,
-                    style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
-              ),
-            ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Row(
               children: [
-                _ProfileStat(
-                  value: stats?.valueOrNull?.storyCount,
+                _StatCard(
+                  value: stats?.storyCount,
                   label: l10n.profileStatStories,
-                  palette: palette,
                   onTap: () => context.push('/settings/my-stories'),
                 ),
-                _ProfileStat(
-                  value: stats?.valueOrNull?.followerCount,
+                const SizedBox(width: 8),
+                _StatCard(
+                  value: stats?.followerCount,
                   label: l10n.profileStatFollowers,
-                  palette: palette,
                   onTap: myUserId == null ? null : () => context.push('/users/$myUserId/followers'),
                 ),
-                _ProfileStat(
-                  value: stats?.valueOrNull?.followingCount,
+                const SizedBox(width: 8),
+                _StatCard(
+                  value: stats?.followingCount,
                   label: l10n.profileStatFollowing,
-                  palette: palette,
                   onTap: myUserId == null ? null : () => context.push('/users/$myUserId/following'),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            _SecondaryButton(
-              label: l10n.myProfileEdit,
+            const SizedBox(height: 12),
+            OutlineBlockButton(
               icon: Icons.edit_outlined,
-              palette: palette,
+              label: l10n.myProfileEdit,
+              height: 48,
               onTap: () => context.push('/settings/profile'),
             ),
-            const SizedBox(height: 30),
-            SectionLabel(l10n.myProfileStories),
-            const SizedBox(height: 12),
+            const SizedBox(height: 28),
+            SectionHeader(
+              title: l10n.myProfileStories,
+              action: l10n.discoveriesSeeAll,
+              onAction: () => context.push('/settings/my-stories'),
+            ),
+            const SizedBox(height: 8),
             _StoryGrid(
               loading: stories.loadingMine,
               stories: stories.mine,
               categories: categories,
-              palette: palette,
-              onAdd: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const StorySubmitScreen()),
+              onAdd: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StorySubmitScreen())),
+              onOpen: (id) =>
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => StoryDetailScreen(storyId: id))),
+            ),
+            const SizedBox(height: 28),
+            SectionHeader(title: l10n.meReminders),
+            const SizedBox(height: 10),
+            ListGroup(
+              children: [
+                ListRow(
+                  icon: Icons.notifications_none_rounded,
+                  tint: palette.sun,
+                  label: l10n.notificationsCheckinTitle,
+                  subtitle: data == null
+                      ? null
+                      : (reminderOn ? l10n.meReminderOn(reminderTimeLabel(reminderHour)) : l10n.meReminderOff),
+                  trailing: Switch(
+                    value: reminderOn,
+                    onChanged: data == null || _reminderOverride != null
+                        ? null
+                        : (value) => _setReminder(value, reminderHour),
+                  ),
+                  onTap: () => context.push('/settings/notifications'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            SectionHeader(title: l10n.meChatAndMessages),
+            const SizedBox(height: 10),
+            ListGroup(
+              children: [
+                ListRow(
+                  icon: Icons.tune_rounded,
+                  tint: palette.sky,
+                  label: l10n.settingsChatBoundaries,
+                  subtitle: l10n.settingsChatBoundariesBody,
+                  onTap: () => context.push('/settings/chat-boundaries'),
+                ),
+                ListRow(
+                  icon: Icons.mail_outline_rounded,
+                  tint: palette.peach,
+                  label: l10n.settingsDmPrivacy,
+                  subtitle: data?.dmPolicy == 'following' ? l10n.meDmPolicyFollowing : l10n.meDmPolicyEveryone,
+                  onTap: () => context.push('/settings/privacy'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            SectionHeader(title: l10n.settingsAppearance),
+            const SizedBox(height: 10),
+            _ThemeSegments(
+              mode: themeMode,
+              onChanged: (mode) => ref.read(themeModeControllerProvider.notifier).setMode(mode),
+            ),
+            const SizedBox(height: 28),
+            Material(
+              color: palette.lilac,
+              borderRadius: BorderRadius.circular(22),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => context.push('/premium'),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 16, 12, 16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.workspace_premium_outlined, size: 28, color: palette.textPrimary),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(l10n.settingsPremiumRow,
+                                style: AppTypography.label.copyWith(color: palette.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+                            Text(l10n.mePlusBody, style: AppTypography.footnote.copyWith(color: palette.textPrimary)),
+                          ],
+                        ),
+                      ),
+                      Text(l10n.mePlusCta,
+                          style: AppTypography.label.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700)),
+                      Icon(Icons.chevron_right_rounded, color: palette.textPrimary),
+                    ],
+                  ),
+                ),
               ),
-              onOpen: (id) => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => StoryDetailScreen(storyId: id)),
+            ),
+            if (isAdmin) ...[
+              const SizedBox(height: 28),
+              SectionHeader(title: l10n.settingsCommunity),
+              const SizedBox(height: 10),
+              ListGroup(
+                children: [
+                  ListRow(
+                    icon: Icons.verified_user_outlined,
+                    label: l10n.meModeration,
+                    subtitle: moderation == null || moderation.loading
+                        ? null
+                        : l10n.meModerationCounts(moderation.pending.length, moderation.reports.length),
+                    onTap: () => context.go('/stories/moderation'),
+                  ),
+                ],
               ),
+            ],
+            const SizedBox(height: 28),
+            SectionHeader(title: l10n.settingsPrivacy),
+            const SizedBox(height: 10),
+            ListGroup(
+              children: [
+                ListRow(
+                  icon: Icons.lock_outline_rounded,
+                  label: l10n.settingsDataLocation,
+                  subtitle: l10n.settingsDataLocationBody,
+                ),
+                ListRow(
+                  icon: Icons.shield_outlined,
+                  label: l10n.settingsLegal,
+                  subtitle: l10n.settingsLegalBody,
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            SectionHeader(title: l10n.settingsConnection),
+            const SizedBox(height: 10),
+            ListGroup(
+              children: [
+                ListRow(label: l10n.settingsServer, subtitle: AppConstants.apiBaseUrl),
+                ListRow(label: l10n.settingsDeviceId, subtitle: myUserId ?? '—'),
+              ],
+            ),
+            const SizedBox(height: 28),
+            SectionHeader(title: l10n.settingsAccount),
+            const SizedBox(height: 10),
+            ListGroup(
+              children: [
+                ListRow(icon: Icons.logout_rounded, label: l10n.settingsLogout, onTap: _logout),
+                ListRow(
+                  icon: Icons.delete_outline_rounded,
+                  tint: palette.warningSoft,
+                  label: l10n.settingsDeleteAccount,
+                  labelColor: palette.warning,
+                  onTap: _deleteAccount,
+                ),
+              ],
             ),
           ],
         ),
@@ -167,63 +421,37 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   }
 }
 
-class _ProfileStat extends StatelessWidget {
+class _StatCard extends StatelessWidget {
   final int? value;
   final String label;
-  final AppPalette palette;
   final VoidCallback? onTap;
 
-  const _ProfileStat({required this.value, required this.label, required this.palette, this.onTap});
+  const _StatCard({required this.value, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            children: [
-              value == null
-                  ? const SkeletonBox(width: 26, height: 18, radius: 6)
-                  : Text('$value', style: AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 19)),
-              const SizedBox(height: 4),
-              Text(label, style: AppTypography.caption.copyWith(color: palette.textSecondary)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SecondaryButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final AppPalette palette;
-  final VoidCallback onTap;
-
-  const _SecondaryButton({required this.label, required this.icon, required this.palette, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 50,
       child: Material(
-        color: palette.surfaceMuted,
-        borderRadius: BorderRadius.circular(16),
+        color: palette.glassFill,
+        borderRadius: BorderRadius.circular(18),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: palette.textPrimary),
-              const SizedBox(width: 8),
-              Text(label,
-                  style: AppTypography.label.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w600)),
-            ],
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 66),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                value == null
+                    ? const SkeletonBox(width: 26, height: 20, radius: 6)
+                    : Text('$value', style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 22)),
+                Text(label, style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+              ],
+            ),
           ),
         ),
       ),
@@ -231,16 +459,66 @@ class _SecondaryButton extends StatelessWidget {
   }
 }
 
-/// The account's own post grid, embedded directly on the profile page
-/// rather than behind a "see all" tap — the same 3-across square tiles
-/// as the dedicated [MyStoriesScreen] (sharing [StoryGridTile]), laid out
-/// with [GridView]'s own scrolling disabled so it grows inline with the
-/// rest of the page instead of nesting a second scrollable.
+class _ThemeSegments extends StatelessWidget {
+  final ThemeMode mode;
+  final ValueChanged<ThemeMode> onChanged;
+
+  const _ThemeSegments({required this.mode, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final options = [
+      (ThemeMode.system, l10n.settingsThemeSystem),
+      (ThemeMode.light, l10n.settingsThemeLight),
+      (ThemeMode.dark, l10n.settingsThemeDark),
+    ];
+
+    return GlassSurface(
+      radius: 18,
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          for (final (value, label) in options)
+            Expanded(
+              child: Semantics(
+                selected: value == mode,
+                button: true,
+                child: Material(
+                  color: value == mode ? palette.accent : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => onChanged(value),
+                    child: SizedBox(
+                      height: 46,
+                      child: Center(
+                        child: Text(
+                          label,
+                          style: AppTypography.label.copyWith(
+                            color: value == mode ? palette.onAccent : palette.textSecondary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The first few of the person's own stories, with the "write a new one"
+/// tile first; "Tümü" opens the full list.
 class _StoryGrid extends StatelessWidget {
   final bool loading;
   final List<LifeStory> stories;
   final List<DisorderCategory> categories;
-  final AppPalette palette;
   final VoidCallback onAdd;
   final void Function(String storyId) onOpen;
 
@@ -248,7 +526,6 @@ class _StoryGrid extends StatelessWidget {
     required this.loading,
     required this.stories,
     required this.categories,
-    required this.palette,
     required this.onAdd,
     required this.onOpen,
   });
@@ -264,21 +541,21 @@ class _StoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final shown = loading ? 2 : math.min(stories.length, 5);
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        crossAxisSpacing: 3,
-        mainAxisSpacing: 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
       ),
-      // +1 for the leading "write a new one" tile, always first — loading
-      // shows five skeleton squares behind it so the grid's shape doesn't
-      // jump once real tiles arrive.
-      itemCount: 1 + (loading ? 5 : stories.length),
+      itemCount: 1 + shown,
       itemBuilder: (context, i) {
         if (i == 0) return AddStoryTile(palette: palette, onTap: onAdd);
-        if (loading) return SkeletonBox(radius: 8, height: double.infinity);
+        if (loading) return const SkeletonBox(radius: 14, height: double.infinity);
 
         final story = stories[i - 1];
         return StoryGridTile(

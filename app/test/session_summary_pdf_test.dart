@@ -53,7 +53,7 @@ void main() {
 
   test('both bundled fonts actually contain the Turkish letters', () async {
     const turkish = 'şŞğĞıİüÜöÖçÇ';
-    for (final asset in ['assets/fonts/InstrumentSans-Variable.ttf', 'assets/fonts/Sora-Variable.ttf']) {
+    for (final asset in ['assets/fonts/AtkinsonHyperlegibleNext-Regular.ttf', 'assets/fonts/BricolageGrotesque-Bold.ttf']) {
       final parser = TtfParser((await rootBundle.load(asset)));
       final missing = [
         for (final rune in turkish.runes)

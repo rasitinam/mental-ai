@@ -3517,6 +3517,270 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Hearth · kişinin kendi kayıtlarından hazırlanmıştır, tanı değildir'**
   String get sessionPdfFooter;
+
+  /// No description provided for @navToday.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bugün'**
+  String get navToday;
+
+  /// No description provided for @navPath.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yolum'**
+  String get navPath;
+
+  /// No description provided for @navMe.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ben'**
+  String get navMe;
+
+  /// No description provided for @supportPill.
+  ///
+  /// In tr, this message translates to:
+  /// **'Destek'**
+  String get supportPill;
+
+  /// No description provided for @supportSheetBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Acil bir durumdaysan hemen 112\'yi ara. Hazır hissettiğinde bir uzmana ulaşmak da iyi bir adım olabilir.'**
+  String get supportSheetBody;
+
+  /// No description provided for @supportWriteInChat.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbette yaz'**
+  String get supportWriteInChat;
+
+  /// No description provided for @todayNoCheckinYet.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bugün henüz kayıt yok'**
+  String get todayNoCheckinYet;
+
+  /// No description provided for @todayMoreWords.
+  ///
+  /// In tr, this message translates to:
+  /// **'+{count} kelime'**
+  String todayMoreWords(int count);
+
+  /// No description provided for @todayWriteJournal.
+  ///
+  /// In tr, this message translates to:
+  /// **'Günlüğe yaz'**
+  String get todayWriteJournal;
+
+  /// No description provided for @todaySpeak.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sesle anlat'**
+  String get todaySpeak;
+
+  /// No description provided for @todayYourState.
+  ///
+  /// In tr, this message translates to:
+  /// **'Durumun'**
+  String get todayYourState;
+
+  /// No description provided for @todayStreak.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} gün seri'**
+  String todayStreak(int count);
+
+  /// No description provided for @todayRefreshState.
+  ///
+  /// In tr, this message translates to:
+  /// **'Durumu yenile'**
+  String get todayRefreshState;
+
+  /// No description provided for @levelVeryLow.
+  ///
+  /// In tr, this message translates to:
+  /// **'çok düşük'**
+  String get levelVeryLow;
+
+  /// No description provided for @levelLow.
+  ///
+  /// In tr, this message translates to:
+  /// **'düşük'**
+  String get levelLow;
+
+  /// No description provided for @levelMid.
+  ///
+  /// In tr, this message translates to:
+  /// **'orta'**
+  String get levelMid;
+
+  /// No description provided for @levelHigh.
+  ///
+  /// In tr, this message translates to:
+  /// **'iyi'**
+  String get levelHigh;
+
+  /// No description provided for @levelVeryHigh.
+  ///
+  /// In tr, this message translates to:
+  /// **'çok iyi'**
+  String get levelVeryHigh;
+
+  /// No description provided for @todayMetooCard.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} kişi hikayelerinde kendini buldu'**
+  String todayMetooCard(int count);
+
+  /// No description provided for @todayMetooCardAction.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bıraktıkları notları gör'**
+  String get todayMetooCardAction;
+
+  /// No description provided for @chatPreferences.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tercihler'**
+  String get chatPreferences;
+
+  /// No description provided for @storiesPendingBanner.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} hikaye onayını bekliyor'**
+  String storiesPendingBanner(int count);
+
+  /// No description provided for @storiesReportsBanner.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} bildirilen hikaye'**
+  String storiesReportsBanner(int count);
+
+  /// No description provided for @storiesAdminOnly.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yalnızca yöneticiler görür'**
+  String get storiesAdminOnly;
+
+  /// No description provided for @storiesReview.
+  ///
+  /// In tr, this message translates to:
+  /// **'İncele'**
+  String get storiesReview;
+
+  /// No description provided for @pathSessionBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Terapistine götürmek için tek sayfa'**
+  String get pathSessionBody;
+
+  /// No description provided for @pathTests.
+  ///
+  /// In tr, this message translates to:
+  /// **'Testlerim'**
+  String get pathTests;
+
+  /// No description provided for @pathDiagnosesEmpty.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz bir tanı eklemedin.'**
+  String get pathDiagnosesEmpty;
+
+  /// No description provided for @pathDiagnosesAdd.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tanı ekle'**
+  String get pathDiagnosesAdd;
+
+  /// No description provided for @pathGuideBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tanılar ve araştırmalardan bilgi kartları'**
+  String get pathGuideBody;
+
+  /// No description provided for @meReminders.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hatırlatmalar'**
+  String get meReminders;
+
+  /// No description provided for @meReminderOn.
+  ///
+  /// In tr, this message translates to:
+  /// **'Saat {time}'**
+  String meReminderOn(String time);
+
+  /// No description provided for @meReminderOff.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kapalı'**
+  String get meReminderOff;
+
+  /// No description provided for @meChatAndMessages.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbet ve mesajlar'**
+  String get meChatAndMessages;
+
+  /// No description provided for @meDmPolicyEveryone.
+  ///
+  /// In tr, this message translates to:
+  /// **'Herkesten'**
+  String get meDmPolicyEveryone;
+
+  /// No description provided for @meDmPolicyFollowing.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sadece takip ettiklerimden'**
+  String get meDmPolicyFollowing;
+
+  /// No description provided for @mePlusBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sınırsız sohbet'**
+  String get mePlusBody;
+
+  /// No description provided for @mePlusCta.
+  ///
+  /// In tr, this message translates to:
+  /// **'İncele'**
+  String get mePlusCta;
+
+  /// No description provided for @meModeration.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hikaye moderasyonu'**
+  String get meModeration;
+
+  /// No description provided for @meModerationCounts.
+  ///
+  /// In tr, this message translates to:
+  /// **'{pending} bekleyen · {reports} bildirilen'**
+  String meModerationCounts(int pending, int reports);
+
+  /// No description provided for @quickCheckinEyebrow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh hali · bugün'**
+  String get quickCheckinEyebrow;
+
+  /// No description provided for @quickCheckinNoteHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bir cümle ekle, istersen'**
+  String get quickCheckinNoteHint;
+
+  /// No description provided for @quickCheckinFootnote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Günde bir kez kaydedilir.'**
+  String get quickCheckinFootnote;
+
+  /// No description provided for @quickCheckinFootnoteReminder.
+  ///
+  /// In tr, this message translates to:
+  /// **'Günde bir kez kaydedilir. Kaydetmezsen saat {time} olunca tek bir hatırlatma gelir.'**
+  String quickCheckinFootnoteReminder(String time);
 }
 
 class _AppLocalizationsDelegate

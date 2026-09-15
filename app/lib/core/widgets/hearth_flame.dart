@@ -32,7 +32,7 @@ class HearthFlame extends StatelessWidget {
     final tier = _tier;
     final tierFraction = tier / (_thresholds.length - 1);
     final scale = 0.5 + tierFraction * 0.5;
-    final color = Color.lerp(palette.textTertiary, palette.accent, tierFraction)!;
+    final color = Color.lerp(palette.textTertiary, palette.ember, tierFraction)!;
     final glow = tier == 0 ? 0.0 : 0.1 + tierFraction * 0.3;
 
     return SizedBox(
@@ -49,7 +49,7 @@ class HearthFlame extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: palette.accent.withValues(alpha: glow),
+                    color: palette.ember.withValues(alpha: glow),
                     blurRadius: size * 0.45,
                     spreadRadius: size * 0.02,
                   ),

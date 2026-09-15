@@ -105,7 +105,7 @@ class PushService {
     }
   }
 
-  /// Called right before the session is cleared (see `settings_screen.dart`
+  /// Called right before the session is cleared (see `my_profile_screen.dart`
   /// — must run while the auth token is still valid) so a signed-out
   /// device stops receiving notifications for the account it just left.
   Future<void> unregister() async {

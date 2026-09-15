@@ -30,8 +30,8 @@ Future<Uint8List> buildSessionSummaryPdf({
   required AppLocalizations l10n,
   required String locale,
 }) async {
-  final body = pw.Font.ttf(await rootBundle.load('assets/fonts/InstrumentSans-Variable.ttf'));
-  final heading = pw.Font.ttf(await rootBundle.load('assets/fonts/Sora-Variable.ttf'));
+  final body = pw.Font.ttf(await rootBundle.load('assets/fonts/AtkinsonHyperlegibleNext-Regular.ttf'));
+  final heading = pw.Font.ttf(await rootBundle.load('assets/fonts/BricolageGrotesque-Bold.ttf'));
 
   final range = '${DateFormat.MMMd(locale).format(summary.periodStart.toLocal())} – '
       '${DateFormat.yMMMd(locale).format(summary.periodEnd.toLocal())}';

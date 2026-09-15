@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/layout/bottom_clearance.dart';
@@ -8,15 +9,18 @@ import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/network/error_messages.dart';
 import '../../../core/onboarding/first_run.dart';
-import '../../../core/voice/voice.dart';
-
 import '../../../core/storage/local_prefs.dart';
+import '../../../core/voice/voice.dart';
 import '../../../core/widgets/countdown_text.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../streak/data/streak_api.dart';
 import '../domain/journal_entry.dart';
 import 'journal_controller.dart';
+
+/// Set by Bugün's "Sesle anlat" right before it opens the journal, so the
+/// microphone is already listening when the page arrives.
+final journalStartDictationProvider = StateProvider<bool>((ref) => false);
 
 /// One entry per day (enforced by the backend), plus the archive of every
 /// past entry by date — a journal you can't read back is just a form.
@@ -33,12 +37,20 @@ const _draftKey = 'mental_ai.journal_draft';
 
 class _JournalScreenState extends ConsumerState<JournalScreen> {
   final _controller = TextEditingController();
+  final _dictation = GlobalKey<DictationButtonState>();
 
   @override
   void initState() {
     super.initState();
     final draft = ref.read(sharedPreferencesProvider).getString(_draftKey);
     if (draft != null) _controller.text = draft;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeStartDictation());
+  }
+
+  void _maybeStartDictation() {
+    if (!mounted || !ref.read(journalStartDictationProvider)) return;
+    ref.read(journalStartDictationProvider.notifier).state = false;
+    _dictation.currentState?.start();
   }
 
   @override
@@ -62,6 +74,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final palette = AppPalette.of(context);
     final onCooldown = state.isOnCooldown;
     final streak = ref.watch(streakProvider).valueOrNull;
+
+    ref.listen(journalStartDictationProvider, (previous, next) {
+      if (next) WidgetsBinding.instance.addPostFrameCallback((_) => _maybeStartDictation());
+    });
 
     ref.listen(journalControllerProvider, (prev, next) {
       if (next.submitted && prev?.submitted != true) {
@@ -87,29 +103,32 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         child: RefreshIndicator(
           color: palette.accent,
           onRefresh: journalController.load,
-          // The composer and the labels are a fixed handful of widgets, but
-          // the archive below them grows by one card a day forever, so it is
-          // built lazily in its own sliver rather than in one eager list.
+          // The archive grows by one card a day forever, so it is built
+          // lazily in its own sliver rather than in one eager list.
           child: CustomScrollView(
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(22, 12, 22, 0),
+                padding: const EdgeInsets.fromLTRB(22, 10, 22, 0),
                 sliver: SliverList.list(
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        SquareIconButton(
+                          icon: Icons.arrow_back_rounded,
+                          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                          onPressed: () => context.go('/report'),
+                        ),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(l10n.journalPrompt,
-                                  style:
-                                      AppTypography.title2.copyWith(color: palette.textPrimary)),
-                              const SizedBox(height: 5),
+                                  style: AppTypography.title3.copyWith(color: palette.textPrimary)),
+                              const SizedBox(height: 4),
                               Text(l10n.journalPromptNote,
-                                  style: AppTypography.footnote
-                                      .copyWith(color: palette.textSecondary)),
+                                  style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
                             ],
                           ),
                         ),
@@ -118,9 +137,15 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text('${streak.current}',
-                                  style: AppTypography.headline
-                                      .copyWith(color: palette.accent, fontSize: 18)),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.local_fire_department_rounded, size: 18, color: palette.ember),
+                                  const SizedBox(width: 2),
+                                  Text('${streak.current}',
+                                      style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 18)),
+                                ],
+                              ),
                               const SizedBox(height: 2),
                               SectionLabel(l10n.streakJournalLabel),
                             ],
@@ -140,8 +165,6 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                         until: state.cooldownUntil!,
                         format: (remaining) => _formatRemaining(l10n, remaining),
                         palette: palette,
-                        // One rebuild when the cooldown lapses, to swap the
-                        // card back for the composer.
                         onFinished: () => setState(() {}),
                       )
                     else ...[
@@ -164,6 +187,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                             ),
                             const SizedBox(width: 8),
                             DictationButton(
+                              key: _dictation,
                               controller: _controller,
                               style: DictationStyle.pill,
                               onChanged: (text) =>
@@ -172,7 +196,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 16),
                       if (state.error != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),
@@ -185,7 +209,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                         onPressed: () => journalController.submit(_controller.text),
                       ),
                     ],
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 28),
                     SectionLabel(l10n.journalPast),
                     const SizedBox(height: 10),
                     if (state.loading)
@@ -216,9 +240,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 }
 
-/// The writing surface: a card outlined in the accent so it reads as the
-/// one thing on the screen waiting for input, with the counter and draft
-/// state pinned to its floor.
+/// The writing surface, outlined in ink so it reads as the one thing on the
+/// screen waiting for input, with the counter and microphone on its floor.
 class _Composer extends StatelessWidget {
   final TextEditingController controller;
   final AppPalette palette;
@@ -237,29 +260,29 @@ class _Composer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 170),
+      constraints: const BoxConstraints(minHeight: 190),
       decoration: BoxDecoration(
         color: palette.glassFill,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.accent, width: 2),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: palette.textPrimary, width: 1.5),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(18, 16, 12, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextField(
             controller: controller,
             maxLines: null,
-            minLines: 5,
+            minLines: 6,
             onChanged: onChanged,
             textAlignVertical: TextAlignVertical.top,
-            style: AppTypography.body.copyWith(color: palette.textPrimary),
+            style: AppTypography.body.copyWith(color: palette.textPrimary, fontSize: 17),
             cursorColor: palette.accent,
             decoration: InputDecoration(
               isDense: true,
               contentPadding: EdgeInsets.zero,
               hintText: hint,
-              hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
+              hintStyle: AppTypography.body.copyWith(color: palette.textTertiary, fontSize: 17),
               border: InputBorder.none,
             ),
           ),
@@ -292,23 +315,28 @@ class _CooldownCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return GlassSurface(
-      radius: 20,
+      color: palette.sun,
+      radius: 24,
       padding: const EdgeInsets.all(20),
-      child: Column(
+      child: Row(
         children: [
-          Icon(Icons.check_circle_outline_rounded, size: 28, color: palette.accent),
-          const SizedBox(height: 12),
-          Text(
-            l10n.journalDoneToday,
-            style: AppTypography.headline.copyWith(color: palette.textPrimary),
-          ),
-          const SizedBox(height: 6),
-          CountdownText(
-            until: until,
-            onFinished: onFinished,
-            format: (remaining) => l10n.journalNextIn(format(remaining)),
-            textAlign: TextAlign.center,
-            style: AppTypography.footnote.copyWith(color: palette.textSecondary),
+          Icon(Icons.check_circle_rounded, size: 28, color: palette.textPrimary),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.journalDoneToday,
+                    style: AppTypography.headline.copyWith(color: palette.textPrimary)),
+                const SizedBox(height: 4),
+                CountdownText(
+                  until: until,
+                  onFinished: onFinished,
+                  format: (remaining) => l10n.journalNextIn(format(remaining)),
+                  style: AppTypography.subheadline.copyWith(color: palette.textPrimary),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -316,9 +344,7 @@ class _CooldownCard extends StatelessWidget {
   }
 }
 
-/// Stands in for the archive list while it loads — shaped like
-/// [_JournalEntryCard] itself (a date line over a couple of body lines) so
-/// the list doesn't visibly jump once the real entries arrive.
+/// Stands in for the archive list while it loads.
 class _JournalEntrySkeleton extends StatelessWidget {
   const _JournalEntrySkeleton();
 
@@ -327,13 +353,13 @@ class _JournalEntrySkeleton extends StatelessWidget {
     return Column(
       children: [
         for (var i = 0; i < 3; i++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 10),
             child: GlassSurface(
-              radius: 16,
+              radius: 20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   SkeletonBox(width: 110, height: 11),
                   SizedBox(height: 10),
                   SkeletonBox(height: 13),
@@ -356,7 +382,7 @@ class _JournalEntryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassSurface(
-      radius: 16,
+      radius: 20,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -364,10 +390,10 @@ class _JournalEntryCard extends StatelessWidget {
             DateFormat.yMMMMd(Localizations.localeOf(context).languageCode)
                 .add_Hm()
                 .format(entry.createdAt),
-            style: AppTypography.caption.copyWith(color: palette.textSecondary),
+            style: AppTypography.caption.copyWith(color: palette.textSecondary, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
-          Text(entry.body, style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
+          Text(entry.body, style: AppTypography.body.copyWith(color: palette.textPrimary)),
         ],
       ),
     );

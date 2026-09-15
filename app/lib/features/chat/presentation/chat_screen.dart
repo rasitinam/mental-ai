@@ -5,18 +5,14 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
+import '../../../app/theme/components.dart';
 import '../../../core/onboarding/first_run.dart';
 import '../../../core/voice/voice.dart';
-
 import '../../../l10n/app_localizations.dart';
+import '../../onboarding/presentation/chat_boundaries_screen.dart';
 import '../../streak/data/streak_api.dart';
 import '../domain/chat_message.dart';
 import 'chat_controller.dart';
-
-/// Turkey's single emergency number — not configurable per user, since
-/// there's no reliable, low-risk way to infer someone's actual country
-/// from inside the app.
-const _emergencyNumber = '112';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -58,15 +54,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(chatControllerProvider);
     final palette = AppPalette.of(context);
+    final narrow = MediaQuery.sizeOf(context).width < 380;
 
-    // The first reply that actually lands is the moment the app stops
-    // being a form and starts being a conversation — worth marking, once.
-    // The guards matter: a reply arriving appends to a transcript that
-    // ended on the person's own message (so this can't fire on the
-    // history load, which goes from empty to many at once), and a
-    // two-message transcript is the only one that can be a first
-    // exchange (so an account that was already chatting before this
-    // existed never gets congratulated on its hundredth message).
+    // The first reply that actually lands is worth marking, once. A reply
+    // arriving appends to a transcript that ended on the person's own
+    // message, and only a two-message transcript can be a first exchange.
     ref.listen(chatControllerProvider.select((s) => s.messages), (previous, next) {
       final justReplied = previous != null &&
           previous.isNotEmpty &&
@@ -85,9 +77,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       );
     });
 
-    // Free daily chat budget hit (see `PremiumRequiredException`): tell the
-    // person why, then send them straight to the paywall instead of
-    // leaving them stuck in front of a chat that just stopped replying.
+    // Free daily chat budget hit: say why, then go to the paywall instead
+    // of leaving a chat that just stopped replying.
     ref.listen(chatControllerProvider.select((s) => s.quotaExceededTick), (previous, next) {
       if (previous == null || next <= previous) return;
       ScaffoldMessenger.of(context)
@@ -107,14 +98,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
+              padding: const EdgeInsets.fromLTRB(22, 10, 22, 14),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(l10n.navChat,
-                      style: AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 20)),
-                  Text(l10n.chatToday,
-                      style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                  Expanded(
+                    child: Text(l10n.navChat,
+                        maxLines: 1,
+                        style: AppTypography.title2.copyWith(color: palette.textPrimary)),
+                  ),
+                  PillButton(
+                    icon: Icons.tune_rounded,
+                    label: l10n.chatPreferences,
+                    iconOnly: narrow,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ChatBoundariesScreen()),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const SupportPill(),
                 ],
               ),
             ),
@@ -135,7 +136,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               const SizedBox(height: 24),
                               Text(
                                 l10n.chatEmptyPrompt,
-                                style: AppTypography.body.copyWith(color: palette.textTertiary),
+                                style: AppTypography.body.copyWith(color: palette.textSecondary),
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -158,49 +159,43 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   color: palette.accent,
                 ),
               ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(22, 8, 22, 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 52),
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
-                        alignment: Alignment.centerLeft,
-                        decoration: BoxDecoration(
-                          color: palette.glassFill,
-                          borderRadius: BorderRadius.circular(26),
-                          border: Border.all(color: palette.separator),
-                        ),
-                        child: TextField(
-                          controller: _inputController,
-                          onSubmitted: (_) => _send(),
-                          textInputAction: TextInputAction.send,
-                          style: AppTypography.label
-                              .copyWith(color: palette.textPrimary, fontWeight: FontWeight.w400),
-                          cursorColor: palette.accent,
-                          decoration: InputDecoration(
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                            hintText: l10n.chatInputHint,
-                            hintStyle: AppTypography.label.copyWith(
-                              color: palette.textTertiary,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            border: InputBorder.none,
-                          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 54),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      alignment: Alignment.centerLeft,
+                      decoration: BoxDecoration(
+                        color: palette.glassFill,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: TextField(
+                        controller: _inputController,
+                        onSubmitted: (_) => _send(),
+                        textInputAction: TextInputAction.send,
+                        minLines: 1,
+                        maxLines: 5,
+                        style: AppTypography.body.copyWith(color: palette.textPrimary),
+                        cursorColor: palette.accent,
+                        decoration: InputDecoration(
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                          hintText: l10n.chatInputHint,
+                          hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
+                          border: InputBorder.none,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    DictationButton(controller: _inputController),
-                    const SizedBox(width: 8),
-                    _SendButton(color: palette.accent, onTap: _send),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  DictationButton(controller: _inputController),
+                  const SizedBox(width: 8),
+                  _SendButton(onTap: _send),
+                ],
               ),
             ),
           ],
@@ -211,22 +206,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 }
 
 class _SendButton extends StatelessWidget {
-  final Color color;
   final VoidCallback onTap;
-  const _SendButton({required this.color, required this.onTap});
+  const _SendButton({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: color,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: const SizedBox(
-          width: 52,
-          height: 52,
-          child: Icon(Icons.arrow_upward_rounded, size: 20, color: Colors.white),
+    final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return Tooltip(
+      message: l10n.dmSend,
+      child: Material(
+        color: palette.accent,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            width: 54,
+            height: 54,
+            child: Icon(Icons.arrow_upward_rounded, size: 24, color: palette.onAccent),
+          ),
         ),
       ),
     );
@@ -242,14 +242,9 @@ class _ChatBubble extends StatefulWidget {
 }
 
 class _ChatBubbleState extends State<_ChatBubble> {
-  // Dismissing only hides this message's own crisis card — it doesn't
-  // change anything server-side, so scrolling away and back (or a
-  // future message) can still surface it again if it's still relevant.
+  // Dismissing only hides this message's own crisis card — nothing changes
+  // server-side, so a later message can still surface it again.
   bool _dismissed = false;
-
-  Future<void> _call() async {
-    await launchUrl(Uri(scheme: 'tel', path: _emergencyNumber));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -263,34 +258,29 @@ class _ChatBubbleState extends State<_ChatBubble> {
         Align(
           alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-            margin: EdgeInsets.only(bottom: isUser ? 14 : 2),
+            margin: EdgeInsets.only(bottom: isUser ? 12 : 0),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * (isUser ? 0.72 : 0.8),
+              maxWidth: MediaQuery.sizeOf(context).width * (isUser ? 0.74 : 0.82),
             ),
             decoration: BoxDecoration(
-              color: isUser ? palette.accent : palette.glassFill,
+              color: isUser ? palette.sky : palette.glassFill,
               borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(20),
-                topRight: const Radius.circular(20),
-                bottomLeft: Radius.circular(isUser ? 20 : 6),
-                bottomRight: Radius.circular(isUser ? 6 : 20),
+                topLeft: const Radius.circular(22),
+                topRight: const Radius.circular(22),
+                bottomLeft: Radius.circular(isUser ? 22 : 6),
+                bottomRight: Radius.circular(isUser ? 6 : 22),
               ),
-              border: isUser ? null : Border.all(color: palette.separator),
             ),
             child: Text(
               widget.message.text,
-              style: AppTypography.label.copyWith(
-                fontWeight: FontWeight.w400,
-                height: 1.55,
-                color: isUser ? Colors.white : palette.textPrimary,
-              ),
+              style: AppTypography.body.copyWith(color: palette.textPrimary),
             ),
           ),
         ),
         if (!isUser)
           Padding(
-            padding: const EdgeInsets.only(left: 2, bottom: 8),
+            padding: const EdgeInsets.only(bottom: 6),
             child: SpeakButton(
               id: 'chat-${identityHashCode(widget.message)}',
               text: widget.message.text,
@@ -300,48 +290,28 @@ class _ChatBubbleState extends State<_ChatBubble> {
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: palette.warningSoft,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: palette.warning.withValues(alpha: 0.35)),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 18,
-                      height: 18,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(color: palette.warning, shape: BoxShape.circle),
-                      child: Text('!',
-                          style: TextStyle(
-                            fontSize: 11,
-                            height: 1,
-                            fontWeight: FontWeight.w700,
-                            color: palette.warningSoft,
-                          )),
-                    ),
+                    Icon(Icons.support_rounded, size: 20, color: palette.warning),
                     const SizedBox(width: 9),
                     Expanded(
                       child: Text(
                         l10n.chatCrisisTitle,
-                        style: AppTypography.footnote.copyWith(
-                          color: palette.warning,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppTypography.label.copyWith(color: palette.warning, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  l10n.chatCrisis,
-                  style: AppTypography.footnote.copyWith(color: palette.warning),
-                ),
+                const SizedBox(height: 8),
+                Text(l10n.chatCrisis, style: AppTypography.subheadline.copyWith(color: palette.warning)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -349,8 +319,7 @@ class _ChatBubbleState extends State<_ChatBubble> {
                       child: _CrisisAction(
                         label: l10n.chatCallEmergency,
                         filled: true,
-                        palette: palette,
-                        onTap: _call,
+                        onTap: () => launchUrl(Uri(scheme: 'tel', path: emergencyNumber)),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -358,7 +327,6 @@ class _ChatBubbleState extends State<_ChatBubble> {
                       child: _CrisisAction(
                         label: l10n.chatContinue,
                         filled: false,
-                        palette: palette,
                         onTap: () => setState(() => _dismissed = true),
                       ),
                     ),
@@ -375,38 +343,30 @@ class _ChatBubbleState extends State<_ChatBubble> {
 class _CrisisAction extends StatelessWidget {
   final String label;
   final bool filled;
-  final AppPalette palette;
   final VoidCallback onTap;
 
-  const _CrisisAction({
-    required this.label,
-    required this.filled,
-    required this.palette,
-    required this.onTap,
-  });
+  const _CrisisAction({required this.label, required this.filled, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
     return Material(
       color: filled ? palette.warning : Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: filled ? BorderSide.none : BorderSide(color: palette.warning, width: 1.5),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Container(
-          height: 40,
+          height: 46,
           alignment: Alignment.center,
-          decoration: filled
-              ? null
-              : BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: palette.warning.withValues(alpha: 0.45)),
-                ),
           child: Text(
             label,
-            style: AppTypography.footnote.copyWith(
-              fontSize: 13.5,
-              fontWeight: filled ? FontWeight.w600 : FontWeight.w500,
+            style: AppTypography.label.copyWith(
+              fontWeight: FontWeight.w700,
               color: filled ? palette.warningSoft : palette.warning,
             ),
           ),

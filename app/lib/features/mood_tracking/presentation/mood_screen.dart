@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
@@ -85,6 +86,14 @@ class _MoodScreenState extends ConsumerState<MoodScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: SquareIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  onPressed: () => context.go('/report'),
+                ),
+              ),
+              const SizedBox(height: 14),
               Text(
                 onCooldown ? l10n.moodDoneToday : l10n.moodHowAreYou,
                 style: AppTypography.title2.copyWith(color: palette.textPrimary, fontSize: 24),
@@ -236,7 +245,7 @@ class _EmotionChip extends StatelessWidget {
           child: Text(
             label,
             style: AppTypography.label.copyWith(
-              color: selected ? Colors.white : palette.textPrimary,
+              color: selected ? AppPalette.of(context).onAccent : palette.textPrimary,
             ),
           ),
         ),

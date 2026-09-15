@@ -58,7 +58,7 @@ class AssessmentSummaryScreen extends ConsumerWidget {
               const Spacer(),
               AppPrimaryButton(
                 label: latest.valueOrNull == null ? l10n.assessmentRetakeCta : l10n.assessmentRetakeAgain,
-                onPressed: () => context.go('/settings/assessment/take'),
+                onPressed: () => context.go('/life-analysis/assessment/take'),
               ),
             ],
           ),

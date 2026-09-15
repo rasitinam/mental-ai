@@ -506,7 +506,7 @@ class _AssessmentCrisisBanner extends StatelessWidget {
                 onTap: _call,
                 child: Center(
                   child: Text(l10n.chatCallEmergency,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                      style: TextStyle(color: AppPalette.of(context).warningSoft, fontWeight: FontWeight.w600, fontSize: 14)),
                 ),
               ),
             ),

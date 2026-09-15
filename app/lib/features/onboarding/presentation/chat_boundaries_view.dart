@@ -223,7 +223,7 @@ class _BoundaryTile extends StatelessWidget {
                   border: selected ? null : Border.all(color: palette.textTertiary, width: 1.5),
                 ),
                 child: selected
-                    ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
+                    ? Icon(Icons.check_rounded, size: 15, color: AppPalette.of(context).onAccent)
                     : null,
               ),
               const SizedBox(width: 13),

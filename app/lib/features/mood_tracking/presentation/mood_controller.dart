@@ -106,12 +106,13 @@ class MoodController extends Notifier<MoodState> {
     );
   }
 
-  Future<void> submit({String? note}) async {
+  Future<void> submit({String? note, List<String> tags = const []}) async {
     state = state.copyWith(submitting: true, error: null);
     try {
       await ref.read(moodApiProvider).addMood(
             valence: state.valence,
             arousal: state.arousal,
+            tags: tags,
             note: note,
           );
       HapticFeedback.mediumImpact();

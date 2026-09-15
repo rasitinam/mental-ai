@@ -28,7 +28,7 @@ class StoryGridTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: palette.glassFill,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(14),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -57,10 +57,10 @@ class StoryGridTile extends StatelessWidget {
                   Expanded(
                     child: Text(
                       story.body,
-                      maxLines: 5,
+                      maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 12,
                         height: 1.35,
                         fontWeight: FontWeight.w400,
                         color: palette.textSecondary,
@@ -95,7 +95,7 @@ class AddStoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: palette.glassFill,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(14),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,

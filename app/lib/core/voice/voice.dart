@@ -83,8 +83,8 @@ class ReadAloud extends ChangeNotifier {
   }
 }
 
-/// A small speaker icon under an assistant message: tap to hear it, tap
-/// again (or start another) to stop.
+/// "Sesli oku" under an assistant message: tap to hear it, tap again (or
+/// start another) to stop.
 class SpeakButton extends ConsumerWidget {
   final String id;
   final String text;
@@ -96,20 +96,25 @@ class SpeakButton extends ConsumerWidget {
     final palette = AppPalette.of(context);
     final l10n = AppLocalizations.of(context)!;
     final speaking = ref.watch(readAloudProvider.select((r) => r.speakingId == id));
+    final color = speaking ? palette.textPrimary : palette.textSecondary;
 
-    return Tooltip(
-      message: speaking ? l10n.voiceStopSpeaking : l10n.voiceSpeak,
-      child: InkResponse(
-        onTap: () => ref
-            .read(readAloudProvider)
-            .toggle(id, text, Localizations.localeOf(context).languageCode),
-        radius: 20,
+    return InkWell(
+      onTap: () => ref.read(readAloudProvider).toggle(id, text, Localizations.localeOf(context).languageCode),
+      borderRadius: BorderRadius.circular(10),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 40),
         child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Icon(
-            speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined,
-            size: 18,
-            color: speaking ? palette.accent : palette.textTertiary,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined, size: 18, color: color),
+              const SizedBox(width: 6),
+              Text(
+                speaking ? l10n.voiceStopSpeaking : l10n.voiceSpeak,
+                style: AppTypography.footnote.copyWith(color: color, fontWeight: FontWeight.w700),
+              ),
+            ],
           ),
         ),
       ),
@@ -118,7 +123,7 @@ class SpeakButton extends ConsumerWidget {
 }
 
 enum DictationStyle {
-  /// A 46px round button that sits next to a send button (chat).
+  /// A 54px rounded square that sits next to a send button (chat).
   round,
 
   /// A compact "Sesle yaz" pill that sits in a text card's footer (journal).
@@ -145,12 +150,18 @@ class DictationButton extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<DictationButton> createState() => _DictationButtonState();
+  ConsumerState<DictationButton> createState() => DictationButtonState();
 }
 
-class _DictationButtonState extends ConsumerState<DictationButton> {
+class DictationButtonState extends ConsumerState<DictationButton> {
   bool _listening = false;
   String _prefix = '';
+
+  /// Starts listening if it isn't already — for "Sesle anlat", which
+  /// arrives at the journal wanting the microphone already on.
+  Future<void> start() async {
+    if (!_listening) await _toggle();
+  }
 
   Future<void> _toggle() async {
     final l10n = AppLocalizations.of(context)!;
@@ -243,25 +254,28 @@ class _DictationButtonState extends ConsumerState<DictationButton> {
     final l10n = AppLocalizations.of(context)!;
 
     if (widget.style == DictationStyle.pill) {
-      final color = _listening ? palette.warning : palette.accent;
+      final foreground = _listening ? palette.warningSoft : palette.textPrimary;
       return Material(
-        color: _listening ? palette.warningSoft : palette.accentSoft,
+        color: _listening ? palette.warning : palette.sky,
         borderRadius: BorderRadius.circular(100),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: _toggle,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(_listening ? Icons.stop_rounded : Icons.mic_none_rounded, size: 15, color: color),
-                const SizedBox(width: 5),
-                Text(
-                  _listening ? l10n.voiceListening : l10n.voiceDictate,
-                  style: AppTypography.caption.copyWith(color: color, fontWeight: FontWeight.w600),
-                ),
-              ],
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 40),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 13),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_listening ? Icons.stop_rounded : Icons.mic_none_rounded, size: 18, color: foreground),
+                  const SizedBox(width: 6),
+                  Text(
+                    _listening ? l10n.voiceListening : l10n.voiceDictate,
+                    style: AppTypography.footnote.copyWith(color: foreground, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -270,24 +284,19 @@ class _DictationButtonState extends ConsumerState<DictationButton> {
 
     return Tooltip(
       message: _listening ? l10n.voiceListening : l10n.voiceDictate,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: _listening ? palette.warning : palette.surfaceMuted,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: _toggle,
+      child: Material(
+        color: _listening ? palette.warning : palette.sky,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: _toggle,
+          child: SizedBox(
+            width: 54,
+            height: 54,
             child: Icon(
               _listening ? Icons.stop_rounded : Icons.mic_none_rounded,
-              size: 21,
-              color: _listening ? Colors.white : palette.textSecondary,
+              size: 24,
+              color: _listening ? palette.warningSoft : palette.textPrimary,
             ),
           ),
         ),

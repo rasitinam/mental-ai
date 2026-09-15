@@ -4,28 +4,31 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/layout/bottom_clearance.dart';
-import '../../discoveries/data/discoveries_api.dart';
-import '../../discoveries/presentation/discoveries_section.dart';
-
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
+import '../../../app/theme/components.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/network/error_messages.dart';
-import '../../../core/widgets/hearth_flame.dart';
+import '../../../core/widgets/countdown_text.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../catalog/data/catalog_api.dart';
-import '../../catalog/domain/disorder_category.dart';
-import '../../profile/presentation/profile_controller.dart';
+import '../../discoveries/data/discoveries_api.dart';
+import '../../discoveries/presentation/discoveries_section.dart';
+import '../../journal/presentation/journal_screen.dart' show journalStartDictationProvider;
+import '../../mood_tracking/domain/mood_emotion.dart';
+import '../../mood_tracking/presentation/mood_controller.dart';
+import '../../mood_tracking/presentation/quick_checkin_sheet.dart';
+import '../../profile/data/profile_api.dart';
+import '../../stories/presentation/metoo.dart' show MetooGlyph;
+import '../../stories/presentation/stories_controller.dart';
 import '../../streak/data/streak_api.dart';
-import '../../streak/domain/streak_summary.dart';
 import '../domain/user_state.dart';
 import 'daily_report_controller.dart';
 import 'state_controller.dart';
 
-/// The app's landing screen, in the order the design puts things: where
-/// you are right now, how long you've kept it up, what today's note
-/// says, and the three places you'd go next.
+/// Bugün — where the app opens. The check-in comes first because it's the
+/// thing people come to do; then where they are, what the records show,
+/// and today's note.
 class DailyReportScreen extends ConsumerWidget {
   const DailyReportScreen({super.key});
 
@@ -36,15 +39,14 @@ class DailyReportScreen extends ConsumerWidget {
     final reportController = ref.read(dailyReportControllerProvider.notifier);
     final home = ref.watch(stateControllerProvider);
     final palette = AppPalette.of(context);
+    final name = ref.watch(myProfileProvider).valueOrNull?.displayName.trim().split(' ').first ?? '';
+    final greeting = _greeting(l10n);
 
     return Scaffold(
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
           color: palette.accent,
-          // Pull-to-refresh reassesses rather than re-reads: the whole point
-          // is that a conversation from ten minutes ago should change what
-          // this screen says.
           onRefresh: () async {
             await Future.wait([
               ref.read(stateControllerProvider.notifier).refresh(),
@@ -54,7 +56,7 @@ class DailyReportScreen extends ConsumerWidget {
             ref.invalidate(discoveriesProvider);
           },
           child: ListView(
-            padding: EdgeInsets.fromLTRB(22, 8, 22, bottomClearance(context)),
+            padding: EdgeInsets.fromLTRB(22, 10, 22, bottomClearance(context)),
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,75 +65,63 @@ class DailyReportScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_greeting(l10n),
-                            style: AppTypography.title2.copyWith(color: palette.textPrimary)),
-                        const SizedBox(height: 3),
                         Text(
-                          // Locale-aware on purpose: this used to render
-                          // "September Tuesday" for a Turkish user because the
-                          // format followed the device, not the app.
                           DateFormat.MMMMEEEEd(Localizations.localeOf(context).languageCode)
                               .format(DateTime.now()),
                           style: AppTypography.footnote.copyWith(color: palette.textSecondary),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          name.isEmpty ? greeting : '$greeting,\n$name',
+                          style: AppTypography.largeTitle.copyWith(color: palette.textPrimary),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 12),
-                  SquareIconButton(
-                    icon: Icons.refresh_rounded,
-                    iconColor: palette.accent,
-                    onPressed: home.refreshing
-                        ? null
-                        : () => ref.read(stateControllerProvider.notifier).refresh(),
-                  ),
+                  const SupportPill(),
                 ],
               ),
-              const SizedBox(height: 16),
-              _StateCard(data: home, palette: palette, l10n: l10n),
-              const SizedBox(height: 16),
-              // Carries its own bottom spacing, and takes none at all when
-              // there's nothing to show.
+              const SizedBox(height: 20),
+              const _CheckinTile(),
+              const SizedBox(height: 14),
+              _StateCard(data: home),
+              const SizedBox(height: 14),
+              const _MetooCard(),
               const DiscoveriesStrip(),
-              const _StreakCard(),
-              const SizedBox(height: 16),
-              const _RecapCard(),
-              // Reads the profile itself, so saving a diagnosis rebuilds
-              // this strip instead of the whole landing screen.
-              _DiagnosesStrip(palette: palette, title: l10n.homeDiagnosesTitle),
-              const SizedBox(height: 16),
               if (report.error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(friendlyErrorMessage(l10n, report.error!),
-                      style: TextStyle(color: palette.warning)),
+                      style: AppTypography.footnote.copyWith(color: palette.warning)),
                 ),
               if (report.loading)
                 const _ReportSkeleton()
               else if (report.report == null && report.error == null)
-                _EmptyState(onGenerate: reportController.generateNow, palette: palette, l10n: l10n)
+                _EmptyState(onGenerate: reportController.generateNow)
               else if (report.report != null) ...[
                 if (report.report!.crisisFlag) ...[
-                  _CrisisBanner(palette: palette, l10n: l10n),
-                  const SizedBox(height: 16),
+                  const _CrisisBanner(),
+                  const SizedBox(height: 14),
                 ],
-                SectionLabel(l10n.homeToday),
-                const SizedBox(height: 8),
-                Text(
-                  report.report!.summary,
-                  style: AppTypography.subheadline
-                      .copyWith(color: palette.textPrimary, fontSize: 14.5, height: 1.6),
+                GlassSurface(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SectionLabel(l10n.homeToday),
+                      const SizedBox(height: 8),
+                      Text(report.report!.summary,
+                          style: AppTypography.body.copyWith(color: palette.textPrimary)),
+                      if (report.report!.recommendations.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        SectionLabel(l10n.homeRecommendations),
+                        const SizedBox(height: 8),
+                        for (final item in report.report!.recommendations) _Bullet(text: item),
+                      ],
+                    ],
+                  ),
                 ),
-                if (report.report!.recommendations.isNotEmpty) ...[
-                  const SizedBox(height: 18),
-                  SectionLabel(l10n.homeRecommendations),
-                  const SizedBox(height: 8),
-                  for (final item in report.report!.recommendations)
-                    _Bullet(text: item, color: palette.accent, palette: palette),
-                ],
-                const SizedBox(height: 20),
               ],
-              _QuickActions(palette: palette, l10n: l10n),
             ],
           ),
         ),
@@ -148,311 +138,329 @@ class DailyReportScreen extends ConsumerWidget {
   }
 }
 
-/// The face that carries the whole card at a glance. Five steps rather
-/// than a continuous curve, because a face people read in half a second
-/// should land on a recognizable expression, not a subtly-off one.
-String _faceFor(double? valence) {
-  if (valence == null) return '🙂';
-  if (valence >= 0.5) return '😄';
-  if (valence >= 0.15) return '😊';
-  if (valence > -0.15) return '😐';
-  if (valence > -0.5) return '😟';
-  return '😢';
+String _formatRemaining(AppLocalizations l10n, Duration d) {
+  final hours = d.inHours;
+  final minutes = d.inMinutes.remainder(60);
+  if (hours > 0) return '$hours${l10n.timeUnitHour} $minutes${l10n.timeUnitMinute}';
+  return '$minutes${l10n.timeUnitMinute} ${d.inSeconds.remainder(60)}${l10n.timeUnitSecond}';
 }
 
-class _StateCard extends StatelessWidget {
-  final HomeStateData data;
-  final AppPalette palette;
-  final AppLocalizations l10n;
-  const _StateCard({required this.data, required this.palette, required this.l10n});
+/// The check-in, on the landing screen instead of at the bottom of it.
+/// After 18:00 it becomes the evening check-in the reminder points at.
+class _CheckinTile extends ConsumerWidget {
+  const _CheckinTile();
 
   @override
-  Widget build(BuildContext context) {
-    final state = data.state;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+    final mood = ref.watch(moodControllerProvider);
+    final controller = ref.read(moodControllerProvider.notifier);
+    final evening = DateTime.now().hour >= 18;
+    final done = mood.isOnCooldown;
+    final shown = moodEmotions.take(evening ? 3 : 5).toList();
+    final chipFill = palette.glassFill.withValues(alpha: 0.6);
+
+    final IconData eyebrowIcon;
+    final String eyebrow;
+    if (done) {
+      eyebrowIcon = Icons.check_circle_rounded;
+      eyebrow = l10n.navToday;
+    } else if (evening) {
+      eyebrowIcon = Icons.nights_stay_rounded;
+      eyebrow = l10n.notificationsCheckinTitle;
+    } else {
+      eyebrowIcon = Icons.wb_twilight_rounded;
+      eyebrow = l10n.todayNoCheckinYet;
+    }
 
     return GlassSurface(
-      radius: 22,
+      color: evening ? palette.sky : palette.sun,
+      radius: 28,
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(color: palette.accentSoft, shape: BoxShape.circle),
-                alignment: Alignment.center,
-                child: Text(_faceFor(state?.valence), style: const TextStyle(fontSize: 26)),
-              ),
-              const SizedBox(width: 14),
+              Icon(eyebrowIcon, size: 18, color: palette.textPrimary),
+              const SizedBox(width: 7),
+              Flexible(child: SectionLabel(eyebrow, color: palette.textPrimary)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            done
+                ? l10n.moodDoneToday
+                : (evening ? l10n.notificationsPreviewTitle : l10n.moodHowAreYou),
+            style: AppTypography.title3.copyWith(color: palette.textPrimary),
+          ),
+          if (done) ...[
+            const SizedBox(height: 6),
+            CountdownText(
+              until: mood.cooldownUntil!,
+              onFinished: () => ref.invalidate(moodControllerProvider),
+              format: (remaining) => l10n.moodNextIn(_formatRemaining(l10n, remaining)),
+              style: AppTypography.subheadline.copyWith(color: palette.textPrimary),
+            ),
+          ] else ...[
+            if (evening) ...[
+              const SizedBox(height: 6),
+              Text(l10n.notificationsPreviewBody,
+                  style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
+            ],
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final emotion in shown)
+                  AppChip(
+                    label: moodEmotionLabel(l10n, emotion.key),
+                    selected: mood.emotions.contains(emotion.key),
+                    fill: chipFill,
+                    onTap: () {
+                      if (!mood.emotions.contains(emotion.key)) controller.toggleEmotion(emotion.key);
+                      showQuickCheckinSheet(context, ref);
+                    },
+                  ),
+                AppChip(
+                  label: l10n.todayMoreWords(moodEmotions.length - shown.length),
+                  selected: false,
+                  outlined: true,
+                  onTap: () => showQuickCheckinSheet(context, ref),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      state?.headline ?? (data.loading ? l10n.commonLoading : l10n.homeStateNoData),
-                      style: AppTypography.headline.copyWith(color: palette.textPrimary),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      data.refreshing
-                          ? l10n.homeRefreshing
-                          : (state?.note ?? l10n.homeStateNoDataNote),
-                      style: AppTypography.footnote
-                          .copyWith(color: palette.textSecondary, fontSize: 13.5, height: 1.45),
-                    ),
-                  ],
+                child: AppPrimaryButton(
+                  label: l10n.todayWriteJournal,
+                  icon: Icons.edit_outlined,
+                  onPressed: () => context.go('/journal'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlineBlockButton(
+                  icon: Icons.mic_none_rounded,
+                  label: l10n.todaySpeak,
+                  height: 56,
+                  onTap: () {
+                    ref.read(journalStartDictationProvider.notifier).state = true;
+                    context.go('/journal');
+                  },
                 ),
               ),
             ],
           ),
-          if (state != null) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.only(top: 14),
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: palette.separator)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _LevelBar(
-                    label: l10n.homeMoodLabel,
-                    level: UserState.stars(state.valence),
-                    palette: palette,
-                  ),
-                  const SizedBox(height: 14),
-                  _LevelBar(
-                    label: l10n.homeEnergyLabel,
-                    level: UserState.stars(state.energy),
-                    palette: palette,
-                  ),
-                  if (state.basis.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.homeBasedOn(state.basis.join(', ')),
-                      style: AppTypography.footnote
-                          .copyWith(color: palette.textSecondary, fontSize: 12, height: 1.5),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
   }
 }
 
-/// A labeled 0-5 level as five equal bars, filled up to the level.
-class _LevelBar extends StatelessWidget {
+String _levelWord(AppLocalizations l10n, int stars) => switch (stars) {
+      1 => l10n.levelVeryLow,
+      2 => l10n.levelLow,
+      3 => l10n.levelMid,
+      4 => l10n.levelHigh,
+      _ => l10n.levelVeryHigh,
+    };
+
+class _StateCard extends ConsumerWidget {
+  final HomeStateData data;
+  const _StateCard({required this.data});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+    final state = data.state;
+    final streak = ref.watch(streakProvider).valueOrNull;
+
+    return GlassSurface(
+      padding: const EdgeInsets.fromLTRB(18, 10, 8, 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: SectionLabel(l10n.todayYourState)),
+              if (streak != null && streak.current > 0) ...[
+                Icon(Icons.local_fire_department_rounded, size: 19, color: palette.ember),
+                const SizedBox(width: 4),
+                Text(l10n.todayStreak(streak.current),
+                    style: AppTypography.label.copyWith(color: palette.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
+              ],
+              IconButton(
+                tooltip: l10n.todayRefreshState,
+                onPressed: data.refreshing ? null : () => ref.read(stateControllerProvider.notifier).refresh(),
+                icon: Icon(Icons.refresh_rounded, color: palette.textSecondary),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  state?.headline ?? (data.loading ? l10n.commonLoading : l10n.homeStateNoData),
+                  style: AppTypography.headline.copyWith(color: palette.textPrimary),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  data.refreshing ? l10n.homeRefreshing : (state?.note ?? l10n.homeStateNoDataNote),
+                  style: AppTypography.subheadline.copyWith(color: palette.textSecondary),
+                ),
+                if (state != null) ...[
+                  const SizedBox(height: 16),
+                  _Meter(label: l10n.homeMoodLabel, stars: UserState.stars(state.valence)),
+                  const SizedBox(height: 10),
+                  _Meter(label: l10n.homeEnergyLabel, stars: UserState.stars(state.energy)),
+                  if (state.basis.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(l10n.homeBasedOn(state.basis.join(', ')),
+                        style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                  ],
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A 1-5 level as five segments plus the word for it — the number itself
+/// isn't something anyone reads anything out of.
+class _Meter extends StatelessWidget {
   final String label;
-  final int level;
-  final AppPalette palette;
-  const _LevelBar({required this.label, required this.level, required this.palette});
+  final int stars;
+  const _Meter({required this.label, required this.stars});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return Row(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label,
-                style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
-            Text(
-              '$level / 5',
-              style: AppTypography.footnote
-                  .copyWith(color: palette.textPrimary, fontWeight: FontWeight.w500),
-            ),
-          ],
+        SizedBox(
+          width: 64,
+          child: Text(label, style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            for (var i = 1; i <= 5; i++) ...[
-              if (i > 1) const SizedBox(width: 5),
-              Expanded(
-                child: Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    color: i <= level ? palette.accent : palette.separator,
+        Expanded(
+          child: Row(
+            children: [
+              for (var i = 1; i <= 5; i++) ...[
+                if (i > 1) const SizedBox(width: 4),
+                Expanded(
+                  child: Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      color: i <= stars ? palette.accent : palette.separator,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
+        ),
+        SizedBox(
+          width: 72,
+          child: Text(
+            _levelWord(l10n, stars),
+            textAlign: TextAlign.right,
+            style: AppTypography.footnote.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700),
+          ),
         ),
       ],
     );
   }
 }
 
-/// Days in a row, with the last seven as a sparkline. Reads its own
-/// provider so a slow streak request never holds up the state card
-/// above it.
-class _StreakCard extends ConsumerWidget {
-  const _StreakCard();
+/// "3 kişi hikayelerinde kendini buldu" — the author's side of "Bende de
+/// oldu", surfaced where they land instead of only inside their stories.
+class _MetooCard extends ConsumerWidget {
+  const _MetooCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
-    final streak = ref.watch(streakProvider).valueOrNull;
-    if (streak == null || streak.current == 0) return const SizedBox.shrink();
+    final mine = ref.watch(storiesControllerProvider.select((s) => s.mine));
+    final total = mine.fold<int>(0, (sum, story) => sum + story.metooCount);
+    if (total == 0) return const SizedBox.shrink();
 
-    return GlassSurface(
-      radius: 18,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              HearthFlame(streak: streak.current, size: 36),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SectionLabel(l10n.streakLabel),
-                  const SizedBox(height: 2),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Material(
+        color: palette.peach,
+        borderRadius: BorderRadius.circular(22),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.go('/settings/my-stories'),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: palette.glassFill.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: MetooGlyph(size: 22, color: palette.textPrimary),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${streak.current}',
-                        style:
-                            AppTypography.title3.copyWith(color: palette.textPrimary, fontSize: 20),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        l10n.streakDays,
-                        style: AppTypography.footnote.copyWith(color: palette.textSecondary),
-                      ),
+                      Text(l10n.todayMetooCard(total),
+                          style: AppTypography.label.copyWith(color: palette.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text(l10n.todayMetooCardAction,
+                          style: AppTypography.footnote.copyWith(color: palette.textPrimary)),
                     ],
                   ),
-                ],
-              ),
-            ],
-          ),
-          _Sparkline(streak: streak, palette: palette),
-        ],
-      ),
-    );
-  }
-}
-
-class _Sparkline extends StatelessWidget {
-  final StreakSummary streak;
-  final AppPalette palette;
-  const _Sparkline({required this.streak, required this.palette});
-
-  @override
-  Widget build(BuildContext context) {
-    final peak = streak.peak;
-
-    return SizedBox(
-      height: 26,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (var i = 0; i < streak.lastSeven.length; i++) ...[
-            if (i > 0) const SizedBox(width: 5),
-            Container(
-              width: 8,
-              // Floored so an empty day still leaves a stub to read the
-              // rhythm against, rather than a gap.
-              height: 8 + (streak.lastSeven[i] / peak).clamp(0.0, 1.0) * 15,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                color: i == streak.lastSeven.length - 1 && streak.lastSeven[i] > 0
-                    ? palette.accent
-                    : palette.separator,
-              ),
+                ),
+                Icon(Icons.chevron_right_rounded, color: palette.textPrimary),
+              ],
             ),
-          ],
-        ],
+          ),
+        ),
       ),
     );
   }
 }
 
-/// Stands in for today's note and recommendations while the report loads.
 class _ReportSkeleton extends StatelessWidget {
   const _ReportSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+    return const GlassSurface(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           SkeletonBox(width: 90, height: 11),
-          SizedBox(height: 10),
-          SkeletonBox(height: 13),
-          SizedBox(height: 7),
-          SkeletonBox(height: 13),
-          SizedBox(height: 7),
-          SkeletonBox(width: 200, height: 13),
+          SizedBox(height: 12),
+          SkeletonBox(height: 14),
+          SizedBox(height: 8),
+          SkeletonBox(height: 14),
+          SizedBox(height: 8),
+          SkeletonBox(width: 200, height: 14),
         ],
-      ),
-    );
-  }
-}
-
-/// Entry point into the weekly recap (`RecapScreen`, pushed rather than a
-/// tab — it's a destination someone visits, not one they live on). Reads
-/// its own localizations rather than taking them as a parameter, the same
-/// as `_StreakCard`.
-class _RecapCard extends StatelessWidget {
-  const _RecapCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final palette = AppPalette.of(context);
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push('/recap'),
-        child: GlassSurface(
-          radius: 18,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(color: palette.accentSoft, shape: BoxShape.circle),
-                alignment: Alignment.center,
-                child: Icon(Icons.auto_awesome_rounded, size: 18, color: palette.accent),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.recapEntryTitle,
-                        style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 15)),
-                    const SizedBox(height: 2),
-                    Text(l10n.recapEntrySubtitle,
-                        style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: palette.textTertiary),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -460,168 +468,26 @@ class _RecapCard extends StatelessWidget {
 
 class _Bullet extends StatelessWidget {
   final String text;
-  final Color color;
-  final AppPalette palette;
-  const _Bullet({required this.text, required this.color, required this.palette});
+  const _Bullet({required this.text});
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 9),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 8),
-            width: 5,
-            height: 5,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            margin: const EdgeInsets.only(top: 9),
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: palette.textPrimary, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(text,
-                style: AppTypography.subheadline.copyWith(color: palette.textPrimary)),
-          ),
+          const SizedBox(width: 11),
+          Expanded(child: Text(text, style: AppTypography.body.copyWith(color: palette.textPrimary))),
         ],
-      ),
-    );
-  }
-}
-
-class _DiagnosesStrip extends ConsumerWidget {
-  final AppPalette palette;
-  final String title;
-  const _DiagnosesStrip({required this.palette, required this.title});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final slugs = ref.watch(profileControllerProvider.select((s) => s.diagnoses));
-    final categories = ref.watch(categoriesProvider).valueOrNull ?? const <DisorderCategory>[];
-
-    final resolved = <({String emoji, String name})>[];
-    for (final category in categories) {
-      for (final disorder in category.disorders) {
-        if (slugs.contains(disorder.slug)) {
-          resolved.add((emoji: category.emoji, name: disorder.name));
-        }
-      }
-    }
-    if (resolved.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionLabel(title),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 34,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: resolved.length,
-              itemBuilder: (context, i) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: palette.accentSoft,
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(resolved[i].emoji, style: const TextStyle(fontSize: 13)),
-                      const SizedBox(width: 7),
-                      Text(resolved[i].name,
-                          style: AppTypography.footnote.copyWith(color: palette.accent)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickActions extends StatelessWidget {
-  final AppPalette palette;
-  final AppLocalizations l10n;
-  const _QuickActions({required this.palette, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _QuickAction(
-            icon: Icons.emoji_emotions_outlined,
-            label: l10n.navMood,
-            palette: palette,
-            onTap: () => context.go('/mood'),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _QuickAction(
-            icon: Icons.menu_book_outlined,
-            label: l10n.navJournal,
-            palette: palette,
-            onTap: () => context.go('/journal'),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _QuickAction(
-            icon: Icons.forum_outlined,
-            label: l10n.navChat,
-            palette: palette,
-            onTap: () => context.go('/chat'),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final AppPalette palette;
-  final VoidCallback onTap;
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.palette,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: palette.surfaceMuted,
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 60),
-          padding: const EdgeInsets.all(11),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, size: 16, color: palette.accent),
-              const SizedBox(height: 10),
-              Text(label,
-                  style: AppTypography.footnote
-                      .copyWith(color: palette.textPrimary, fontWeight: FontWeight.w500)),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -629,33 +495,22 @@ class _QuickAction extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   final VoidCallback onGenerate;
-  final AppPalette palette;
-  final AppLocalizations l10n;
-  const _EmptyState({required this.onGenerate, required this.palette, required this.l10n});
+  const _EmptyState({required this.onGenerate});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 20),
+    final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return GlassSurface(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration:
-                BoxDecoration(color: palette.surfaceMuted, borderRadius: BorderRadius.circular(16)),
-            alignment: Alignment.center,
-            child: Icon(Icons.event_note_outlined, size: 22, color: palette.accent),
-          ),
-          const SizedBox(height: 14),
-          Text(l10n.homeNoReport,
-              textAlign: TextAlign.center,
-              style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: 200,
-            child: AppPrimaryButton(label: l10n.homeGenerateReport, onPressed: onGenerate),
-          ),
+          SectionLabel(l10n.homeToday),
+          const SizedBox(height: 8),
+          Text(l10n.homeNoReport, style: AppTypography.body.copyWith(color: palette.textSecondary)),
+          const SizedBox(height: 16),
+          AppPrimaryButton(label: l10n.homeGenerateReport, onPressed: onGenerate),
         ],
       ),
     );
@@ -663,42 +518,33 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _CrisisBanner extends StatelessWidget {
-  final AppPalette palette;
-  final AppLocalizations l10n;
-  const _CrisisBanner({required this.palette, required this.l10n});
+  const _CrisisBanner();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: palette.warningSoft,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 20,
-            height: 20,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: palette.warning, width: 2),
-            ),
-            child: Text('!',
-                style: TextStyle(
-                    fontSize: 12,
-                    height: 1,
-                    fontWeight: FontWeight.w700,
-                    color: palette.warning)),
+    final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return Material(
+      color: palette.warningSoft,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => showSupportSheet(context),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.support_rounded, size: 22, color: palette.warning),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(l10n.homeCrisisWarning,
+                    style: AppTypography.subheadline.copyWith(color: palette.warning)),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(l10n.homeCrisisWarning,
-                style: AppTypography.footnote.copyWith(color: palette.warning)),
-          ),
-        ],
+        ),
       ),
     );
   }

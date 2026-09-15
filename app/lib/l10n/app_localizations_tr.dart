@@ -1878,4 +1878,153 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get sessionPdfFooter =>
       'Hearth · kişinin kendi kayıtlarından hazırlanmıştır, tanı değildir';
+
+  @override
+  String get navToday => 'Bugün';
+
+  @override
+  String get navPath => 'Yolum';
+
+  @override
+  String get navMe => 'Ben';
+
+  @override
+  String get supportPill => 'Destek';
+
+  @override
+  String get supportSheetBody =>
+      'Acil bir durumdaysan hemen 112\'yi ara. Hazır hissettiğinde bir uzmana ulaşmak da iyi bir adım olabilir.';
+
+  @override
+  String get supportWriteInChat => 'Sohbette yaz';
+
+  @override
+  String get todayNoCheckinYet => 'Bugün henüz kayıt yok';
+
+  @override
+  String todayMoreWords(int count) {
+    return '+$count kelime';
+  }
+
+  @override
+  String get todayWriteJournal => 'Günlüğe yaz';
+
+  @override
+  String get todaySpeak => 'Sesle anlat';
+
+  @override
+  String get todayYourState => 'Durumun';
+
+  @override
+  String todayStreak(int count) {
+    return '$count gün seri';
+  }
+
+  @override
+  String get todayRefreshState => 'Durumu yenile';
+
+  @override
+  String get levelVeryLow => 'çok düşük';
+
+  @override
+  String get levelLow => 'düşük';
+
+  @override
+  String get levelMid => 'orta';
+
+  @override
+  String get levelHigh => 'iyi';
+
+  @override
+  String get levelVeryHigh => 'çok iyi';
+
+  @override
+  String todayMetooCard(int count) {
+    return '$count kişi hikayelerinde kendini buldu';
+  }
+
+  @override
+  String get todayMetooCardAction => 'Bıraktıkları notları gör';
+
+  @override
+  String get chatPreferences => 'Tercihler';
+
+  @override
+  String storiesPendingBanner(int count) {
+    return '$count hikaye onayını bekliyor';
+  }
+
+  @override
+  String storiesReportsBanner(int count) {
+    return '$count bildirilen hikaye';
+  }
+
+  @override
+  String get storiesAdminOnly => 'Yalnızca yöneticiler görür';
+
+  @override
+  String get storiesReview => 'İncele';
+
+  @override
+  String get pathSessionBody => 'Terapistine götürmek için tek sayfa';
+
+  @override
+  String get pathTests => 'Testlerim';
+
+  @override
+  String get pathDiagnosesEmpty => 'Henüz bir tanı eklemedin.';
+
+  @override
+  String get pathDiagnosesAdd => 'Tanı ekle';
+
+  @override
+  String get pathGuideBody => 'Tanılar ve araştırmalardan bilgi kartları';
+
+  @override
+  String get meReminders => 'Hatırlatmalar';
+
+  @override
+  String meReminderOn(String time) {
+    return 'Saat $time';
+  }
+
+  @override
+  String get meReminderOff => 'Kapalı';
+
+  @override
+  String get meChatAndMessages => 'Sohbet ve mesajlar';
+
+  @override
+  String get meDmPolicyEveryone => 'Herkesten';
+
+  @override
+  String get meDmPolicyFollowing => 'Sadece takip ettiklerimden';
+
+  @override
+  String get mePlusBody => 'Sınırsız sohbet';
+
+  @override
+  String get mePlusCta => 'İncele';
+
+  @override
+  String get meModeration => 'Hikaye moderasyonu';
+
+  @override
+  String meModerationCounts(int pending, int reports) {
+    return '$pending bekleyen · $reports bildirilen';
+  }
+
+  @override
+  String get quickCheckinEyebrow => 'Ruh hali · bugün';
+
+  @override
+  String get quickCheckinNoteHint => 'Bir cümle ekle, istersen';
+
+  @override
+  String get quickCheckinFootnote => 'Günde bir kez kaydedilir.';
+
+  @override
+  String quickCheckinFootnoteReminder(String time) {
+    return 'Günde bir kez kaydedilir. Kaydetmezsen saat $time olunca tek bir hatırlatma gelir.';
+  }
 }

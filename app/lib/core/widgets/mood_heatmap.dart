@@ -39,7 +39,7 @@ class MoodHeatmap extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cell = ((constraints.maxWidth - (weeks - 1) * 3) / weeks).clamp(8.0, 16.0);
+        final cell = ((constraints.maxWidth - (weeks - 1) * 3) / weeks).clamp(8.0, 20.0);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,16 +97,14 @@ class MoodHeatmap extends StatelessWidget {
 
 /// A day with no check-in stays [AppPalette.separator] (the grid's own
 /// "empty" gray/black, not a mood reading) — everything else runs on a
-/// diverging scale from [AppPalette.warning] at the worst valence through
-/// to [AppPalette.accent] at the best, so "zorlu" and "keyifli" read as two
+/// diverging scale from [AppPalette.moodLow] at the worst valence through
+/// to [AppPalette.moodHigh] at the best, so "zorlu" and "keyifli" read as two
 /// different colors, not two intensities of the same one.
 Color moodCellColor(AppPalette palette, double? valence) {
   if (valence == null) return palette.separator;
 
   final magnitude = valence.abs().clamp(0.0, 1.0);
-  final alpha = 0.18 + magnitude * 0.72;
-  final base = valence >= 0 ? palette.accent : palette.warning;
-  return base.withValues(alpha: alpha);
+  return Color.lerp(palette.moodMid, valence >= 0 ? palette.moodHigh : palette.moodLow, magnitude)!;
 }
 
 class _Cell extends StatelessWidget {

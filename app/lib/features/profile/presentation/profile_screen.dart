@@ -390,12 +390,12 @@ class _ThemeOption extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Column(
               children: [
-                Icon(icon, size: 18, color: selected ? Colors.white : palette.textSecondary),
+                Icon(icon, size: 18, color: selected ? AppPalette.of(context).onAccent : palette.textSecondary),
                 const SizedBox(height: 6),
                 Text(
                   label,
                   style: AppTypography.caption.copyWith(
-                    color: selected ? Colors.white : palette.textSecondary,
+                    color: selected ? AppPalette.of(context).onAccent : palette.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -449,10 +449,10 @@ class _AvatarPicker extends ConsumerWidget {
               clipBehavior: Clip.antiAlias,
               child: InkWell(
                 onTap: saving ? null : controller.pickAndUploadAvatar,
-                child: const SizedBox(
+                child: SizedBox(
                   width: 30,
                   height: 30,
-                  child: Icon(Icons.camera_alt_rounded, size: 15, color: Colors.white),
+                  child: Icon(Icons.camera_alt_rounded, size: 15, color: AppPalette.of(context).onAccent),
                 ),
               ),
             ),
@@ -499,7 +499,7 @@ class _LanguageOption extends StatelessWidget {
                 code,
                 style: AppTypography.headline.copyWith(
                   fontSize: 19,
-                  color: selected ? Colors.white : palette.textPrimary,
+                  color: selected ? AppPalette.of(context).onAccent : palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -507,7 +507,7 @@ class _LanguageOption extends StatelessWidget {
                 label,
                 style: AppTypography.caption.copyWith(
                   color: selected
-                      ? Colors.white.withValues(alpha: 0.85)
+                      ? AppPalette.of(context).onAccent.withValues(alpha: 0.85)
                       : palette.textSecondary,
                 ),
               ),

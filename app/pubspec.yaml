@@ -110,20 +110,29 @@ flutter:
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
 
-  # Instrument Sans (light theme) and Sora (dark theme) — see
-  # `app/theme/app_theme.dart`. Bundled as variable-font assets rather
-  # than fetched at runtime (e.g. via a `google_fonts`-style package) so
-  # text renders correctly offline and on first launch, which matters
-  # more here than in a typical app: this is a local-first product whose
-  # backend may not even be reachable yet when the login screen first
-  # paints.
+  # Bricolage Grotesque (titles, instanced at a narrow width) and Atkinson
+  # Hyperlegible Next (everything read) — see `app/theme/app_typography.dart`.
+  # Bundled rather than fetched at runtime so text renders correctly
+  # offline and on first launch, before the backend is even reachable.
   fonts:
-    - family: Instrument Sans
+    - family: Bricolage Grotesque
       fonts:
-        - asset: assets/fonts/InstrumentSans-Variable.ttf
-    - family: Sora
+        - asset: assets/fonts/BricolageGrotesque-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/BricolageGrotesque-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/BricolageGrotesque-ExtraBold.ttf
+          weight: 800
+    - family: Atkinson Hyperlegible Next
       fonts:
-        - asset: assets/fonts/Sora-Variable.ttf
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/AtkinsonHyperlegibleNext-Bold.ttf
+          weight: 700
 
 # Source art for the app icon lives in assets/icon/ — `icon.png` is the mark
 # on the light-theme canvas color (used as-is for iOS/web/legacy Android),

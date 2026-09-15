@@ -3,42 +3,38 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_typography.dart';
 
 /// The app's one card surface: an opaque panel with a soft continuous
-/// ("squircle") corner and, in light mode, a shadow just heavy enough to
-/// lift it off the canvas — `0 1px 2px` at 5%, not a drop shadow anyone
-/// would describe as a drop shadow. Dark mode drops the shadow entirely
-/// and separates by fill alone, since a shadow under a near-black card
-/// on a near-black canvas is only ever mud.
+/// corner, separated from the stone ground by fill alone — no border, no
+/// shadow stack.
 ///
-/// [blur] is off by default, and that is a deliberate performance call.
-/// `BackdropFilter` forces a save-layer and a read-back of everything
-/// painted behind it, per surface, per frame — with a dozen cards on
-/// screen that alone was dropping frames on a mid-range phone. The blur
-/// is kept only where something genuinely scrolls underneath the
-/// surface: the floating tab bar.
+/// [blur] stays opt-in: `BackdropFilter` forces a save-layer per surface
+/// per frame, which dropped frames on a mid-range phone when every card
+/// had one.
 class GlassSurface extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double radius;
   final double blurSigma;
-
-  /// Real backdrop blur. Only worth it when content actually moves behind
-  /// this surface; see the class docs.
   final bool blur;
 
-  /// A hairline outline. Off for cards (the design separates them with
-  /// fill and shadow), on for surfaces that float over moving content.
+  /// A hairline outline, for a surface that must separate from another
+  /// card-colored surface behind it.
   final bool bordered;
+
+  /// Overrides the card fill — a tab-colored tile, for instance.
+  final Color? color;
 
   const GlassSurface({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(16),
-    this.radius = 18,
+    this.padding = const EdgeInsets.all(18),
+    this.radius = 22,
     this.blurSigma = 24,
     this.blur = false,
     this.bordered = false,
+    this.color,
   });
 
   @override
@@ -46,16 +42,14 @@ class GlassSurface extends StatelessWidget {
     final palette = AppPalette.of(context);
     final shape = RoundedSuperellipseBorder(
       borderRadius: BorderRadius.circular(radius),
-      side: bordered ? BorderSide(color: palette.glassBorder) : BorderSide.none,
+      side: bordered ? BorderSide(color: palette.glassBorder, width: 1.5) : BorderSide.none,
     );
+    final fill = color ?? palette.glassFill;
 
     final surface = DecoratedBox(
       decoration: ShapeDecoration(
-        color: blur ? palette.glassFill.withValues(alpha: 0.82) : palette.glassFill,
+        color: blur ? fill.withValues(alpha: 0.86) : fill,
         shape: shape,
-        shadows: [
-          BoxShadow(color: palette.glassShadow, blurRadius: 2, offset: const Offset(0, 1)),
-        ],
       ),
       child: Padding(padding: padding, child: child),
     );
@@ -72,10 +66,7 @@ class GlassSurface extends StatelessWidget {
   }
 }
 
-/// The app's constant backdrop: one flat, quiet ground the cards sit on.
-/// Painted once into its own layer — it never changes while a screen
-/// scrolls, so isolating it keeps scrolling content from dragging a
-/// full-screen repaint behind it.
+/// The app's constant backdrop, painted once into its own layer.
 class AppBackground extends StatelessWidget {
   final Widget child;
   const AppBackground({super.key, required this.child});
@@ -93,10 +84,7 @@ class AppBackground extends StatelessWidget {
   }
 }
 
-/// A single-accent block button — the app's one primary call-to-action
-/// style. Deliberately not a gradient-filled button, and deliberately a
-/// soft rectangle rather than a full pill: at 54pt tall a stadium border
-/// reads as a toggle, not a commit.
+/// The primary call to action: an ink block, 56 tall.
 class AppPrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -117,34 +105,36 @@ class AppPrimaryButton extends StatelessWidget {
     final disabled = loading || onPressed == null;
 
     return SizedBox(
-      height: 54,
+      height: 56,
       child: Material(
-        color: disabled ? palette.accent.withValues(alpha: 0.5) : palette.accent,
+        color: disabled ? palette.accent.withValues(alpha: 0.45) : palette.accent,
         borderRadius: BorderRadius.circular(18),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: disabled ? null : onPressed,
           child: Center(
             child: loading
-                ? const SizedBox(
+                ? SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: palette.onAccent),
                   )
                 : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (icon != null) ...[
-                        Icon(icon, size: 18, color: Colors.white),
-                        const SizedBox(width: 8),
+                        Icon(icon, size: 20, color: palette.onAccent),
+                        const SizedBox(width: 9),
                       ],
-                      Text(
-                        label,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.1,
+                      Flexible(
+                        child: Text(
+                          label,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.label.copyWith(
+                            color: palette.onAccent,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
@@ -156,10 +146,7 @@ class AppPrimaryButton extends StatelessWidget {
   }
 }
 
-/// The small uppercase label that heads almost every section in the
-/// design — 11px, semibold, wide tracking, secondary color. Common
-/// enough that every screen was repeating the same four lines of
-/// `copyWith`.
+/// The small uppercase label that heads a group of rows or a card.
 class SectionLabel extends StatelessWidget {
   final String text;
   final Color? color;
@@ -172,31 +159,31 @@ class SectionLabel extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       style: TextStyle(
-        fontSize: 11,
+        fontFamily: AppTypography.bodyFamily,
+        fontSize: 12.5,
         height: 1.3,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.99,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.9,
         color: color ?? palette.textSecondary,
       ),
     );
   }
 }
 
-/// The 44×44 rounded-square icon button the design uses for back
-/// navigation and for the refresh affordance on the home and life
-/// screens.
+/// The 44×44 rounded-square icon button used for back navigation.
 class SquareIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onPressed;
   final Color? iconColor;
-  const SquareIconButton({super.key, required this.icon, this.onPressed, this.iconColor});
+  final String? tooltip;
+  const SquareIconButton({super.key, required this.icon, this.onPressed, this.iconColor, this.tooltip});
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
 
-    return Material(
-      color: palette.surfaceMuted,
+    final button = Material(
+      color: palette.glassFill,
       borderRadius: BorderRadius.circular(14),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -205,11 +192,12 @@ class SquareIconButton extends StatelessWidget {
           width: 44,
           height: 44,
           child: Opacity(
-            opacity: onPressed == null ? 0.5 : 1,
-            child: Icon(icon, size: 19, color: iconColor ?? palette.textSecondary),
+            opacity: onPressed == null ? 0.45 : 1,
+            child: Icon(icon, size: 22, color: iconColor ?? palette.textPrimary),
           ),
         ),
       ),
     );
+    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
   }
 }

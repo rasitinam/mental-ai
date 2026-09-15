@@ -305,17 +305,17 @@ class _ActionButton extends StatelessWidget {
                   border: Border.all(color: palette.warning.withValues(alpha: 0.45)),
                 ),
           child: busy
-              ? const SizedBox(
+              ? SizedBox(
                   height: 16,
                   width: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppPalette.of(context).warningSoft),
                 )
               : Text(
                   label,
                   style: AppTypography.label.copyWith(
                     fontSize: 14,
                     fontWeight: filled ? FontWeight.w600 : FontWeight.w500,
-                    color: filled ? Colors.white : palette.warning,
+                    color: filled ? palette.warningSoft : palette.warning,
                   ),
                 ),
         ),

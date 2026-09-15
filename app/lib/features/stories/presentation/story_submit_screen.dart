@@ -303,7 +303,7 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
                                 : Border.all(color: palette.textTertiary, width: 1.5),
                           ),
                           child: _consent
-                              ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                              ? Icon(Icons.check_rounded, size: 16, color: AppPalette.of(context).onAccent)
                               : null,
                         ),
                         const SizedBox(width: 12),

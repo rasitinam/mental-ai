@@ -63,7 +63,7 @@ class _MyStoriesScreenState extends ConsumerState<MyStoriesScreen> {
           backgroundColor: palette.accent,
           elevation: 3,
           tooltip: l10n.storiesWriteCta,
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 26),
+          child: Icon(Icons.add_rounded, color: AppPalette.of(context).onAccent, size: 26),
         ),
       ),
       body: SafeArea(

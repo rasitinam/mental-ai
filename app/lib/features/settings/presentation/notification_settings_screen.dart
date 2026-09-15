@@ -228,7 +228,7 @@ class _TimeChip extends StatelessWidget {
           child: Text(
             label,
             style: AppTypography.label.copyWith(
-              color: selected ? Colors.white : palette.textPrimary,
+              color: selected ? AppPalette.of(context).onAccent : palette.textPrimary,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
@@ -265,7 +265,7 @@ class _NotificationPreview extends StatelessWidget {
             height: 34,
             alignment: Alignment.center,
             decoration: BoxDecoration(color: palette.accent, borderRadius: BorderRadius.circular(9)),
-            child: const Icon(Icons.local_fire_department_rounded, size: 19, color: Colors.white),
+            child: Icon(Icons.local_fire_department_rounded, size: 19, color: AppPalette.of(context).onAccent),
           ),
           const SizedBox(width: 12),
           Expanded(

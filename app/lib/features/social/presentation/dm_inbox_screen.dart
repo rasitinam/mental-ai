@@ -43,7 +43,7 @@ class _DmInboxScreenState extends ConsumerState<DmInboxScreen> {
                 children: [
                   SquareIconButton(
                     icon: Icons.arrow_back_rounded,
-                    onPressed: () => Navigator.of(context).maybePop(),
+                    onPressed: () => context.go('/stories'),
                   ),
                   const SizedBox(width: 14),
                   Text(l10n.dmTitle,

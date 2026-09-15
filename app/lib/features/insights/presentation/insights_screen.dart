@@ -59,9 +59,14 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
               padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
               child: Row(
                 children: [
+                  SquareIconButton(
+                    icon: Icons.arrow_back_rounded,
+                    onPressed: () => context.go('/life-analysis'),
+                  ),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Text(l10n.guideTitle,
-                        style: AppTypography.title2.copyWith(color: palette.textPrimary)),
+                        style: AppTypography.title3.copyWith(color: palette.textPrimary)),
                   ),
                 ],
               ),
@@ -239,7 +244,6 @@ class SearchField extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.glassFill,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: palette.separator),
       ),
       child: Row(
         children: [
@@ -296,7 +300,7 @@ class CategoryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 38,
+      height: 44,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -315,7 +319,7 @@ class CategoryStrip extends StatelessWidget {
 
           final category = categories[index - 1];
           return _CategoryChip(
-            label: '${category.emoji} ${category.name}',
+            label: category.name,
             selected: selected == category.slug,
             palette: palette,
             onTap: () => onSelect(category.slug),
@@ -345,9 +349,7 @@ class _CategoryChip extends StatelessWidget {
       padding: const EdgeInsets.only(right: 8),
       child: Material(
         color: selected ? palette.accent : palette.glassFill,
-        shape: StadiumBorder(
-          side: BorderSide(color: selected ? palette.accent : palette.separator),
-        ),
+        shape: const StadiumBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -357,9 +359,9 @@ class _CategoryChip extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTypography.footnote.copyWith(
-                  fontSize: 13.5,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: selected ? Colors.white : palette.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? AppPalette.of(context).onAccent : palette.textPrimary,
                 ),
               ),
             ),

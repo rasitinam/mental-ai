@@ -4,34 +4,35 @@ import 'app_colors.dart';
 import 'app_typography.dart';
 
 /// Builds a [ThemeData] from an [AppPalette]. The scaffold background is
-/// left transparent on purpose — [AppBackground] paints the actual
-/// canvas underneath every screen, so glass surfaces have something
-/// consistent to sit on regardless of which screen is showing.
+/// transparent on purpose — [AppBackground] paints the canvas under every
+/// screen.
 class AppTheme {
   AppTheme._();
 
-  /// Every [AppTypography] style is family-less by design (see that
-  /// file), so a `Text` widget without its own `fontFamily` inherits
-  /// whichever one sits on the ambient `DefaultTextStyle` — which
-  /// Flutter derives from here, `textTheme.bodyMedium`. Setting the
-  /// family once, in this one helper, is what makes every existing
-  /// `AppTypography.xxx.copyWith(color: ...)` call site across the app
-  /// pick up the theme's font without needing to touch any of them.
-  static TextStyle _font(String family, TextStyle style) =>
-      style.copyWith(fontFamily: family, fontFamilyFallback: const ['system-ui']);
+  /// Body styles get the body family; styles that already name a family
+  /// (the display titles) keep it.
+  static TextStyle _font(TextStyle style) => style.fontFamily != null
+      ? style
+      : style.copyWith(
+          fontFamily: AppTypography.bodyFamily,
+          fontFamilyFallback: const ['system-ui', 'sans-serif'],
+        );
 
-  static ThemeData _build(AppPalette palette, Brightness brightness, String fontFamily) {
+  static ThemeData _build(AppPalette palette, Brightness brightness) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: palette.accent,
+      seedColor: palette.mint,
       brightness: brightness,
       primary: palette.accent,
+      onPrimary: palette.onAccent,
+      surface: palette.glassFill,
+      error: palette.warning,
     );
-    TextStyle font(TextStyle style) => _font(fontFamily, style);
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
+      fontFamily: AppTypography.bodyFamily,
       scaffoldBackgroundColor: Colors.transparent,
       splashFactory: NoSplash.splashFactory,
       appBarTheme: AppBarTheme(
@@ -40,26 +41,59 @@ class AppTheme {
         foregroundColor: palette.textPrimary,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: font(AppTypography.title2.copyWith(color: palette.textPrimary)),
+        titleTextStyle: AppTypography.title3.copyWith(color: palette.textPrimary),
       ),
       textTheme: TextTheme(
-        headlineMedium: font(AppTypography.largeTitle.copyWith(color: palette.textPrimary)),
-        headlineSmall: font(AppTypography.title1.copyWith(color: palette.textPrimary)),
-        titleLarge: font(AppTypography.title2.copyWith(color: palette.textPrimary)),
-        titleMedium: font(AppTypography.headline.copyWith(color: palette.textPrimary)),
-        bodyLarge: font(AppTypography.body.copyWith(color: palette.textPrimary)),
-        bodyMedium: font(AppTypography.subheadline.copyWith(color: palette.textPrimary)),
-        bodySmall: font(AppTypography.footnote.copyWith(color: palette.textSecondary)),
-        labelLarge: font(AppTypography.headline.copyWith(color: palette.textPrimary)),
-        labelMedium: font(AppTypography.footnote.copyWith(color: palette.textSecondary)),
-        labelSmall: font(AppTypography.caption.copyWith(color: palette.textTertiary)),
+        headlineMedium: _font(AppTypography.largeTitle.copyWith(color: palette.textPrimary)),
+        headlineSmall: _font(AppTypography.title1.copyWith(color: palette.textPrimary)),
+        titleLarge: _font(AppTypography.title2.copyWith(color: palette.textPrimary)),
+        titleMedium: _font(AppTypography.headline.copyWith(color: palette.textPrimary)),
+        bodyLarge: _font(AppTypography.body.copyWith(color: palette.textPrimary)),
+        bodyMedium: _font(AppTypography.subheadline.copyWith(color: palette.textPrimary)),
+        bodySmall: _font(AppTypography.footnote.copyWith(color: palette.textSecondary)),
+        labelLarge: _font(AppTypography.label.copyWith(color: palette.textPrimary)),
+        labelMedium: _font(AppTypography.footnote.copyWith(color: palette.textSecondary)),
+        labelSmall: _font(AppTypography.caption.copyWith(color: palette.textTertiary)),
       ),
       dividerColor: palette.separator,
-      iconTheme: IconThemeData(color: palette.textSecondary, size: 22),
-      textSelectionTheme: TextSelectionThemeData(cursorColor: palette.accent),
+      iconTheme: IconThemeData(color: palette.textPrimary, size: 22),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: palette.accent,
+        selectionColor: palette.sky,
+        selectionHandleColor: palette.accent,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: palette.accent,
+        contentTextStyle: _font(AppTypography.label.copyWith(color: palette.onAccent)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: palette.glassFill,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: palette.textPrimary,
+          minimumSize: const Size(44, 44),
+          textStyle: _font(AppTypography.label),
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? palette.onAccent : palette.textTertiary,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? palette.accent : palette.surfaceMuted,
+        ),
+        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(backgroundColor: Colors.transparent),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: palette.accent),
     );
   }
 
-  static ThemeData get light => _build(AppPalette.light, Brightness.light, 'Instrument Sans');
-  static ThemeData get dark => _build(AppPalette.dark, Brightness.dark, 'Sora');
+  static ThemeData get light => _build(AppPalette.light, Brightness.light);
+  static ThemeData get dark => _build(AppPalette.dark, Brightness.dark);
 }

@@ -1880,4 +1880,153 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get sessionPdfFooter =>
       'Hearth · prepared from the person\'s own records, not a diagnosis';
+
+  @override
+  String get navToday => 'Today';
+
+  @override
+  String get navPath => 'My path';
+
+  @override
+  String get navMe => 'Me';
+
+  @override
+  String get supportPill => 'Support';
+
+  @override
+  String get supportSheetBody =>
+      'If this is an emergency, call 112 now. When you feel ready, reaching out to a professional can be a good step too.';
+
+  @override
+  String get supportWriteInChat => 'Write in chat';
+
+  @override
+  String get todayNoCheckinYet => 'No check-in yet today';
+
+  @override
+  String todayMoreWords(int count) {
+    return '+$count words';
+  }
+
+  @override
+  String get todayWriteJournal => 'Write in journal';
+
+  @override
+  String get todaySpeak => 'Say it out loud';
+
+  @override
+  String get todayYourState => 'Where you are';
+
+  @override
+  String todayStreak(int count) {
+    return '$count-day streak';
+  }
+
+  @override
+  String get todayRefreshState => 'Refresh';
+
+  @override
+  String get levelVeryLow => 'very low';
+
+  @override
+  String get levelLow => 'low';
+
+  @override
+  String get levelMid => 'middle';
+
+  @override
+  String get levelHigh => 'good';
+
+  @override
+  String get levelVeryHigh => 'very good';
+
+  @override
+  String todayMetooCard(int count) {
+    return '$count people found themselves in your stories';
+  }
+
+  @override
+  String get todayMetooCardAction => 'See the notes they left';
+
+  @override
+  String get chatPreferences => 'Preferences';
+
+  @override
+  String storiesPendingBanner(int count) {
+    return '$count stories waiting for approval';
+  }
+
+  @override
+  String storiesReportsBanner(int count) {
+    return '$count reported stories';
+  }
+
+  @override
+  String get storiesAdminOnly => 'Only admins see this';
+
+  @override
+  String get storiesReview => 'Review';
+
+  @override
+  String get pathSessionBody => 'One page to take to your therapist';
+
+  @override
+  String get pathTests => 'My screenings';
+
+  @override
+  String get pathDiagnosesEmpty => 'You haven\'t added a diagnosis yet.';
+
+  @override
+  String get pathDiagnosesAdd => 'Add a diagnosis';
+
+  @override
+  String get pathGuideBody => 'Condition cards and research';
+
+  @override
+  String get meReminders => 'Reminders';
+
+  @override
+  String meReminderOn(String time) {
+    return 'At $time';
+  }
+
+  @override
+  String get meReminderOff => 'Off';
+
+  @override
+  String get meChatAndMessages => 'Chat and messages';
+
+  @override
+  String get meDmPolicyEveryone => 'From everyone';
+
+  @override
+  String get meDmPolicyFollowing => 'Only people I follow';
+
+  @override
+  String get mePlusBody => 'Unlimited chat';
+
+  @override
+  String get mePlusCta => 'See plans';
+
+  @override
+  String get meModeration => 'Story moderation';
+
+  @override
+  String meModerationCounts(int pending, int reports) {
+    return '$pending pending · $reports reported';
+  }
+
+  @override
+  String get quickCheckinEyebrow => 'Mood · today';
+
+  @override
+  String get quickCheckinNoteHint => 'Add a sentence, if you like';
+
+  @override
+  String get quickCheckinFootnote => 'Saved once a day.';
+
+  @override
+  String quickCheckinFootnoteReminder(String time) {
+    return 'Saved once a day. If you skip it, one reminder comes at $time.';
+  }
 }

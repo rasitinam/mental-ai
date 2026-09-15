@@ -92,11 +92,11 @@ class _Content extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 explainer.name.substring(0, 1).toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 19,
                   height: 1,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: AppPalette.of(context).onAccent,
                 ),
               ),
             ),

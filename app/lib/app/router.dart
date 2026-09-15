@@ -24,9 +24,7 @@ import '../features/profile/presentation/profile_screen.dart';
 import '../features/recap/presentation/recap_screen.dart';
 import '../features/session_summary/presentation/session_summary_screen.dart';
 import '../features/settings/presentation/notification_settings_screen.dart';
-
 import '../features/settings/presentation/privacy_settings_screen.dart';
-import '../features/settings/presentation/settings_screen.dart';
 import '../features/social/presentation/dm_inbox_screen.dart';
 import '../features/social/presentation/dm_thread_screen.dart';
 import '../features/social/presentation/follow_list_screen.dart';
@@ -37,9 +35,7 @@ import '../features/stories/presentation/story_moderation_screen.dart';
 import '../features/stories/presentation/story_submit_screen.dart';
 
 /// Notifies [GoRouter] whenever the signed-in session changes, so
-/// `redirect` below re-runs the moment someone logs in, registers, or
-/// logs out — without this, go_router only re-evaluates `redirect` on
-/// navigation, and login doesn't navigate anywhere on its own.
+/// `redirect` re-runs the moment someone logs in, registers, or logs out.
 class _SessionRefreshNotifier extends ChangeNotifier {
   _SessionRefreshNotifier(Ref ref) {
     ref.listen(sessionTokenProvider, (previous, next) {
@@ -51,20 +47,18 @@ class _SessionRefreshNotifier extends ChangeNotifier {
   }
 }
 
-/// Classic session gate: no valid token → every route redirects to
-/// `/login`; a valid token → `/login` itself redirects into the app — or,
-/// for someone who just registered, into `/onboarding` first (the PHQ-9 +
-/// GAD-7 screening flow) rather than straight to `/report`. That flow
-/// clears `justRegisteredProvider` itself before navigating on, whether
-/// finished or skipped, so this only ever fires once per registration.
-/// Every top-level destination past the gate lives on the shell's
-/// `StatefulShellRoute` so the bottom nav bar preserves each tab's state
-/// (scroll position, in-progress journal draft, ...) when switching tabs.
+/// Classic session gate: no valid token → `/login`; a valid token → Bugün,
+/// or `/onboarding` first for someone who just registered.
+///
+/// Branch order matters — `HomeShell` maps branches to its five tabs:
+/// 0 Bugün, 1 Sohbet, 2 Hikayeler, 5 Yolum, 6 Ben are tabs; 3 Messages
+/// (under Hikayeler), 4 Rehber (under Yolum), 7 mood and 8 journal (under
+/// Bugün) are branches that light their parent tab.
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refresh = _SessionRefreshNotifier(ref);
 
   return GoRouter(
-    initialLocation: ref.read(sessionTokenProvider) != null ? '/stories' : '/login',
+    initialLocation: ref.read(sessionTokenProvider) != null ? '/report' : '/login',
     refreshListenable: refresh,
     redirect: (context, state) {
       final loggedIn = ref.read(sessionTokenProvider) != null;
@@ -73,7 +67,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final justRegistered = ref.read(justRegisteredProvider);
 
       if (!loggedIn && !onLoginPage) return '/login';
-      if (loggedIn && onLoginPage) return justRegistered ? '/onboarding' : '/stories';
+      if (loggedIn && onLoginPage) return justRegistered ? '/onboarding' : '/report';
       if (loggedIn && justRegistered && !onOnboarding) return '/onboarding';
       return null;
     },
@@ -87,22 +81,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => OnboardingFlowScreen(
           onFinished: () {
             ref.read(justRegisteredProvider.notifier).state = false;
-            context.go('/stories');
+            context.go('/report');
           },
         ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => HomeShell(navigationShell: navigationShell),
-        // Branch order is tab order (see `HomeShell._destinations`), with
-        // the story feed deliberately in the middle and Messages right
-        // beside it. Mood and the journal branches sit past the last tab:
-        // both still are routes with their own preserved state, reachable
-        // from the home screen's quick actions, just not a destination on
-        // the bar. `/dm`'s own root isn't parameterized (only its
-        // `:threadId` child is), so — unlike `/users/:id` — it's free to be
-        // a branch; that also fixes Android back exiting the app straight
-        // from the inbox, since a shell branch keeps its own back stack
-        // instead of replacing the route history the way `context.go` did.
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/report', builder: (context, state) => const DailyReportScreen()),
@@ -139,8 +123,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/insights',
               builder: (context, state) => const InsightsScreen(),
               routes: [
-                // Nested so the tab bar stays and Back returns to the
-                // category the person was browsing.
                 GoRoute(
                   path: 'disorder/:slug',
                   builder: (context, state) =>
@@ -154,38 +136,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/life-analysis',
               builder: (context, state) => const LifeAnalysisScreen(),
               routes: [
-                // Nested so the tab bar stays and Back returns to Yaşam,
-                // where the entry card for it lives.
                 GoRoute(
                   path: 'session-summary',
                   builder: (context, state) => const SessionSummaryScreen(),
                 ),
-              ],
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              // The tab's own root is now the Instagram-style profile
-              // view (see `MyProfileScreen`) rather than the settings
-              // list — the list moved to `list` below, one tap away
-              // behind the gear icon, so every existing `/settings/...`
-              // child route (profile edit, diagnoses, my stories,
-              // privacy) keeps working unchanged.
-              path: '/settings',
-              builder: (context, state) => const MyProfileScreen(),
-              routes: [
-                GoRoute(path: 'list', builder: (context, state) => const SettingsScreen()),
-                GoRoute(
-                  path: 'notifications',
-                  builder: (context, state) => const NotificationSettingsScreen(),
-                ),
-
-                GoRoute(path: 'profile', builder: (context, state) => const ProfileScreen()),
-                GoRoute(
-                  path: 'chat-boundaries',
-                  builder: (context, state) => const ChatBoundariesScreen(),
-                ),
-                GoRoute(path: 'diagnoses', builder: (context, state) => const DiagnosesScreen()),
                 GoRoute(
                   path: 'assessment',
                   builder: (context, state) => const AssessmentSummaryScreen(),
@@ -194,11 +148,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       path: 'take',
                       builder: (context, state) => AssessmentScreen(
                         skippable: false,
-                        onDone: () => context.go('/settings/assessment'),
+                        onDone: () => context.go('/life-analysis/assessment'),
                       ),
                     ),
                   ],
                 ),
+                GoRoute(path: 'diagnoses', builder: (context, state) => const DiagnosesScreen()),
+              ],
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/settings',
+              builder: (context, state) => const MyProfileScreen(),
+              routes: [
+                GoRoute(
+                  path: 'notifications',
+                  builder: (context, state) => const NotificationSettingsScreen(),
+                ),
+                GoRoute(path: 'profile', builder: (context, state) => const ProfileScreen()),
+                GoRoute(
+                  path: 'chat-boundaries',
+                  builder: (context, state) => const ChatBoundariesScreen(),
+                ),
+                GoRoute(path: 'diagnoses', builder: (context, state) => const DiagnosesScreen()),
                 GoRoute(
                   path: 'my-stories',
                   builder: (context, state) => const MyStoriesScreen(),
@@ -218,11 +191,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ]),
         ],
       ),
-      // The weekly recap sits outside the shell for the same reason the
-      // social surfaces below do: it's pushed over whatever tab you were
-      // on (from the report screen's recap card) and carries its own back
-      // button, so the tab bar would only be a second, contradictory way
-      // out.
+      // Pushed over whatever tab you were on, with their own back button —
+      // the tab bar would only be a second, contradictory way out.
       GoRoute(
         path: '/recap',
         builder: (context, state) => const RecapScreen(),
@@ -231,12 +201,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/premium',
         builder: (context, state) => const PremiumScreen(),
       ),
-      // Social surfaces sit outside the shell: they're pushed over
-      // whatever tab you were on (from a story author or a DM row) and
-      // carry their own back button, so the tab bar would only be a
-      // second, contradictory way out. A parameterized route also can't be
-      // a shell branch's default location, which is why `/users/:id`
-      // itself (unlike `/dm`, whose root is unparameterized) stays here.
       GoRoute(
         path: '/users/:id',
         builder: (context, state) => UserProfileScreen(userId: state.pathParameters['id']!),

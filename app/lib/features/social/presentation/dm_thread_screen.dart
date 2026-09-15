@@ -257,12 +257,12 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
                           width: 52,
                           height: 52,
                           child: _sending
-                              ? const Padding(
+                              ? Padding(
                                   padding: EdgeInsets.all(16),
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
+                                      strokeWidth: 2, color: AppPalette.of(context).onAccent),
                                 )
-                              : const Icon(Icons.arrow_upward_rounded, color: Colors.white),
+                              : Icon(Icons.arrow_upward_rounded, color: AppPalette.of(context).onAccent),
                         ),
                       ),
                     ),
@@ -305,7 +305,7 @@ class _Bubble extends StatelessWidget {
           style: AppTypography.label.copyWith(
             fontWeight: FontWeight.w400,
             height: 1.5,
-            color: message.mine ? Colors.white : palette.textPrimary,
+            color: message.mine ? AppPalette.of(context).onAccent : palette.textPrimary,
           ),
         ),
       ),

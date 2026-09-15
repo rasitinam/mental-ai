@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
+import '../../../app/theme/components.dart';
+import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// The notes a reader can leave with "Bende de oldu" — must match
@@ -25,7 +27,37 @@ String metooNoteEmoji(String key) => switch (key) {
       _ => '🫂',
     };
 
-/// A full-width strip under a story's reactions. Separate from the three
+/// Two overlapping circles — two people, one shape between them.
+class MetooGlyph extends StatelessWidget {
+  final double size;
+  final Color color;
+  const MetooGlyph({super.key, this.size = 22, required this.color});
+
+  @override
+  Widget build(BuildContext context) =>
+      CustomPaint(size: Size.square(size), painter: _MetooGlyphPainter(color));
+}
+
+class _MetooGlyphPainter extends CustomPainter {
+  final Color color;
+  _MetooGlyphPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.08;
+    final r = size.width * 0.23;
+    canvas.drawCircle(Offset(size.width * 0.375, size.height / 2), r, paint);
+    canvas.drawCircle(Offset(size.width * 0.625, size.height / 2), r, paint);
+  }
+
+  @override
+  bool shouldRepaint(_MetooGlyphPainter old) => old.color != color;
+}
+
+/// A full-width button under a story's reactions. Separate from the three
 /// reaction chips on purpose: those say how the story made you feel; this
 /// says "this is my story too", which is a different act and can coexist
 /// with any reaction.
@@ -40,6 +72,7 @@ class MetooStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final foreground = active ? palette.onAccent : palette.textPrimary;
 
     final String trailing;
     if (active) {
@@ -48,46 +81,45 @@ class MetooStrip extends StatelessWidget {
       trailing = count > 0 ? l10n.metooCount(count) : '';
     }
 
-    return Material(
-      color: active ? palette.accentSoft : palette.surfaceMuted,
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 40),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: active ? palette.accent : Colors.transparent),
-          ),
-          child: Row(
-            children: [
-              const Text('🫂', style: TextStyle(fontSize: 15)),
-              const SizedBox(width: 8),
-              Text(
-                l10n.metooButton,
-                style: AppTypography.caption.copyWith(
-                  color: active ? palette.accent : palette.textPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12.5,
+    return Semantics(
+      button: true,
+      selected: active,
+      child: Material(
+        color: active ? palette.accent : palette.peach,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 52),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                active
+                    ? Icon(Icons.check_rounded, size: 20, color: foreground)
+                    : MetooGlyph(size: 22, color: foreground),
+                const SizedBox(width: 10),
+                Text(
+                  l10n.metooButton,
+                  style: AppTypography.label.copyWith(color: foreground, fontSize: 16, fontWeight: FontWeight.w700),
                 ),
-              ),
-              if (active) ...[
-                const SizedBox(width: 5),
-                Icon(Icons.check_rounded, size: 15, color: palette.accent),
+                const SizedBox(width: 10),
+                if (trailing.isNotEmpty)
+                  Expanded(
+                    child: Text(
+                      trailing,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: AppTypography.footnote.copyWith(
+                        color: active ? palette.onAccent.withValues(alpha: 0.8) : palette.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                else
+                  const Spacer(),
               ],
-              const Spacer(),
-              if (trailing.isNotEmpty)
-                Flexible(
-                  child: Text(
-                    trailing,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: AppTypography.caption.copyWith(color: active ? palette.accent : palette.textSecondary),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),
@@ -106,77 +138,106 @@ Future<String?> showMetooSheet(BuildContext context) {
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (sheetContext) {
-      final palette = AppPalette.of(sheetContext);
-      final l10n = AppLocalizations.of(sheetContext)!;
+      var selected = metooNotes.first;
 
-      return Container(
-        decoration: BoxDecoration(
-          color: palette.canvasTop,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        padding: EdgeInsets.fromLTRB(22, 14, 22, 20 + MediaQuery.paddingOf(sheetContext).bottom),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(color: palette.separator, borderRadius: BorderRadius.circular(2)),
+      return StatefulBuilder(
+        builder: (sheetContext, setState) {
+          final palette = AppPalette.of(sheetContext);
+          final l10n = AppLocalizations.of(sheetContext)!;
+
+          return SheetFrame(
+            children: [
+              Row(
+                children: [
+                  MetooGlyph(size: 18, color: palette.textSecondary),
+                  const SizedBox(width: 7),
+                  SectionLabel(l10n.metooButton),
+                ],
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text('🫂', textAlign: TextAlign.center, style: TextStyle(fontSize: 34)),
-            const SizedBox(height: 10),
-            Text(l10n.metooSheetTitle,
-                textAlign: TextAlign.center,
-                style: AppTypography.title3.copyWith(color: palette.textPrimary)),
-            const SizedBox(height: 8),
-            Text(l10n.metooSheetBody,
-                textAlign: TextAlign.center,
-                style: AppTypography.footnote.copyWith(color: palette.textSecondary, height: 1.5)),
-            const SizedBox(height: 18),
-            for (final note in metooNotes) ...[
-              Material(
-                color: palette.glassFill,
-                borderRadius: BorderRadius.circular(16),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: () => Navigator.of(sheetContext).pop(note),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: palette.separator),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(metooNoteEmoji(note), style: const TextStyle(fontSize: 18)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(metooNoteLabel(l10n, note),
-                              style: AppTypography.label.copyWith(color: palette.textPrimary)),
-                        ),
-                        Icon(Icons.send_rounded, size: 16, color: palette.textTertiary),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              const SizedBox(height: 6),
+              Text(l10n.metooSheetTitle, style: AppTypography.title3.copyWith(color: palette.textPrimary)),
               const SizedBox(height: 8),
+              Text(l10n.metooSheetBody, style: AppTypography.body.copyWith(color: palette.textSecondary)),
+              const SizedBox(height: 18),
+              for (final note in metooNotes) ...[
+                _NoteOption(
+                  label: metooNoteLabel(l10n, note),
+                  selected: selected == note,
+                  onTap: () => setState(() => selected = note),
+                ),
+                const SizedBox(height: 8),
+              ],
+              const SizedBox(height: 8),
+              AppPrimaryButton(
+                label: l10n.storiesSubmit,
+                onPressed: () => Navigator.of(sheetContext).pop(selected),
+              ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: () => Navigator.of(sheetContext).pop(metooNoNote),
+                child: Text(l10n.metooJustMark,
+                    style: AppTypography.label.copyWith(color: palette.textSecondary, fontWeight: FontWeight.w700)),
+              ),
             ],
-            const SizedBox(height: 4),
-            TextButton(
-              onPressed: () => Navigator.of(sheetContext).pop(metooNoNote),
-              child: Text(l10n.metooJustMark,
-                  style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
-            ),
-          ],
-        ),
+          );
+        },
       );
     },
   );
+}
+
+class _NoteOption extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _NoteOption({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      checked: selected,
+      button: true,
+      child: Material(
+        color: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: selected ? palette.textPrimary : palette.separator, width: selected ? 2 : 1.5),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 54),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: selected ? palette.textPrimary : palette.textTertiary,
+                      width: selected ? 7 : 2,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(label,
+                      style: AppTypography.label.copyWith(color: palette.textPrimary, fontSize: 16)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
