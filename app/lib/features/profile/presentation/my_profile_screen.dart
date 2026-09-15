@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -256,7 +257,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
         child: ListView(
           // Builds the whole page up front, so the Ayarlar button can
           // scroll to a section that hasn't been on screen yet.
-          scrollCacheExtent: ScrollCacheExtent.pixels(100000),
+          scrollCacheExtent: const ScrollCacheExtent.pixels(100000),
           padding: EdgeInsets.fromLTRB(22, 10, 22, bottomClearance(context)),
           children: [
             Row(
