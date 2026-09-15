@@ -5,9 +5,10 @@ use axum::{
     Json, Router,
 };
 use chrono::{Duration, Utc};
-use mental_analysis_engine::{generate_chat_reply, PersonContext};
+use mental_analysis_engine::{generate_chat_reply, translate::translate_batch, PersonContext};
 use mental_domain::repository::{
-    ChatRepository, ChatUsageRepository, JournalRepository, MoodRepository, SubscriptionRepository,
+    ChatRepository, ChatUsageRepository, ContentTranslationRepository, JournalRepository, MoodRepository,
+    SubscriptionRepository,
 };
 use mental_domain::{ChatMessageRecord, ChatRole};
 use mental_llm_connector::ChatMessage;
@@ -29,6 +30,14 @@ pub fn router() -> Router<AppState> {
 /// window sent to the LLM per turn — this is just for rendering the
 /// scrollback, not prompt cost.
 const HISTORY_LIMIT: u32 = 500;
+
+/// `content_translations` type for an assistant turn translated into the
+/// reader's language; the content id is the message id.
+const CHAT_TRANSLATION_CONTENT_TYPE: &str = "chat_message";
+/// Assistant turns per translation call. Batches run concurrently, so a
+/// long transcript's first load after a language switch stays a matter of
+/// seconds.
+const TRANSLATION_BATCH_SIZE: usize = 25;
 
 #[derive(Debug, Deserialize)]
 struct ChatTurnRequest {
@@ -166,13 +175,72 @@ async fn chat_history(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<Vec<ChatMessageRecord>>, (axum::http::StatusCode, String)> {
-    let history = state
+    let mut history = state
         .chats
         .history_for_user(auth.user_id, HISTORY_LIMIT)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
+    if let Some(user) = user_for(&state, auth.user_id).await {
+        translate_assistant_turns(&state, &mut history, &user.language).await;
+    }
+
     Ok(Json(history))
+}
+
+/// Puts the AI's side of the transcript into the reader's current language,
+/// leaving the person's own messages exactly as they wrote them. Each
+/// assistant turn is translated once per language and cached — a turn
+/// already in that language comes back from the model unchanged and is
+/// cached the same way, so it is never sent again. A batch that fails keeps
+/// its original text rather than failing the whole history.
+async fn translate_assistant_turns(state: &AppState, history: &mut [ChatMessageRecord], language: &str) {
+    let mut missing = Vec::new();
+    for (index, record) in history.iter_mut().enumerate() {
+        if record.role != ChatRole::Assistant {
+            continue;
+        }
+        match state.content_translations.get(CHAT_TRANSLATION_CONTENT_TYPE, &record.id.to_string(), language).await {
+            Ok(Some(cached)) => record.content = cached,
+            Ok(None) => missing.push(index),
+            Err(err) => tracing::warn!(error = %err, "failed to read a cached chat translation"),
+        }
+    }
+    if missing.is_empty() {
+        return;
+    }
+
+    let mut batches = tokio::task::JoinSet::new();
+    for chunk in missing.chunks(TRANSLATION_BATCH_SIZE) {
+        let indices = chunk.to_vec();
+        let texts: Vec<String> = indices.iter().map(|&index| history[index].content.clone()).collect();
+        let llm = state.llm.clone();
+        let language = language.to_string();
+        batches.spawn(async move {
+            let translated = translate_batch(&texts, &language, llm.as_ref()).await;
+            (indices, translated)
+        });
+    }
+
+    while let Some(joined) = batches.join_next().await {
+        let Ok((indices, translated)) = joined else { continue };
+        match translated {
+            Ok(texts) => {
+                for (index, text) in indices.into_iter().zip(texts) {
+                    let record = &mut history[index];
+                    if let Err(err) = state
+                        .content_translations
+                        .save(CHAT_TRANSLATION_CONTENT_TYPE, &record.id.to_string(), language, &text)
+                        .await
+                    {
+                        tracing::warn!(error = %err, "failed to cache a chat translation");
+                    }
+                    record.content = text;
+                }
+            }
+            Err(err) => tracing::warn!(error = %err, "failed to translate a chat history batch"),
+        }
+    }
 }
 
 async fn persist_turn(state: &AppState, user_id: Uuid, role: ChatRole, content: &str, crisis_flag: bool) {
@@ -186,5 +254,22 @@ async fn persist_turn(state: &AppState, user_id: Uuid, role: ChatRole, content: 
     };
     if let Err(err) = state.chats.add(&record).await {
         tracing::warn!(error = %err, "failed to persist chat message");
+        return;
+    }
+
+    // A reply is written in the account's current language, so it is
+    // already its own translation into that language. Recording it as one
+    // means reading the history back in the same language never sends it
+    // to the model.
+    if role == ChatRole::Assistant {
+        if let Some(user) = user_for(state, user_id).await {
+            if let Err(err) = state
+                .content_translations
+                .save(CHAT_TRANSLATION_CONTENT_TYPE, &record.id.to_string(), &user.language, content)
+                .await
+            {
+                tracing::warn!(error = %err, "failed to cache a chat reply in its own language");
+            }
+        }
     }
 }

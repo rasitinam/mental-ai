@@ -250,6 +250,51 @@ pub async fn translate_current_state(
     ))
 }
 
+/// Translates a list of texts into `target_language` in one call, keeping
+/// their order. A text already in that language comes back unchanged, so
+/// callers don't need to know what language each one was written in. Used
+/// for a chat transcript's assistant turns, where one call per message
+/// would make the first load after a language switch far too slow.
+pub async fn translate_batch(
+    texts: &[String],
+    target_language: &str,
+    llm: &dyn LlmProvider,
+) -> anyhow::Result<Vec<String>> {
+    if texts.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let response = llm
+        .chat(ChatRequest {
+            messages: vec![
+                ChatMessage {
+                    role: Role::System,
+                    content: format!(
+                        "You are a translation engine. The user sends a JSON array of strings. \
+                         Translate every string into {}. A string already in that language is \
+                         returned unchanged. Preserve tone, meaning, line breaks and markdown. \
+                         Reply with JSON only: an array of exactly {} strings, in the same order.",
+                        language_name(target_language),
+                        texts.len()
+                    ),
+                },
+                ChatMessage { role: Role::User, content: serde_json::to_string(texts)? },
+            ],
+            tools: vec![],
+            temperature: None,
+        })
+        .await?;
+
+    let translated: Vec<String> = serde_json::from_str(clean_json(&response.message.content))?;
+    anyhow::ensure!(
+        translated.len() == texts.len(),
+        "expected {} translations, got {}",
+        texts.len(),
+        translated.len()
+    );
+    Ok(translated)
+}
+
 fn clean_json(raw: &str) -> &str {
     raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim()
 }

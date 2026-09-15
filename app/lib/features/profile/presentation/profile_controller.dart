@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../app/language_refresh.dart';
 import '../../../core/l10n/locale_controller.dart';
 import '../../../core/storage/local_prefs.dart';
 import '../data/profile_api.dart';
@@ -124,6 +125,13 @@ class ProfileController extends Notifier<ProfileState> {
           );
       state = _fromProfile(profile).copyWith(saved: true);
       ref.invalidate(myProfileProvider);
+      // Only now, with the account saved in the new language, does the
+      // server answer in it — reloading before this would fetch the old one.
+      if (language != null && language != previousLanguage) {
+        for (final provider in languageDependentProviders) {
+          ref.invalidate(provider);
+        }
+      }
     } catch (e) {
       // Put the interface back in the language the account is still stored
       // in. Leaving it switched after a failed save is worse than not

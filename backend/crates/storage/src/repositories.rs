@@ -283,6 +283,13 @@ impl UserRepository for SqliteUserRepository {
             .bind(format!("{id}:%"))
             .execute(&mut *tx)
             .await?;
+        sqlx::query(
+            "DELETE FROM content_translations WHERE content_type = 'chat_message'
+             AND content_id IN (SELECT id FROM chat_messages WHERE user_id = ?1)",
+        )
+        .bind(&id)
+        .execute(&mut *tx)
+        .await?;
 
         // Direct messages this account is part of, either side.
         sqlx::query(
