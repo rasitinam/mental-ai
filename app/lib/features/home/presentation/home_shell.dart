@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/components.dart';
+import '../../../core/l10n/locale_controller.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../profile/data/profile_api.dart';
 import '../../social/data/dm_badge.dart';
 
 /// Five labeled tabs on a solid bar — Bugün, Sohbet, Hikayeler, Yolum,
@@ -39,6 +41,16 @@ class HomeShell extends ConsumerWidget {
     final selectedTab = _tabBranches.indexOf(parent ?? current);
     final unread = ref.watch(dmBadgeProvider.select((s) => s.count));
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+
+    // Reports and chat replies are written in the account's language, so
+    // the interface follows it. Otherwise signing in on a phone set to
+    // another language shows English labels around Turkish content.
+    ref.listen(myProfileProvider, (_, next) {
+      final language = next.valueOrNull?.language;
+      if (language != null && language != ref.read(localeControllerProvider).languageCode) {
+        ref.read(localeControllerProvider.notifier).setLanguage(language);
+      }
+    });
 
     final tabs = [
       _TabData(Icons.wb_twilight_rounded, Icons.wb_twilight_rounded, l10n.navToday, palette.sun),

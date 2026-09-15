@@ -9,6 +9,7 @@ import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/auth_screen.dart';
 import '../features/catalog/presentation/disorder_detail_screen.dart';
 import '../features/chat/presentation/chat_screen.dart';
+import '../features/consent/presentation/privacy_consent_screen.dart';
 import '../features/daily_report/presentation/daily_report_screen.dart';
 import '../features/home/presentation/home_shell.dart';
 import '../features/insights/presentation/insights_screen.dart';
@@ -64,7 +65,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final loggedIn = ref.read(sessionTokenProvider) != null;
       final onLoginPage = state.matchedLocation == '/login';
       final onOnboarding = state.matchedLocation == '/onboarding';
+      final onConsent = state.matchedLocation == '/before-you-go';
       final justRegistered = ref.read(justRegisteredProvider);
+
+      // The privacy summary comes before everything else, once per policy
+      // version — including for people already signed in when it ships.
+      if (!hasAcceptedPrivacy(ref.read(sharedPreferencesProvider))) {
+        return onConsent ? null : '/before-you-go';
+      }
+      if (onConsent) return loggedIn ? '/report' : '/login';
 
       if (!loggedIn && !onLoginPage) return '/login';
       if (loggedIn && onLoginPage) return justRegistered ? '/onboarding' : '/report';
@@ -72,6 +81,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/before-you-go',
+        builder: (context, state) => PrivacyConsentScreen(onAccepted: () => context.go('/login')),
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => const AuthScreen(),

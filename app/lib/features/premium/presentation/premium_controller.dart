@@ -101,10 +101,30 @@ class PremiumController extends Notifier<PremiumState> {
   /// reinstall, since a subscription isn't tied to local app state.
   Future<void> restore() async {
     state = state.copyWith(restoring: true, error: null);
-    await InAppPurchase.instance.restorePurchases();
+    try {
+      await InAppPurchase.instance.restorePurchases();
+    } catch (e) {
+      state = state.copyWith(restoring: false, error: e);
+      return;
+    }
+
+    // StoreKit 2 sends nothing at all when the account has nothing to
+    // restore, so give any restored purchase a moment to arrive (and be
+    // verified) before concluding there was none. Without this the
+    // button would spin forever.
+    await Future<void>.delayed(const Duration(seconds: 4));
+    if (state.restoring) {
+      state = state.copyWith(restoring: false);
+    }
   }
 
   Future<void> _onPurchaseUpdate(List<PurchaseDetails> purchases) async {
+    // StoreKit 1 reports "nothing to restore" as an empty update.
+    if (purchases.isEmpty && state.restoring) {
+      state = state.copyWith(restoring: false);
+      return;
+    }
+
     for (final purchase in purchases) {
       switch (purchase.status) {
         case PurchaseStatus.pending:

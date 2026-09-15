@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/layout/bottom_clearance.dart';
+import '../../../app/settings_jump.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/components.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/l10n/locale_controller.dart';
 import '../../../core/network/error_messages.dart';
 import '../../../core/storage/local_prefs.dart';
 import '../../../core/theme/theme_mode_controller.dart';
@@ -25,6 +27,7 @@ import '../../stories/presentation/story_grid_tile.dart';
 import '../../stories/presentation/story_submit_screen.dart';
 import '../data/profile_api.dart';
 import '../domain/user_profile.dart';
+import 'profile_controller.dart';
 
 /// Ben — the profile and every setting, in one scrolling page. Nothing
 /// sits behind a gear icon: the reminder switch, chat and message
@@ -40,9 +43,29 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   /// The switch's position while its save is in flight.
   bool? _reminderOverride;
 
+  /// Where the settings start, for the Ayarlar buttons on this tab and on
+  /// Bugün.
+  final _settingsKey = GlobalKey();
+  int _handledSettingsJump = 0;
+
+  void _jumpToSettings() {
+    final target = _settingsKey.currentContext;
+    if (target == null) return;
+    Scrollable.ensureVisible(target, duration: const Duration(milliseconds: 420), curve: Curves.easeOutCubic);
+  }
+
   @override
   void initState() {
     super.initState();
+    // fireImmediately covers the tap on Bugün that builds this tab for the
+    // first time: the counter is already bumped by then.
+    ref.listenManual(settingsJumpProvider, (_, next) {
+      if (next <= _handledSettingsJump) return;
+      _handledSettingsJump = next;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _jumpToSettings();
+      });
+    }, fireImmediately: true);
     // A story withdrawn or edited elsewhere shows up the next time this tab
     // opens, not on a stale first load.
     Future.microtask(() => ref.read(storiesControllerProvider.notifier).loadMine());
@@ -191,6 +214,24 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     return months < 1 ? l10n.meMemberNew : l10n.meMemberMonths(months);
   }
 
+  /// Switches the interface right away and stores the choice on the
+  /// account, which reports and chat replies are written in. A failed save
+  /// puts the old language back (see `ProfileController.savePreferences`)
+  /// and says why.
+  Future<void> _setLanguage(String code) async {
+    if (code == ref.read(localeControllerProvider).languageCode) return;
+
+    final controller = ref.read(profileControllerProvider.notifier);
+    await controller.savePreferences(language: code);
+    if (!mounted) return;
+
+    final error = ref.read(profileControllerProvider).error;
+    if (error != null) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(l10n, error))));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -213,9 +254,17 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
       body: SafeArea(
         bottom: false,
         child: ListView(
+          // Builds the whole page up front, so the Ayarlar button can
+          // scroll to a section that hasn't been on screen yet.
+          scrollCacheExtent: ScrollCacheExtent.pixels(100000),
           padding: EdgeInsets.fromLTRB(22, 10, 22, bottomClearance(context)),
           children: [
-            Text(l10n.navMe, style: AppTypography.title2.copyWith(color: palette.textPrimary)),
+            Row(
+              children: [
+                Expanded(child: Text(l10n.navMe, style: AppTypography.title2.copyWith(color: palette.textPrimary))),
+                PillButton(icon: Icons.settings_outlined, label: l10n.settingsTitle, onTap: _jumpToSettings),
+              ],
+            ),
             const SizedBox(height: 20),
             Row(
               children: [
@@ -324,7 +373,16 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 ],
               ],
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 40),
+            Row(
+              key: _settingsKey,
+              children: [
+                Icon(Icons.settings_outlined, size: 26, color: palette.textPrimary),
+                const SizedBox(width: 10),
+                Text(l10n.settingsTitle, style: AppTypography.title2.copyWith(color: palette.textPrimary, fontSize: 28)),
+              ],
+            ),
+            const SizedBox(height: 18),
             SectionHeader(title: l10n.meReminders),
             const SizedBox(height: 8),
             ListGroup(
@@ -367,9 +425,24 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
             const SizedBox(height: 30),
             SectionHeader(title: l10n.settingsAppearance),
             const SizedBox(height: 8),
-            _ThemeSegments(
-              mode: themeMode,
+            _Segments(
+              options: [
+                (ThemeMode.system, l10n.settingsThemeSystem),
+                (ThemeMode.light, l10n.settingsThemeLight),
+                (ThemeMode.dark, l10n.settingsThemeDark),
+              ],
+              selected: themeMode,
               onChanged: (mode) => ref.read(themeModeControllerProvider.notifier).setMode(mode),
+            ),
+            const SizedBox(height: 30),
+            SectionHeader(title: l10n.profileLanguage),
+            const SizedBox(height: 8),
+            // Each language is named in itself, so someone stuck in the
+            // other one can still recognize their own.
+            _Segments(
+              options: const [('tr', 'Türkçe'), ('en', 'English')],
+              selected: ref.watch(localeControllerProvider).languageCode,
+              onChanged: _setLanguage,
             ),
             const SizedBox(height: 30),
             Semantics(
@@ -494,21 +567,18 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _ThemeSegments extends StatelessWidget {
-  final ThemeMode mode;
-  final ValueChanged<ThemeMode> onChanged;
+/// A row of mutually exclusive choices on one card — the theme and the
+/// language pickers.
+class _Segments<T> extends StatelessWidget {
+  final List<(T, String)> options;
+  final T selected;
+  final ValueChanged<T> onChanged;
 
-  const _ThemeSegments({required this.mode, required this.onChanged});
+  const _Segments({required this.options, required this.selected, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    final options = [
-      (ThemeMode.system, l10n.settingsThemeSystem),
-      (ThemeMode.light, l10n.settingsThemeLight),
-      (ThemeMode.dark, l10n.settingsThemeDark),
-    ];
 
     return GlassSurface(
       radius: 16,
@@ -516,13 +586,13 @@ class _ThemeSegments extends StatelessWidget {
       child: Row(
         children: [
           for (final (value, label) in options) ...[
-            if (value != ThemeMode.system) const SizedBox(width: 4),
+            if (value != options.first.$1) const SizedBox(width: 4),
             Expanded(
               child: Semantics(
-                selected: value == mode,
+                selected: value == selected,
                 button: true,
                 child: Material(
-                  color: value == mode ? palette.accent : Colors.transparent,
+                  color: value == selected ? palette.accent : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
@@ -533,7 +603,7 @@ class _ThemeSegments extends StatelessWidget {
                         child: Text(
                           label,
                           style: AppTypography.label.copyWith(
-                            color: value == mode ? palette.onAccent : palette.textSecondary,
+                            color: value == selected ? palette.onAccent : palette.textSecondary,
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),

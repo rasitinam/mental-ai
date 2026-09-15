@@ -3056,6 +3056,12 @@ abstract class AppLocalizations {
   /// **'Satın almaların geri yüklendi.'**
   String get premiumRestored;
 
+  /// No description provided for @premiumNothingToRestore.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu Apple hesabında geri yüklenecek bir Hearth Plus aboneliği bulunamadı.'**
+  String get premiumNothingToRestore;
+
   /// No description provided for @premiumPrivacyPolicy.
   ///
   /// In tr, this message translates to:
@@ -3067,6 +3073,102 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Kullanım Koşulları'**
   String get premiumTermsOfUse;
+
+  /// No description provided for @consentTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Başlamadan önce'**
+  String get consentTitle;
+
+  /// No description provided for @consentLead.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth\'e yazdıkların en kişisel şeylerinin arasında. Onlara nasıl davrandığımızın kısa özeti:'**
+  String get consentLead;
+
+  /// No description provided for @consentOwnTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sen paylaşmadıkça senin'**
+  String get consentOwnTitle;
+
+  /// No description provided for @consentOwnBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh hali kayıtların, günlüğün ve sohbetlerin yalnızca senin hesabına görünür. Bir hikayeyi başkaları, sen paylaşıp incelemeden geçtikten sonra görür.'**
+  String get consentOwnBody;
+
+  /// No description provided for @consentAiTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yapay zekânın gördükleri'**
+  String get consentAiTitle;
+
+  /// No description provided for @consentAiBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yanıt ve rapor yazabilmek için ilgili metin OpenAI\'a gönderilir. Verilerin reklam için kullanılmaz ve asla satılmaz.'**
+  String get consentAiBody;
+
+  /// No description provided for @consentHealthTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sağlık bilgisi için açık rıza'**
+  String get consentHealthTitle;
+
+  /// No description provided for @consentHealthBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh hali, günlük, test yanıtları ve eklediğin tanılar sağlık verisidir. Kabul ederek bunların uygulamanın çalışması için işlenmesine ve yurt dışındaki sağlayıcılara aktarılmasına açık rıza verirsin.'**
+  String get consentHealthBody;
+
+  /// No description provided for @consentDeleteTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'İstediğin an her şeyi sil'**
+  String get consentDeleteTitle;
+
+  /// No description provided for @consentDeleteBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ben sekmesinden hesabını ve ona bağlı tüm verileri kalıcı olarak silebilirsin.'**
+  String get consentDeleteBody;
+
+  /// No description provided for @consentCareTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bir sağlık uzmanı değil'**
+  String get consentCareTitle;
+
+  /// No description provided for @consentCareBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth tanı koymaz, tedavi etmez. Acil bir durumda 112\'yi ara.'**
+  String get consentCareBody;
+
+  /// No description provided for @consentReadFull.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gizlilik Politikası\'nın tamamını oku'**
+  String get consentReadFull;
+
+  /// No description provided for @consentFinePrint.
+  ///
+  /// In tr, this message translates to:
+  /// **'13 yaşından büyük olmalısın. Kaydırarak bu özeti okuduğunu ve Gizlilik Politikası\'nı kabul ettiğini onaylarsın.'**
+  String get consentFinePrint;
+
+  /// No description provided for @consentSlide.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kabul etmek için kaydır'**
+  String get consentSlide;
+
+  /// No description provided for @consentAccepted.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kabul edildi'**
+  String get consentAccepted;
 
   /// No description provided for @chatQuotaExceeded.
   ///

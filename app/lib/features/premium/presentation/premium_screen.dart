@@ -29,7 +29,8 @@ class PremiumScreen extends ConsumerWidget {
 
     ref.listen(premiumControllerProvider, (prev, next) {
       if (next.restoring == false && prev?.restoring == true && next.error == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.premiumRestored)));
+        final message = next.entitlement.isPremium ? l10n.premiumRestored : l10n.premiumNothingToRestore;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       }
     });
 

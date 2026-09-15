@@ -1617,10 +1617,69 @@ class AppLocalizationsTr extends AppLocalizations {
   String get premiumRestored => 'Satın almaların geri yüklendi.';
 
   @override
+  String get premiumNothingToRestore =>
+      'Bu Apple hesabında geri yüklenecek bir Hearth Plus aboneliği bulunamadı.';
+
+  @override
   String get premiumPrivacyPolicy => 'Gizlilik Politikası';
 
   @override
   String get premiumTermsOfUse => 'Kullanım Koşulları';
+
+  @override
+  String get consentTitle => 'Başlamadan önce';
+
+  @override
+  String get consentLead =>
+      'Hearth\'e yazdıkların en kişisel şeylerinin arasında. Onlara nasıl davrandığımızın kısa özeti:';
+
+  @override
+  String get consentOwnTitle => 'Sen paylaşmadıkça senin';
+
+  @override
+  String get consentOwnBody =>
+      'Ruh hali kayıtların, günlüğün ve sohbetlerin yalnızca senin hesabına görünür. Bir hikayeyi başkaları, sen paylaşıp incelemeden geçtikten sonra görür.';
+
+  @override
+  String get consentAiTitle => 'Yapay zekânın gördükleri';
+
+  @override
+  String get consentAiBody =>
+      'Yanıt ve rapor yazabilmek için ilgili metin OpenAI\'a gönderilir. Verilerin reklam için kullanılmaz ve asla satılmaz.';
+
+  @override
+  String get consentHealthTitle => 'Sağlık bilgisi için açık rıza';
+
+  @override
+  String get consentHealthBody =>
+      'Ruh hali, günlük, test yanıtları ve eklediğin tanılar sağlık verisidir. Kabul ederek bunların uygulamanın çalışması için işlenmesine ve yurt dışındaki sağlayıcılara aktarılmasına açık rıza verirsin.';
+
+  @override
+  String get consentDeleteTitle => 'İstediğin an her şeyi sil';
+
+  @override
+  String get consentDeleteBody =>
+      'Ben sekmesinden hesabını ve ona bağlı tüm verileri kalıcı olarak silebilirsin.';
+
+  @override
+  String get consentCareTitle => 'Bir sağlık uzmanı değil';
+
+  @override
+  String get consentCareBody =>
+      'Hearth tanı koymaz, tedavi etmez. Acil bir durumda 112\'yi ara.';
+
+  @override
+  String get consentReadFull => 'Gizlilik Politikası\'nın tamamını oku';
+
+  @override
+  String get consentFinePrint =>
+      '13 yaşından büyük olmalısın. Kaydırarak bu özeti okuduğunu ve Gizlilik Politikası\'nı kabul ettiğini onaylarsın.';
+
+  @override
+  String get consentSlide => 'Kabul etmek için kaydır';
+
+  @override
+  String get consentAccepted => 'Kabul edildi';
 
   @override
   String get chatQuotaExceeded =>

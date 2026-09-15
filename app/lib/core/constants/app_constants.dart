@@ -10,24 +10,22 @@ class AppConstants {
     defaultValue: 'http://127.0.0.1:8787',
   );
 
-  // Apple requires the Hearth Plus paywall to link to a real, hosted
-  // Privacy Policy and Terms of Use (App Store Review Guideline 3.1.2).
-  // This draft must be shared publicly (the artifact's own Share menu)
-  // before a real submission — Apple's reviewer opens it without being
-  // signed into claude.ai. Override with --dart-define if it moves to a
-  // permanent, self-hosted URL later; the paywall hides a link rather
-  // than opening a blank page while either is empty.
+  // Public pages on GitHub Pages (repo rasitinam/hearth-privacy). Apple
+  // requires the Hearth Plus paywall to link to both (App Store Review
+  // Guideline 3.1.2), and the first-launch consent screen links to the
+  // policy. Both pages accept ?lang=tr|en.
   static const String privacyPolicyUrl = String.fromEnvironment(
     'PRIVACY_POLICY_URL',
-    defaultValue: 'https://claude.ai/code/artifact/2658cf1d-f5f7-4aee-b646-4c0ab1b9649e',
+    defaultValue: 'https://rasitinam.github.io/hearth-privacy/',
   );
   static const String termsOfUseUrl = String.fromEnvironment(
     'TERMS_OF_USE_URL',
-    defaultValue: 'https://claude.ai/code/artifact/2658cf1d-f5f7-4aee-b646-4c0ab1b9649e',
+    defaultValue: 'https://rasitinam.github.io/hearth-privacy/terms.html',
   );
 
-
   static const String prefsUserIdKey = 'mental_ai.user_id';
+  /// The Privacy Policy version this device accepted on the consent screen.
+  static const String prefsPrivacyAcceptedKey = 'mental_ai.privacy_accepted_version';
   static const String prefsLanguageKey = 'mental_ai.language';
   static const String prefsThemeModeKey = 'mental_ai.theme_mode';
   static const String prefsSessionTokenKey = 'mental_ai.session_token';

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/layout/bottom_clearance.dart';
+import '../../../app/settings_jump.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/app_typography.dart';
@@ -85,7 +86,21 @@ class DailyReportScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const SupportPill(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const SupportPill(),
+                      const SizedBox(height: 8),
+                      PillButton(
+                        icon: Icons.settings_outlined,
+                        label: AppLocalizations.of(context)!.settingsTitle,
+                        onTap: () {
+                          ref.read(settingsJumpProvider.notifier).state++;
+                          context.go('/settings');
+                        },
+                      ),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 18),

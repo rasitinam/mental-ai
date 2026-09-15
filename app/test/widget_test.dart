@@ -9,6 +9,7 @@ import 'package:mental_ai/app/app.dart';
 import 'package:mental_ai/core/constants/app_constants.dart';
 import 'package:mental_ai/core/network/api_client.dart';
 import 'package:mental_ai/core/storage/local_prefs.dart';
+import 'package:mental_ai/features/consent/presentation/privacy_consent_screen.dart';
 
 /// Fails every request immediately instead of letting the real client open
 /// sockets and leave connect-timeout timers pending past the end of a test.
@@ -34,7 +35,8 @@ void main() {
   testWidgets('shows the login screen when signed out', (WidgetTester tester) async {
     // The language is pinned so the assertions below test routing, not
     // whatever locale the test host happens to report.
-    SharedPreferences.setMockInitialValues({AppConstants.prefsLanguageKey: 'tr'});
+    SharedPreferences.setMockInitialValues({AppConstants.prefsPrivacyAcceptedKey: privacyPolicyVersion,
+      AppConstants.prefsLanguageKey: 'tr'});
     final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
@@ -59,6 +61,7 @@ void main() {
     SharedPreferences.setMockInitialValues({
       AppConstants.prefsUserIdKey: 'test-user-id',
       AppConstants.prefsSessionTokenKey: 'test-token',
+      AppConstants.prefsPrivacyAcceptedKey: privacyPolicyVersion,
       AppConstants.prefsLanguageKey: 'tr',
     });
     final prefs = await SharedPreferences.getInstance();
@@ -100,7 +103,8 @@ void main() {
   testWidgets('renders in English when the stored language is English', (
     WidgetTester tester,
   ) async {
-    SharedPreferences.setMockInitialValues({AppConstants.prefsLanguageKey: 'en'});
+    SharedPreferences.setMockInitialValues({AppConstants.prefsPrivacyAcceptedKey: privacyPolicyVersion,
+      AppConstants.prefsLanguageKey: 'en'});
     final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
@@ -118,7 +122,8 @@ void main() {
   });
 
   testWidgets('switching to register shows the display name field', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({AppConstants.prefsLanguageKey: 'tr'});
+    SharedPreferences.setMockInitialValues({AppConstants.prefsPrivacyAcceptedKey: privacyPolicyVersion,
+      AppConstants.prefsLanguageKey: 'tr'});
     final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
@@ -144,5 +149,38 @@ void main() {
 
     expect(find.text('Hesabını oluştur'), findsOneWidget);
     expect(find.text('Adın'), findsOneWidget);
+  });
+
+  testWidgets('shows the privacy summary first and continues to login once slid to accept', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({AppConstants.prefsLanguageKey: 'tr'});
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          apiClientProvider.overrideWithValue(_offlineDio()),
+        ],
+        child: const MentalAiApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Başlamadan önce'), findsOneWidget);
+
+    // Letting go early slides the handle back without accepting.
+    final slider = find.byType(SlideToAccept);
+    await tester.drag(slider, const Offset(60, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Başlamadan önce'), findsOneWidget);
+    expect(prefs.getString(AppConstants.prefsPrivacyAcceptedKey), isNull);
+
+    await tester.drag(slider, const Offset(1000, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tekrar hoş geldin'), findsOneWidget);
+    expect(prefs.getString(AppConstants.prefsPrivacyAcceptedKey), privacyPolicyVersion);
   });
 }

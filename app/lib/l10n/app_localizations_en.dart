@@ -1619,10 +1619,69 @@ class AppLocalizationsEn extends AppLocalizations {
   String get premiumRestored => 'Your purchases have been restored.';
 
   @override
+  String get premiumNothingToRestore =>
+      'No Hearth Plus subscription was found to restore on this Apple account.';
+
+  @override
   String get premiumPrivacyPolicy => 'Privacy Policy';
 
   @override
   String get premiumTermsOfUse => 'Terms of Use';
+
+  @override
+  String get consentTitle => 'Before you go';
+
+  @override
+  String get consentLead =>
+      'What you write in Hearth is among the most personal things you\'ll write. Here\'s how we treat it, in short:';
+
+  @override
+  String get consentOwnTitle => 'Yours unless you share it';
+
+  @override
+  String get consentOwnBody =>
+      'Your moods, journal and chats are visible only to your account. Others see a story only after you share it and it passes review.';
+
+  @override
+  String get consentAiTitle => 'What the AI sees';
+
+  @override
+  String get consentAiBody =>
+      'To write replies and reports, the relevant text is sent to OpenAI. Your data isn\'t used for advertising and is never sold.';
+
+  @override
+  String get consentHealthTitle => 'Explicit consent for health data';
+
+  @override
+  String get consentHealthBody =>
+      'Moods, journal entries, assessment answers and diagnoses you add are health data. By accepting, you explicitly consent to their processing to run the app, including transfer to providers abroad.';
+
+  @override
+  String get consentDeleteTitle => 'Delete everything, any time';
+
+  @override
+  String get consentDeleteBody =>
+      'From the Me tab you can permanently delete your account and all of its data.';
+
+  @override
+  String get consentCareTitle => 'Not a clinician';
+
+  @override
+  String get consentCareBody =>
+      'Hearth doesn\'t diagnose or treat. In a crisis, call your local emergency number.';
+
+  @override
+  String get consentReadFull => 'Read the full Privacy Policy';
+
+  @override
+  String get consentFinePrint =>
+      'You must be 13 or older. Sliding confirms you\'ve read this summary and accept the Privacy Policy.';
+
+  @override
+  String get consentSlide => 'Slide to accept';
+
+  @override
+  String get consentAccepted => 'Accepted';
 
   @override
   String get chatQuotaExceeded =>
