@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -592,8 +594,11 @@ Color _reactionColor(AppPalette palette, String reaction) => switch (reaction) {
     };
 
 /// A reaction by name: picking a different one swaps rather than stacks,
-/// and the reader's own pick is filled.
-class _ReactionChip extends StatelessWidget {
+/// and the reader's own pick is filled. Picking it (not un-picking, and
+/// not just re-rendering already-selected) plays a small pop-and-sparkle,
+/// the same beat as a YouTube like — a nod that the tap landed, over
+/// before it can get in the way of reading.
+class _ReactionChip extends StatefulWidget {
   final String label;
   final Color color;
   final int count;
@@ -609,37 +614,147 @@ class _ReactionChip extends StatelessWidget {
   });
 
   @override
+  State<_ReactionChip> createState() => _ReactionChipState();
+}
+
+class _ReactionChipState extends State<_ReactionChip> with SingleTickerProviderStateMixin {
+  late final AnimationController _pop = AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
+  late final Animation<double> _scale = TweenSequence([
+    TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.16).chain(CurveTween(curve: Curves.easeOut)), weight: 30),
+    TweenSequenceItem(tween: Tween(begin: 1.16, end: 1.0).chain(CurveTween(curve: Curves.easeOutBack)), weight: 70),
+  ]).animate(_pop);
+  final _burstKey = GlobalKey<_ReactionBurstState>();
+
+  @override
+  void didUpdateWidget(covariant _ReactionChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selected && !oldWidget.selected) {
+      _pop.forward(from: 0);
+      _burstKey.currentState?.burst();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pop.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final foreground = selected ? palette.onVivid : palette.textPrimary;
+    final foreground = widget.selected ? palette.onVivid : palette.textPrimary;
 
     return Semantics(
       button: true,
-      selected: selected,
-      child: Material(
-        color: selected ? color : palette.canvasTop,
-        borderRadius: BorderRadius.circular(12),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 11),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(label, style: AppTypography.footnote.copyWith(color: foreground, fontWeight: FontWeight.w600)),
-                if (count > 0) ...[
-                  const SizedBox(width: 6),
-                  Text('$count',
-                      style: AppTypography.footnote.copyWith(
-                        color: selected ? palette.onVivid : palette.textSecondary,
-                        fontWeight: FontWeight.w700,
-                      )),
-                ],
-              ],
+      selected: widget.selected,
+      child: _ReactionBurst(
+        key: _burstKey,
+        color: widget.color,
+        child: ScaleTransition(
+          scale: _scale,
+          child: Material(
+            color: widget.selected ? widget.color : palette.canvasTop,
+            borderRadius: BorderRadius.circular(12),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: widget.onTap,
+              child: Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: 11),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(widget.label,
+                        style: AppTypography.footnote.copyWith(color: foreground, fontWeight: FontWeight.w600)),
+                    if (widget.count > 0) ...[
+                      const SizedBox(width: 6),
+                      Text('${widget.count}',
+                          style: AppTypography.footnote.copyWith(
+                            color: widget.selected ? palette.onVivid : palette.textSecondary,
+                            fontWeight: FontWeight.w700,
+                          )),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A handful of dots in the reaction's own color, popping outward from
+/// above the chip and fading — [burst] is called once, externally, right
+/// as the chip is picked. Doesn't affect the chip's own layout: the dots
+/// draw past its bounds and never take part in hit-testing.
+class _ReactionBurst extends StatefulWidget {
+  final Color color;
+  final Widget child;
+
+  const _ReactionBurst({super.key, required this.color, required this.child});
+
+  @override
+  State<_ReactionBurst> createState() => _ReactionBurstState();
+}
+
+class _ReactionBurstState extends State<_ReactionBurst> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 550));
+
+  // Angles spread in a fan above the chip, plus a small per-dot size/reach
+  // variation so the burst reads as a scatter rather than a neat ring.
+  static const _dots = [(-60.0, 0.85), (-28.0, 1.0), (-4.0, 0.7), (18.0, 1.05), (46.0, 0.8), (70.0, 0.95)];
+
+  void burst() => _controller.forward(from: 0);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        widget.child,
+        IgnorePointer(
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              if (_controller.isDismissed) return const SizedBox.shrink();
+              final t = Curves.easeOut.transform(_controller.value);
+              final fade = 1 - Curves.easeIn.transform(_controller.value);
+              return Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.topCenter,
+                children: [
+                  for (final (angleDeg, reach) in _dots) _dot(angleDeg, reach, t, fade),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _dot(double angleDeg, double reach, double t, double fade) {
+    final rad = angleDeg * math.pi / 180;
+    final distance = 26 * reach * t;
+    return Transform.translate(
+      offset: Offset(math.sin(rad) * distance, -4 - math.cos(rad) * distance),
+      child: Opacity(
+        opacity: fade,
+        child: Container(
+          width: 5 + reach,
+          height: 5 + reach,
+          decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
         ),
       ),
     );
