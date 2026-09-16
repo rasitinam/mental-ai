@@ -225,7 +225,10 @@ class _SendButton extends StatelessWidget {
     return Tooltip(
       message: l10n.dmSend,
       child: Material(
-        color: palette.accent,
+        // Sohbet's own color, matching the dictation button beside it —
+        // not the app-wide ink accent, so this stays recognizably "chat"
+        // rather than a generic black button.
+        color: palette.sky,
         borderRadius: BorderRadius.circular(18),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -233,7 +236,7 @@ class _SendButton extends StatelessWidget {
           child: SizedBox(
             width: 54,
             height: 54,
-            child: Icon(Icons.arrow_forward_rounded, size: 23, color: palette.onAccent),
+            child: Icon(Icons.arrow_forward_rounded, size: 23, color: palette.onTint),
           ),
         ),
       ),
