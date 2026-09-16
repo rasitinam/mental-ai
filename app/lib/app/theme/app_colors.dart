@@ -9,10 +9,11 @@ import 'package:flutter/material.dart';
 /// the dark. Anything drawn on a tab color uses [onTint]. [ember] belongs to
 /// the streak flame alone; [warning] stays reserved for crisis moments.
 ///
-/// [vividBlue] and [vividGreen] are the one saturated, theme-invariant pop
-/// each screen gets for its single most active moment (send a message,
-/// confirm a reaction) — distinct from each other and from every soft tab
-/// tint, with [onVivid] for whatever sits on top of them.
+/// [vividBlue], [vividGreen], [vividAmber] and [vividPurple] are saturated,
+/// theme-invariant colors for the handful of moments that should pop —
+/// send a message, confirm a reaction — each one distinct so several can
+/// sit on screen together without blurring into one tint. [onVivid] is
+/// for whatever sits on top of them.
 class AppPalette {
   final Color canvasTop;
   final Color canvasBottom;
@@ -49,12 +50,14 @@ class AppPalette {
   final Color onTint;
   final Color ember;
 
-  /// One saturated blue and green, the same in both themes — for the rare
-  /// button that should read as genuinely colorful, not a pastel tint.
+  /// Saturated colors, the same in both themes — for the rare button that
+  /// should read as genuinely colorful, not a pastel tint.
   final Color vividBlue;
   final Color vividGreen;
+  final Color vividAmber;
+  final Color vividPurple;
 
-  /// Text and icons on [vividBlue] or [vividGreen], in either theme.
+  /// Text and icons on any vivid color, in either theme.
   final Color onVivid;
 
   /// Count badges (unread messages).
@@ -91,6 +94,8 @@ class AppPalette {
     required this.ember,
     required this.vividBlue,
     required this.vividGreen,
+    required this.vividAmber,
+    required this.vividPurple,
     required this.onVivid,
     required this.badge,
     required this.moodLow,
@@ -124,6 +129,8 @@ class AppPalette {
     ember: Color(0xFFE2622F),
     vividBlue: Color(0xFF3B82F6),
     vividGreen: Color(0xFF16A34A),
+    vividAmber: Color(0xFFEA580C),
+    vividPurple: Color(0xFF7C3AED),
     onVivid: Color(0xFFFBFBF8),
     badge: Color(0xFFB4412F),
     moodLow: Color(0xFFEBA98A),
@@ -157,6 +164,8 @@ class AppPalette {
     ember: Color(0xFFF07A4A),
     vividBlue: Color(0xFF3B82F6),
     vividGreen: Color(0xFF16A34A),
+    vividAmber: Color(0xFFEA580C),
+    vividPurple: Color(0xFF7C3AED),
     onVivid: Color(0xFFFBFBF8),
     badge: Color(0xFFC44A36),
     moodLow: Color(0xFFEBA98A),

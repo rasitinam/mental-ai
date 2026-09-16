@@ -555,6 +555,7 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
                   if (reaction != storyReactions.first) const SizedBox(width: 6),
                   _ReactionChip(
                     label: _reactionLabel(l10n, reaction),
+                    color: _reactionColor(palette, reaction),
                     count: story.reactions[reaction] ?? 0,
                     selected: story.viewerReaction == reaction,
                     onTap: () => widget.onReact(story.id, reaction),
@@ -580,29 +581,43 @@ String _reactionLabel(AppLocalizations l10n, String reaction) => switch (reactio
       _ => reaction,
     };
 
+/// Each of the three reactions gets its own vivid color when picked, so a
+/// story with several reactions doesn't read as one repeated color —
+/// support is green, strength is amber, understanding is purple.
+Color _reactionColor(AppPalette palette, String reaction) => switch (reaction) {
+      'destek' => palette.vividGreen,
+      'guclusun' => palette.vividAmber,
+      'anliyorum' => palette.vividPurple,
+      _ => palette.vividGreen,
+    };
+
 /// A reaction by name: picking a different one swaps rather than stacks,
 /// and the reader's own pick is filled.
 class _ReactionChip extends StatelessWidget {
   final String label;
+  final Color color;
   final int count;
   final bool selected;
   final VoidCallback onTap;
 
-  const _ReactionChip({required this.label, required this.count, required this.selected, required this.onTap});
+  const _ReactionChip({
+    required this.label,
+    required this.color,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    // Vivid green when picked — a reaction is a feeling, not a form
-    // control, so it reads better genuinely colorful than as the app-wide
-    // black/white ink or a pale tab tint.
     final foreground = selected ? palette.onVivid : palette.textPrimary;
 
     return Semantics(
       button: true,
       selected: selected,
       child: Material(
-        color: selected ? palette.vividGreen : palette.canvasTop,
+        color: selected ? color : palette.canvasTop,
         borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
