@@ -8,6 +8,11 @@ import 'package:flutter/material.dart';
 /// the grounds, cards and text change — so a section keeps its identity in
 /// the dark. Anything drawn on a tab color uses [onTint]. [ember] belongs to
 /// the streak flame alone; [warning] stays reserved for crisis moments.
+///
+/// [vividBlue] and [vividGreen] are the one saturated, theme-invariant pop
+/// each screen gets for its single most active moment (send a message,
+/// confirm a reaction) — distinct from each other and from every soft tab
+/// tint, with [onVivid] for whatever sits on top of them.
 class AppPalette {
   final Color canvasTop;
   final Color canvasBottom;
@@ -44,6 +49,14 @@ class AppPalette {
   final Color onTint;
   final Color ember;
 
+  /// One saturated blue and green, the same in both themes — for the rare
+  /// button that should read as genuinely colorful, not a pastel tint.
+  final Color vividBlue;
+  final Color vividGreen;
+
+  /// Text and icons on [vividBlue] or [vividGreen], in either theme.
+  final Color onVivid;
+
   /// Count badges (unread messages).
   final Color badge;
 
@@ -76,6 +89,9 @@ class AppPalette {
     required this.lilac,
     required this.onTint,
     required this.ember,
+    required this.vividBlue,
+    required this.vividGreen,
+    required this.onVivid,
     required this.badge,
     required this.moodLow,
     required this.moodMid,
@@ -106,6 +122,9 @@ class AppPalette {
     lilac: Color(0xFFDCCDEB),
     onTint: Color(0xFF1C1E24),
     ember: Color(0xFFE2622F),
+    vividBlue: Color(0xFF3B82F6),
+    vividGreen: Color(0xFF16A34A),
+    onVivid: Color(0xFFFBFBF8),
     badge: Color(0xFFB4412F),
     moodLow: Color(0xFFEBA98A),
     moodMid: Color(0xFFE4E2D6),
@@ -136,6 +155,9 @@ class AppPalette {
     lilac: Color(0xFFDCCDEB),
     onTint: Color(0xFF1C1E24),
     ember: Color(0xFFF07A4A),
+    vividBlue: Color(0xFF3B82F6),
+    vividGreen: Color(0xFF16A34A),
+    onVivid: Color(0xFFFBFBF8),
     badge: Color(0xFFC44A36),
     moodLow: Color(0xFFEBA98A),
     moodMid: Color(0xFF3A3D46),

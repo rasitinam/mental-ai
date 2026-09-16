@@ -593,16 +593,16 @@ class _ReactionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    // Hikayeler's own color when picked, instead of the app-wide black/white
-    // ink — a reaction is a feeling, not a form control, so it reads better
-    // colorful in both themes.
-    final foreground = selected ? palette.onTint : palette.textPrimary;
+    // Vivid green when picked — a reaction is a feeling, not a form
+    // control, so it reads better genuinely colorful than as the app-wide
+    // black/white ink or a pale tab tint.
+    final foreground = selected ? palette.onVivid : palette.textPrimary;
 
     return Semantics(
       button: true,
       selected: selected,
       child: Material(
-        color: selected ? palette.peach : palette.canvasTop,
+        color: selected ? palette.vividGreen : palette.canvasTop,
         borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -618,7 +618,7 @@ class _ReactionChip extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text('$count',
                       style: AppTypography.footnote.copyWith(
-                        color: selected ? palette.onTint : palette.textSecondary,
+                        color: selected ? palette.onVivid : palette.textSecondary,
                         fontWeight: FontWeight.w700,
                       )),
                 ],

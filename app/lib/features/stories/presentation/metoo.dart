@@ -72,10 +72,11 @@ class MetooStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final l10n = AppLocalizations.of(context)!;
-    // Stays peach either way — a deeper shade once pressed, rather than
-    // flipping to the app-wide black/white ink, so it never goes monochrome.
-    final background = active ? Color.lerp(palette.peach, Colors.black, 0.16)! : palette.peach;
-    final foreground = palette.onTint;
+    // Peach while unmarked; vivid blue once pressed — a different color
+    // from the green reaction chips right above it, so the two stay
+    // readable as separate actions rather than blurring into one tint.
+    final background = active ? palette.vividBlue : palette.peach;
+    final foreground = active ? palette.onVivid : palette.onTint;
 
     final String trailing;
     if (active) {
