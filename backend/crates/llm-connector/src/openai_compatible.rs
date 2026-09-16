@@ -161,4 +161,37 @@ impl LlmProvider for OpenAiCompatibleProvider {
             })
             .collect())
     }
+
+    async fn synthesize_speech(&self, text: &str) -> Result<Vec<u8>, LlmError> {
+        // "gpt-4o-mini-tts" is OpenAI's expressive, natural-sounding voice
+        // model — a clear step up from the classic "tts-1" voices, and
+        // the only one of the two that takes `instructions` to steer
+        // delivery. "nova" reads as warm rather than clipped/announcer-y,
+        // which fits a wellness companion better than a neutral narrator.
+        let body = json!({
+            "model": "gpt-4o-mini-tts",
+            "voice": "nova",
+            "input": text,
+            "response_format": "mp3",
+            "instructions": "Speak warmly and calmly, like a caring friend checking in \
+                — unhurried, gentle, natural conversational pacing, not like a news \
+                announcer or an automated assistant.",
+        });
+
+        let resp = self
+            .client
+            .post(format!("{}/audio/speech", self.base_url))
+            .bearer_auth(&self.api_key)
+            .json(&body)
+            .send()
+            .await?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let text = resp.text().await.unwrap_or_default();
+            return Err(LlmError::Provider(format!("{status}: {text}")));
+        }
+
+        Ok(resp.bytes().await?.to_vec())
+    }
 }

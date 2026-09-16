@@ -1,13 +1,14 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
+import '../../features/chat/data/chat_api.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Voice in and out, for the places people write at length: the journal,
@@ -24,61 +25,78 @@ import '../../l10n/app_localizations.dart';
 /// service, and two widgets each holding their own would fight over it.
 final speechToTextProvider = Provider<SpeechToText>((ref) => SpeechToText());
 
-/// One text-to-speech engine for the whole app, so starting to read one
-/// message stops whichever message was already being read.
-final readAloudProvider = ChangeNotifierProvider<ReadAloud>((ref) => ReadAloud());
+/// One player for the whole app, so starting to read one message stops
+/// whichever message was already being read. The voice itself is
+/// synthesized server-side (see `ChatApi.speech`) with a natural TTS
+/// model instead of the device's own — much less robotic than the
+/// on-device engine this replaced.
+final readAloudProvider = ChangeNotifierProvider<ReadAloud>((ref) => ReadAloud(ref.read(chatApiProvider)));
 
 class ReadAloud extends ChangeNotifier {
-  final FlutterTts _tts = FlutterTts();
+  ReadAloud(this._api);
+
+  final ChatApi _api;
+  final AudioPlayer _player = AudioPlayer();
+  // Keyed by caller-chosen message id: a re-tap of the same message plays
+  // back instantly and doesn't bill the TTS call a second time.
+  final Map<String, Uint8List> _cache = {};
   String? _speakingId;
+  String? _loadingId;
   bool _configured = false;
 
   /// Which message (by caller-chosen id) is being read right now, if any.
   String? get speakingId => _speakingId;
 
-  Future<void> toggle(String id, String text, String languageCode) async {
-    if (_speakingId == id) {
+  /// Which message's audio is being fetched from the server, if any — the
+  /// network round-trip isn't instant the way the old on-device engine
+  /// was, so the button has something to show while it waits.
+  String? get loadingId => _loadingId;
+
+  Future<void> toggle(String id, String text) async {
+    if (_speakingId == id || _loadingId == id) {
       await stop();
       return;
     }
 
-    await _tts.stop();
+    await _player.stop();
     if (!_configured) {
-      _tts.setCompletionHandler(_clear);
-      _tts.setCancelHandler(_clear);
-      _tts.setErrorHandler((_) => _clear());
+      _player.onPlayerComplete.listen((_) => _clear());
       _configured = true;
     }
 
-    await _tts.setLanguage(languageCode == 'en' ? 'en-US' : 'tr-TR');
-    // A touch slower than the engine default: this reads replies about
-    // how someone is doing, not a news bulletin.
-    await _tts.setSpeechRate(0.46);
-
-    _speakingId = id;
+    _loadingId = id;
+    _speakingId = null;
     notifyListeners();
-    await _tts.speak(_plain(text));
+
+    try {
+      final bytes = _cache[id] ?? await _api.speech(text);
+      _cache[id] = bytes;
+      // Stopped, or another message started, while this fetch was in flight.
+      if (_loadingId != id) return;
+      _loadingId = null;
+      _speakingId = id;
+      notifyListeners();
+      await _player.play(BytesSource(bytes));
+    } catch (_) {
+      if (_loadingId == id) _clear();
+    }
   }
 
   Future<void> stop() async {
-    await _tts.stop();
+    await _player.stop();
     _clear();
   }
 
   void _clear() {
-    if (_speakingId == null) return;
+    if (_speakingId == null && _loadingId == null) return;
     _speakingId = null;
+    _loadingId = null;
     notifyListeners();
   }
 
-  /// Markdown the model sometimes emits (`**bold**`, bullets) would
-  /// otherwise be read out as "asterisk asterisk".
-  static String _plain(String text) =>
-      text.replaceAll(RegExp(r'[*_#`>]+'), '').replaceAll(RegExp(r'\s+'), ' ').trim();
-
   @override
   void dispose() {
-    _tts.stop();
+    _player.dispose();
     super.dispose();
   }
 }
@@ -95,13 +113,15 @@ class SpeakButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = AppPalette.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final speaking = ref.watch(readAloudProvider.select((r) => r.speakingId == id));
-    final color = speaking ? palette.textPrimary : palette.textSecondary;
+    final status = ref.watch(
+      readAloudProvider.select((r) => (speaking: r.speakingId == id, loading: r.loadingId == id)),
+    );
+    final color = status.speaking || status.loading ? palette.textPrimary : palette.textSecondary;
 
     return Semantics(
       button: true,
       child: InkWell(
-        onTap: () => ref.read(readAloudProvider).toggle(id, text, Localizations.localeOf(context).languageCode),
+        onTap: () => ref.read(readAloudProvider).toggle(id, text),
         borderRadius: BorderRadius.circular(10),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 32),
@@ -110,10 +130,21 @@ class SpeakButton extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined, size: 17, color: color),
+                if (status.loading)
+                  SizedBox(
+                    width: 15,
+                    height: 15,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: color),
+                  )
+                else
+                  Icon(
+                    status.speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined,
+                    size: 17,
+                    color: color,
+                  ),
                 const SizedBox(width: 6),
                 Text(
-                  speaking ? l10n.voiceStopSpeaking : l10n.voiceSpeak,
+                  status.speaking ? l10n.voiceStopSpeaking : l10n.voiceSpeak,
                   style: AppTypography.footnote.copyWith(color: color, fontWeight: FontWeight.w700),
                 ),
               ],

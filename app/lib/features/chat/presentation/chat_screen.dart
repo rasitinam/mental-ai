@@ -286,7 +286,14 @@ class _ChatBubbleState extends State<_ChatBubble> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(widget.message.text, style: AppTypography.body.copyWith(color: palette.textPrimary)),
+                        Text.rich(
+                          TextSpan(
+                            children: _boldSpans(
+                              widget.message.text,
+                              AppTypography.body.copyWith(color: palette.textPrimary),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 4),
                         Transform.translate(
                           offset: const Offset(-8, 2),
@@ -352,6 +359,30 @@ class _ChatBubbleState extends State<_ChatBubble> {
       ),
     );
   }
+}
+
+/// Splits `**bold**` runs out of the model's reply into their own spans
+/// so they render bold instead of showing the literal asterisks — the
+/// model writes markdown emphasis fairly often, and this is the only
+/// markdown it reaches for, so a full markdown renderer would be more
+/// than the case in front of it needs.
+final _boldPattern = RegExp(r'\*\*(.+?)\*\*');
+
+List<InlineSpan> _boldSpans(String text, TextStyle base) {
+  final boldStyle = base.copyWith(fontWeight: FontWeight.w700);
+  final spans = <InlineSpan>[];
+  var last = 0;
+  for (final match in _boldPattern.allMatches(text)) {
+    if (match.start > last) {
+      spans.add(TextSpan(text: text.substring(last, match.start), style: base));
+    }
+    spans.add(TextSpan(text: match.group(1), style: boldStyle));
+    last = match.end;
+  }
+  if (last < text.length) {
+    spans.add(TextSpan(text: text.substring(last), style: base));
+  }
+  return spans;
 }
 
 class _CrisisAction extends StatelessWidget {

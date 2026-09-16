@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -62,5 +64,17 @@ class ChatApi {
     return (response.data as List<dynamic>)
         .map((e) => ChatMessage.fromRecordJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// MP3 bytes of `text` read aloud in the backend's natural TTS voice —
+  /// for "Sesli oku". One call per tap; the caller decides whether to
+  /// cache the result for replay.
+  Future<Uint8List> speech(String text) async {
+    final response = await _dio.post(
+      '/chat/speech',
+      data: {'text': text},
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList(response.data as List<int>);
   }
 }

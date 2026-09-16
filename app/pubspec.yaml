@@ -70,7 +70,10 @@ dependencies:
   # Hearth Plus subscription.
   in_app_purchase: ^3.2.3
   speech_to_text: ^7.5.0
-  flutter_tts: ^4.2.5
+  # Plays the natural-voice MP3 the backend synthesizes for "Sesli oku"
+  # (replaced the on-device flutter_tts engine, whose voices read as
+  # robotic/Google-Translate-ish compared to a real TTS model's output).
+  audioplayers: ^6.1.0
   pdf: ^3.13.0
 
 dev_dependencies:

@@ -60,4 +60,9 @@ pub struct ChatResponse {
 pub trait LlmProvider: Send + Sync {
     async fn chat(&self, request: ChatRequest) -> Result<ChatResponse, LlmError>;
     async fn embed(&self, texts: &[String]) -> Result<Vec<Vec<f32>>, LlmError>;
+
+    /// Reads `text` aloud with the provider's most natural-sounding voice,
+    /// returning encoded audio bytes (MP3) ready to stream straight to a
+    /// client player — no separate decode step on either side.
+    async fn synthesize_speech(&self, text: &str) -> Result<Vec<u8>, LlmError>;
 }

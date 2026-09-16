@@ -1,6 +1,7 @@
 use axum::{
     extract::State,
-    http::StatusCode,
+    http::{header, StatusCode},
+    response::IntoResponse,
     routing::{get, post},
     Json, Router,
 };
@@ -23,6 +24,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/chat", post(send_message))
         .route("/chat/history", get(chat_history))
+        .route("/chat/speech", post(synthesize_speech))
 }
 
 /// How much of the durable transcript to hand back when the client
@@ -57,6 +59,16 @@ struct ChatTurnResponse {
     reply: String,
     crisis_flag: bool,
 }
+
+#[derive(Debug, Deserialize)]
+struct SpeechRequest {
+    text: String,
+}
+
+/// A single chat reply is never going to run past this; it's just a
+/// backstop against an accidental/abusive giant payload driving up the
+/// per-character cost of the TTS call.
+const MAX_SPEECH_CHARS: usize = 4000;
 
 /// Only the most recent turns are kept: early rapport-building context
 /// matters less than what was just said, and this bounds token cost on
@@ -241,6 +253,31 @@ async fn translate_assistant_turns(state: &AppState, history: &mut [ChatMessageR
             Err(err) => tracing::warn!(error = %err, "failed to translate a chat history batch"),
         }
     }
+}
+
+/// Reads a chat message aloud with a natural, warm TTS voice — the
+/// "Sesli oku" button. Auth-gated (not a free-standing TTS proxy) and
+/// length-capped; every other failure mode (empty text, provider error)
+/// just fails the one request, nothing durable to clean up.
+async fn synthesize_speech(
+    State(state): State<AppState>,
+    _auth: AuthUser,
+    Json(req): Json<SpeechRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    if req.text.trim().is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "text must not be empty".to_string()));
+    }
+    if req.text.len() > MAX_SPEECH_CHARS {
+        return Err((StatusCode::BAD_REQUEST, format!("text must be at most {MAX_SPEECH_CHARS} characters")));
+    }
+
+    let audio = state
+        .llm
+        .synthesize_speech(&req.text)
+        .await
+        .map_err(|e| (StatusCode::BAD_GATEWAY, e.to_string()))?;
+
+    Ok(([(header::CONTENT_TYPE, "audio/mpeg")], audio))
 }
 
 async fn persist_turn(state: &AppState, user_id: Uuid, role: ChatRole, content: &str, crisis_flag: bool) {
