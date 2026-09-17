@@ -9,13 +9,21 @@
 	     committed since it carries no secret, only your public team ID. -->
 	<key>teamID</key>
 	<string>REPLACE_WITH_YOUR_APPLE_TEAM_ID</string>
-	<!-- "automatic" so Codemagic's `xcode-project use-profiles` step (see
-	     ../../codemagic.yaml) can fetch/generate the right provisioning
-	     profile itself via its App Store Connect API key integration,
-	     rather than needing a manually-created and -downloaded profile
-	     from someone sitting at a Mac. -->
+	<!-- "manual" because the GitHub Actions workflow (release-ios.yml)
+	     signs with a specific imported certificate + provisioning
+	     profile, not a logged-in Apple ID — "automatic" made the export
+	     step fail with "No Accounts" / "No profiles ... were found" even
+	     after the archive itself was signed correctly. If you wire up
+	     Codemagic (see ../../codemagic.yaml) instead, its own
+	     `xcode-project use-profiles` step can override this back to
+	     automatic at build time. -->
 	<key>signingStyle</key>
-	<string>automatic</string>
+	<string>manual</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.rasitinam.hearth</key>
+		<string>REPLACE_WITH_PROVISIONING_PROFILE_UUID</string>
+	</dict>
 	<key>uploadBitcode</key>
 	<false/>
 	<key>uploadSymbols</key>

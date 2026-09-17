@@ -76,9 +76,13 @@ jobs:
           sed -i '' "s/REPLACE_WITH_YOUR_APPLE_TEAM_ID/$APPLE_TEAM_ID/" ios/ExportOptions.plist
           sed -i '' "s/REPLACE_WITH_YOUR_APPLE_TEAM_ID/$APPLE_TEAM_ID/" ios/Runner.xcodeproj/project.pbxproj
           sed -i '' "s/REPLACE_WITH_PROVISIONING_PROFILE_UUID/$PROFILE_UUID/" ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' "s/REPLACE_WITH_PROVISIONING_PROFILE_UUID/$PROFILE_UUID/" ios/ExportOptions.plist
 
       - name: Build signed IPA
-        run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+        run: |
+          flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+          echo "Contents of build/ios/ipa:"
+          ls -la build/ios/ipa/
 
       - name: Upload to TestFlight
         env:
