@@ -60,11 +60,22 @@ jobs:
           PROFILE_UUID=$(security cms -D -i "$RUNNER_TEMP/profile.mobileprovision" | plutil -extract UUID xml1 -o - - | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp "$RUNNER_TEMP/profile.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
 
-      - name: Set the Apple Team ID in ExportOptions.plist
+      - name: Configure code signing (team ID + provisioning profile)
+        # The archive step reads signing settings from the Xcode project
+        # itself, not ExportOptions.plist (that only governs export) — the
+        # project was left on "Automatic" signing with nothing to resolve
+        # it against on a fresh runner (no signed-in Apple ID), which is
+        # why the cert being in the keychain wasn't enough on its own. The
+        # project now points at manual signing with placeholders here;
+        # this step fills them in for both files that carry one.
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: sed -i '' "s/REPLACE_WITH_YOUR_APPLE_TEAM_ID/$APPLE_TEAM_ID/" ios/ExportOptions.plist
+        run: |
+          sed -i '' "s/REPLACE_WITH_YOUR_APPLE_TEAM_ID/$APPLE_TEAM_ID/" ios/ExportOptions.plist
+          sed -i '' "s/REPLACE_WITH_YOUR_APPLE_TEAM_ID/$APPLE_TEAM_ID/" ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' "s/REPLACE_WITH_PROVISIONING_PROFILE_UUID/$PROFILE_UUID/" ios/Runner.xcodeproj/project.pbxproj
 
       - name: Build signed IPA
         run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
