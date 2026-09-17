@@ -1,13 +1,11 @@
 name: Release - iOS
 
-# Template only until the signing secrets below exist in the repo
-# (Settings → Secrets and variables → Actions) — see docs/CI_CD.md for
-# exactly what each one is and how to generate it, and for the manual
-# Xcode signing settings this still needs on first setup. Runs on demand
-# or when you push a version tag, never on every push, since it needs
-# real Apple Developer credentials to do anything useful. Requires a
-# macOS runner (Xcode is Apple-only) — see docs/ARCHITECTURE.md for why
-# that's unavoidable even though the rest of this project is Windows-dev.
+# Needs real Apple Developer credentials in the repo's secrets (Settings
+# → Secrets and variables → Actions) — see docs/CI_CD.md for what each
+# one is and how to generate it. Runs on demand or when you push a
+# version tag, never on every push. Requires a macOS runner (Xcode is
+# Apple-only) — see docs/ARCHITECTURE.md for why that's unavoidable even
+# though the rest of this project is Windows-dev.
 on:
   workflow_dispatch:
   push:
@@ -30,9 +28,9 @@ jobs:
 
       - name: Import signing certificate & provisioning profile
         env:
-          IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERT_P12 }}
           IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE }}
         run: |
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
           KEYCHAIN_PASSWORD=$(uuidgen)
@@ -50,14 +48,19 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp "$RUNNER_TEMP/profile.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/
 
+      - name: Set the Apple Team ID in ExportOptions.plist
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: sed -i '' "s/REPLACE_WITH_YOUR_APPLE_TEAM_ID/$APPLE_TEAM_ID/" ios/ExportOptions.plist
+
       - name: Build signed IPA
         run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
 
       - name: Upload to TestFlight
         env:
-          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
           echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode -o ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8

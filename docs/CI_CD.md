@@ -45,14 +45,15 @@ Bir Apple Developer Program üyeliği (yıllık ücretli) gerekiyor.
 
    | Secret adı | Değer |
    |---|---|
-   | `IOS_CERTIFICATE_P12_BASE64` | `.p12` dosyasının base64'ü |
+   | `IOS_DISTRIBUTION_CERT_P12` | `.p12` dosyasının base64'ü |
    | `IOS_CERTIFICATE_PASSWORD` | `.p12`'yi dışa aktarırken belirlediğin şifre |
-   | `IOS_PROVISIONING_PROFILE_BASE64` | `.mobileprovision` dosyasının base64'ü |
-   | `APP_STORE_CONNECT_KEY_ID` | API key'in Key ID'si |
+   | `IOS_PROVISIONING_PROFILE` | `.mobileprovision` dosyasının base64'ü |
+   | `APP_STORE_CONNECT_API_KEY_ID` | API key'in Key ID'si |
    | `APP_STORE_CONNECT_ISSUER_ID` | App Store Connect hesabının Issuer ID'si |
-   | `APP_STORE_CONNECT_API_KEY_BASE64` | `.p8` dosyasının base64'ü |
+   | `APP_STORE_CONNECT_API_KEY` | `.p8` dosyasının base64'ü |
+   | `APPLE_TEAM_ID` | Apple Developer portal → Membership'teki Team ID |
 
-5. **`app/ios/ExportOptions.plist`** içindeki `REPLACE_WITH_YOUR_APPLE_TEAM_ID` değerini gerçek Team ID'inle değiştir (Apple Developer portal → Membership). Bu dosya secret değil, commit'lenebilir — sadece herkese açık bir kimlik.
+5. `APPLE_TEAM_ID` secret'ı, `app/ios/ExportOptions.plist` içindeki `REPLACE_WITH_YOUR_APPLE_TEAM_ID` yer tutucusunun yerine workflow çalışırken otomatik yazılıyor (bkz. `release-ios.yml`'deki "Set the Apple Team ID" adımı) — dosyayı elle düzenlemene gerek yok.
 
 ## LLM API anahtarı — CI'da gerekli mi?
 
