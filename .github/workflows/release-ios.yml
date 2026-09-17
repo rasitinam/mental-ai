@@ -43,10 +43,23 @@ jobs:
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security import "$RUNNER_TEMP/certificate.p12" -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed 's/"//g')
+          # xcodebuild's automatic signing resolution checks the default
+          # keychain specifically — just being on the search list (above)
+          # wasn't enough for it to see the imported identity.
+          security default-keychain -s "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
+          echo "Signing identities visible to codesign:"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+          # Xcode only discovers a profile here if it's named by the
+          # profile's own UUID — a plain "profile.mobileprovision" is
+          # silently invisible to it, which is why signing failed with
+          # "No valid code signing certificates were found" even though
+          # the cert imported fine above.
+          PROFILE_UUID=$(security cms -D -i "$RUNNER_TEMP/profile.mobileprovision" | plutil -extract UUID xml1 -o - - | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp "$RUNNER_TEMP/profile.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/
+          cp "$RUNNER_TEMP/profile.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
 
       - name: Set the Apple Team ID in ExportOptions.plist
         env:
