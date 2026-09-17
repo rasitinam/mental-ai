@@ -91,7 +91,21 @@ jobs:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
-          echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode -o ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+          KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+
+          # The secret may hold the .p8's raw PEM text (if whoever set it
+          # pasted the key straight from Apple's download instead of
+          # base64-encoding it first) or the base64 of it, as documented
+          # in docs/CI_CD.md — handle either so a format mismatch here
+          # doesn't surface three steps later as an opaque altool error.
+          if [[ "$APP_STORE_CONNECT_API_KEY_BASE64" == *"BEGIN PRIVATE KEY"* ]]; then
+            printf '%s' "$APP_STORE_CONNECT_API_KEY_BASE64" > "$KEY_PATH"
+          else
+            echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode -o "$KEY_PATH"
+          fi
+
+          echo "API key file: $(wc -c < "$KEY_PATH") bytes, starts with:"
+          head -1 "$KEY_PATH"
 
           xcrun altool --upload-app -f build/ios/ipa/*.ipa -t ios \
             --apiKey "$APP_STORE_CONNECT_KEY_ID" \
