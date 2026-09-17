@@ -9,6 +9,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/l10n/language_switch.dart';
 import '../../../core/l10n/locale_controller.dart';
 import '../../../core/storage/local_prefs.dart';
 import '../../../l10n/app_localizations.dart';
@@ -67,7 +68,7 @@ class PrivacyConsentScreen extends ConsumerWidget {
                       const SizedBox(width: 10),
                       Text('Hearth', style: AppTypography.headline.copyWith(color: palette.textPrimary)),
                       const Spacer(),
-                      _LanguageSwitch(
+                      LanguageSwitch(
                         selected: language,
                         onChanged: (code) => ref.read(localeControllerProvider.notifier).setLanguage(code),
                       ),
@@ -181,51 +182,6 @@ class _Point extends StatelessWidget {
 
 /// Each language is named in itself, so someone who can't read the
 /// current one still finds their own.
-class _LanguageSwitch extends StatelessWidget {
-  final String selected;
-  final ValueChanged<String> onChanged;
-
-  const _LanguageSwitch({required this.selected, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-
-    return GlassSurface(
-      radius: 14,
-      padding: const EdgeInsets.all(3),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final (code, label) in const [('tr', 'Türkçe'), ('en', 'English')])
-            Semantics(
-              button: true,
-              selected: code == selected,
-              child: Material(
-                color: code == selected ? palette.accent : Colors.transparent,
-                borderRadius: BorderRadius.circular(11),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: () => onChanged(code),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                    child: Text(
-                      label,
-                      style: AppTypography.label.copyWith(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: code == selected ? palette.onAccent : palette.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
 
 /// A track with a round handle: drag the handle to the end to accept.
 /// Letting go early slides it back. Screen readers get a plain "activate"

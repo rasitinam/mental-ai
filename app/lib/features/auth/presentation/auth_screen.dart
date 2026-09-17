@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
+import '../../../core/l10n/language_switch.dart';
+import '../../../core/l10n/locale_controller.dart';
 import '../../../core/network/error_messages.dart';
 import '../../../l10n/app_localizations.dart';
 import 'auth_controller.dart';
@@ -78,6 +80,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
     final state = ref.watch(authControllerProvider);
+    final language = ref.watch(localeControllerProvider).languageCode;
 
     return Scaffold(
       body: SafeArea(
@@ -108,6 +111,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.28,
                         ),
+                      ),
+                      const Spacer(),
+                      LanguageSwitch(
+                        selected: language,
+                        onChanged: (code) => ref.read(localeControllerProvider.notifier).setLanguage(code),
                       ),
                     ],
                   ),
