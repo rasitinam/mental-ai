@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/local_prefs.dart';
 import '../../../core/l10n/locale_controller.dart';
+import '../data/apple_sign_in.dart';
 import '../data/auth_api.dart';
 import '../domain/session.dart';
 
@@ -53,6 +54,34 @@ class AuthController extends Notifier<AuthState> {
     await _submit(() => ref.read(authApiProvider).login(email: email, password: password));
   }
 
+  /// Native Apple sheet, then the backend verifies the token it returns.
+  /// Dismissing the sheet is not an error — nothing changes on screen.
+  Future<void> signInWithApple() async {
+    ref.read(justRegisteredProvider.notifier).state = false;
+    state = state.copyWith(submitting: true, error: null);
+
+    final AppleCredential? credential;
+    try {
+      credential = await requestAppleCredential();
+    } catch (e) {
+      state = state.copyWith(submitting: false, error: e);
+      return;
+    }
+    if (credential == null) {
+      state = state.copyWith(submitting: false);
+      return;
+    }
+
+    await _submit(
+      () => ref.read(authApiProvider).apple(
+            identityToken: credential!.identityToken,
+            nonce: credential.nonce,
+            displayName: credential.displayName,
+            language: ref.read(localeControllerProvider).languageCode,
+          ),
+    );
+  }
+
   bool _validate(String email, String password) {
     final tr = ref.read(localeControllerProvider).languageCode != 'en';
     if (!email.contains('@') || email.trim().length < 3) {
@@ -83,7 +112,7 @@ class AuthController extends Notifier<AuthState> {
       // the app and only bounced into onboarding on a second redirect —
       // one extra frame of the wrong screen, and one more ordering
       // assumption than this needs to rest on.
-      if (registering) ref.read(justRegisteredProvider.notifier).state = true;
+      if (registering || session.isNewAccount) ref.read(justRegisteredProvider.notifier).state = true;
       ref.read(sessionTokenProvider.notifier).state = session.token;
       state = state.copyWith(submitting: false);
     } catch (e) {

@@ -406,6 +406,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authLoginCta => 'Sign in';
 
   @override
+  String get authContinueWithApple => 'Continue with Apple';
+
+  @override
+  String get authOrDivider => 'or';
+
+  @override
+  String get authErrorApple =>
+      'Couldn\'t finish signing in with Apple. Try again or sign in with your email.';
+
+  @override
   String get authSwitchToLogin => 'Already have an account? Sign in';
 
   @override
@@ -1549,6 +1559,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountPasswordHint => 'Enter your password to confirm';
+
+  @override
+  String get deleteAccountAppleNote =>
+      'Your account was created with Apple, so you\'ll be asked to verify with Apple again before it\'s deleted.';
 
   @override
   String get deleteAccountConfirm => 'Permanently Delete';

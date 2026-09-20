@@ -43,6 +43,10 @@ struct ProfileResponse {
     id: String,
     display_name: String,
     email: Option<String>,
+    /// True when the account was created with Sign in with Apple and has no
+    /// password — the delete-account dialog re-verifies with Apple instead of
+    /// asking for one.
+    signs_in_with_apple: bool,
     language: String,
     birth_year: Option<i32>,
     age: Option<i32>,
@@ -106,11 +110,16 @@ async fn profile(
     // A missing email shouldn't fail the whole screen — it only means the
     // address can't be shown back.
     let email = state.auth.find_email_for_user(auth.user_id).await.ok().flatten();
+    let signs_in_with_apple = state.auth.apple_sub_for_user(auth.user_id).await.ok().flatten().is_some();
+    // Apple accounts that hid their email get a made-up `.invalid` address
+    // to satisfy the credentials table; it isn't something to show back.
+    let email = email.filter(|e| !e.ends_with(".invalid"));
 
     Ok(Json(ProfileResponse {
         id: user.id.to_string(),
         display_name: user.display_name.clone(),
         email,
+        signs_in_with_apple,
         language: user.language.clone(),
         birth_year: user.birth_year,
         age: user.age(),
@@ -444,7 +453,15 @@ struct DeleteAccountRequest {
     /// Re-confirms it's really the account holder — a bearer token alone
     /// (which could be a session left open on a shared or stolen device)
     /// isn't enough to authorize something this irreversible.
-    password: String,
+    #[serde(default)]
+    password: Option<String>,
+    /// For accounts created with Sign in with Apple, which have no password:
+    /// a *fresh* identity token from a new Apple sign-in, plus the raw nonce
+    /// it was requested with. Must belong to the same Apple user.
+    #[serde(default)]
+    apple_identity_token: Option<String>,
+    #[serde(default)]
+    apple_nonce: Option<String>,
 }
 
 /// Permanently deletes the signed-in account and everything it owns.
@@ -470,7 +487,26 @@ async fn delete_account(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .ok_or((StatusCode::NOT_FOUND, "account not found".to_string()))?;
 
-    if !verify_password(&req.password, &credentials.password_hash) {
+    if credentials.password_hash == crate::routes::auth::APPLE_PASSWORD_SENTINEL {
+        // No password to check: make the person sign in with Apple again
+        // right now and require it to be the same Apple user.
+        let (Some(token), Some(nonce)) = (req.apple_identity_token.as_deref(), req.apple_nonce.as_deref()) else {
+            return Err((StatusCode::UNAUTHORIZED, "Sign in with Apple is required to delete this account".to_string()));
+        };
+        let identity = state
+            .apple_keys
+            .verify(token, &state.apple_iap.bundle_id, nonce)
+            .await
+            .map_err(|e| (StatusCode::UNAUTHORIZED, e.to_string()))?;
+        let linked = state
+            .auth
+            .apple_sub_for_user(auth.user_id)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        if linked.as_deref() != Some(identity.subject.as_str()) {
+            return Err((StatusCode::UNAUTHORIZED, "this Apple ID does not own the account".to_string()));
+        }
+    } else if !req.password.as_deref().is_some_and(|p| verify_password(p, &credentials.password_hash)) {
         return Err((StatusCode::UNAUTHORIZED, "incorrect password".to_string()));
     }
 

@@ -328,6 +328,7 @@ impl UserRepository for SqliteUserRepository {
             "subscriptions",
             "device_push_tokens",
             "sessions",
+            "apple_identities",
             "credentials",
         ] {
             sqlx::query(&format!("DELETE FROM {table} WHERE user_id = ?1")).bind(&id).execute(&mut *tx).await?;
@@ -2001,6 +2002,35 @@ impl AuthRepository for SqliteAuthRepository {
             .await?;
 
         Ok(row.map(|(email,)| email))
+    }
+
+    async fn find_user_by_apple_sub(&self, apple_sub: &str) -> anyhow::Result<Option<Uuid>> {
+        let row = sqlx::query_as::<_, (String,)>("SELECT user_id FROM apple_identities WHERE apple_sub = ?1")
+            .bind(apple_sub)
+            .fetch_optional(&self.pool)
+            .await?;
+
+        Ok(row.and_then(|(user_id,)| Uuid::parse_str(&user_id).ok()))
+    }
+
+    async fn link_apple_identity(&self, apple_sub: &str, user_id: Uuid) -> anyhow::Result<()> {
+        sqlx::query("INSERT INTO apple_identities (apple_sub, user_id, created_at) VALUES (?1, ?2, ?3)")
+            .bind(apple_sub)
+            .bind(user_id.to_string())
+            .bind(Utc::now())
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn apple_sub_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<String>> {
+        let row = sqlx::query_as::<_, (String,)>("SELECT apple_sub FROM apple_identities WHERE user_id = ?1")
+            .bind(user_id.to_string())
+            .fetch_optional(&self.pool)
+            .await?;
+
+        Ok(row.map(|(sub,)| sub))
     }
 
     async fn create_session(&self, session: &Session) -> anyhow::Result<()> {

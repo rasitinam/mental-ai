@@ -406,6 +406,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authLoginCta => 'Giriş yap';
 
   @override
+  String get authContinueWithApple => 'Apple ile devam et';
+
+  @override
+  String get authOrDivider => 'veya';
+
+  @override
+  String get authErrorApple =>
+      'Apple ile giriş tamamlanamadı. Tekrar dene ya da e-posta ile giriş yap.';
+
+  @override
   String get authSwitchToLogin => 'Zaten hesabın var mı? Giriş yap';
 
   @override
@@ -1546,6 +1556,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountPasswordHint => 'Onaylamak için şifreni gir';
+
+  @override
+  String get deleteAccountAppleNote =>
+      'Hesabın Apple ile açıldığı için silmeden önce Apple ile yeniden doğrulaman istenecek.';
 
   @override
   String get deleteAccountConfirm => 'Kalıcı Olarak Sil';

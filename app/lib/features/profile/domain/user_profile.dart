@@ -6,6 +6,10 @@ class UserProfile {
   final String id;
   final String displayName;
   final String? email;
+
+  /// True for accounts created with Sign in with Apple, which have no
+  /// password — deleting one re-verifies with Apple instead.
+  final bool signsInWithApple;
   final String language;
   final int? birthYear;
   final int? age;
@@ -38,6 +42,7 @@ class UserProfile {
     required this.id,
     required this.displayName,
     required this.email,
+    this.signsInWithApple = false,
     required this.language,
     required this.birthYear,
     required this.age,
@@ -56,6 +61,7 @@ class UserProfile {
         id: json['id'] as String,
         displayName: json['display_name'] as String,
         email: json['email'] as String?,
+        signsInWithApple: json['signs_in_with_apple'] as bool? ?? false,
         language: json['language'] as String? ?? 'tr',
         birthYear: json['birth_year'] as int?,
         age: json['age'] as int?,

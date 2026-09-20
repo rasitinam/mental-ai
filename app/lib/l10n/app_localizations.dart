@@ -830,6 +830,24 @@ abstract class AppLocalizations {
   /// **'Giriş yap'**
   String get authLoginCta;
 
+  /// No description provided for @authContinueWithApple.
+  ///
+  /// In tr, this message translates to:
+  /// **'Apple ile devam et'**
+  String get authContinueWithApple;
+
+  /// No description provided for @authOrDivider.
+  ///
+  /// In tr, this message translates to:
+  /// **'veya'**
+  String get authOrDivider;
+
+  /// No description provided for @authErrorApple.
+  ///
+  /// In tr, this message translates to:
+  /// **'Apple ile giriş tamamlanamadı. Tekrar dene ya da e-posta ile giriş yap.'**
+  String get authErrorApple;
+
   /// No description provided for @authSwitchToLogin.
   ///
   /// In tr, this message translates to:
@@ -2929,6 +2947,12 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Onaylamak için şifreni gir'**
   String get deleteAccountPasswordHint;
+
+  /// No description provided for @deleteAccountAppleNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hesabın Apple ile açıldığı için silmeden önce Apple ile yeniden doğrulaman istenecek.'**
+  String get deleteAccountAppleNote;
 
   /// No description provided for @deleteAccountConfirm.
   ///

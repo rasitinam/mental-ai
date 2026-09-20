@@ -32,6 +32,24 @@ class AuthApi {
     return Session.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Signs in (or creates the account) with a Sign in with Apple identity
+  /// token. The backend verifies it against Apple's keys; nothing here is
+  /// trusted on its own.
+  Future<Session> apple({
+    required String identityToken,
+    required String nonce,
+    String? displayName,
+    String? language,
+  }) async {
+    final response = await _dio.post('/auth/apple', data: {
+      'identity_token': identityToken,
+      'nonce': nonce,
+      'display_name': ?displayName,
+      'language': ?language,
+    });
+    return Session.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<void> logout() async {
     await _dio.post('/auth/logout');
   }
@@ -40,8 +58,17 @@ class AuthApi {
   /// Requires the current password — a session token alone (which could be
   /// left open on a shared or lost device) isn't enough to authorize
   /// something this irreversible. Throws [DioException] with a 401 for a
-  /// wrong password.
-  Future<void> deleteAccount({required String password}) async {
-    await _dio.delete('/account', data: {'password': password});
+  /// wrong password. Accounts created with Sign in with Apple have no
+  /// password: they re-verify with a fresh Apple identity token instead.
+  Future<void> deleteAccount({
+    String? password,
+    String? appleIdentityToken,
+    String? appleNonce,
+  }) async {
+    await _dio.delete('/account', data: {
+      'password': ?password,
+      'apple_identity_token': ?appleIdentityToken,
+      'apple_nonce': ?appleNonce,
+    });
   }
 }

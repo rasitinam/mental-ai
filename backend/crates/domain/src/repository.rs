@@ -75,6 +75,15 @@ pub trait AuthRepository: Send + Sync {
     /// The address an account signs in with, for showing it back on the
     /// profile screen. Sign-in itself always goes the other way round.
     async fn find_email_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<String>>;
+    /// The account a Sign in with Apple `sub` claim belongs to, if it has
+    /// signed in with Apple before.
+    async fn find_user_by_apple_sub(&self, apple_sub: &str) -> anyhow::Result<Option<Uuid>>;
+    /// Links an Apple `sub` to an existing account.
+    async fn link_apple_identity(&self, apple_sub: &str, user_id: Uuid) -> anyhow::Result<()>;
+    /// The Apple `sub` linked to an account, if any — how the account
+    /// deletion route knows it has to re-verify with Apple instead of a
+    /// password.
+    async fn apple_sub_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<String>>;
     async fn create_session(&self, session: &Session) -> anyhow::Result<()>;
     async fn find_session(&self, token: &str) -> anyhow::Result<Option<Session>>;
     async fn delete_session(&self, token: &str) -> anyhow::Result<()>;

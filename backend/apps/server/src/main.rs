@@ -1,3 +1,4 @@
+mod apple_signin;
 mod auth;
 mod rate_limit;
 mod routes;
@@ -120,6 +121,7 @@ async fn main() -> anyhow::Result<()> {
             shared_secret: apple_shared_secret,
             bundle_id: config.apple_iap.bundle_id.clone(),
         },
+        apple_keys: Arc::new(apple_signin::AppleKeys::new()),
     };
 
     if config.research_ingest.enabled {

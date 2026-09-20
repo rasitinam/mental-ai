@@ -17,6 +17,7 @@ import '../../../core/storage/local_prefs.dart';
 import '../../../core/theme/theme_mode_controller.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../auth/data/apple_sign_in.dart';
 import '../../auth/data/auth_api.dart';
 import '../../notifications/push_service.dart';
 import '../../settings/presentation/notification_settings_screen.dart' show reminderTimeLabel;
@@ -113,6 +114,9 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     final l10n = AppLocalizations.of(context)!;
     final palette = AppPalette.of(context);
     final passwordController = TextEditingController();
+    // Accounts created with Sign in with Apple have no password to type:
+    // they confirm by signing in with Apple again, right here.
+    final usesApple = ref.read(myProfileProvider).valueOrNull?.signsInWithApple ?? false;
 
     final deleted = await showDialog<bool>(
       context: context,
@@ -128,12 +132,32 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 error = null;
               });
               try {
-                await ref.read(authApiProvider).deleteAccount(password: passwordController.text);
+                if (usesApple) {
+                  final credential = await requestAppleCredential();
+                  if (credential == null) {
+                    // Dismissed the Apple sheet: nothing was confirmed.
+                    setState(() => busy = false);
+                    return;
+                  }
+                  await ref.read(authApiProvider).deleteAccount(
+                        appleIdentityToken: credential.identityToken,
+                        appleNonce: credential.nonce,
+                      );
+                } else {
+                  await ref.read(authApiProvider).deleteAccount(password: passwordController.text);
+                }
                 if (dialogContext.mounted) Navigator.pop(dialogContext, true);
               } on DioException catch (e) {
                 setState(() {
                   busy = false;
-                  error = e.response?.statusCode == 401 ? l10n.deleteAccountWrongPassword : l10n.commonError;
+                  error = e.response?.statusCode == 401
+                      ? (usesApple ? l10n.authErrorApple : l10n.deleteAccountWrongPassword)
+                      : l10n.commonError;
+                });
+              } catch (_) {
+                setState(() {
+                  busy = false;
+                  error = usesApple ? l10n.authErrorApple : l10n.commonError;
                 });
               }
             }
@@ -146,17 +170,25 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 children: [
                   Text(l10n.deleteAccountBody, style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
                   const SizedBox(height: 14),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    onChanged: (_) => setState(() {}),
-                    style: AppTypography.body.copyWith(color: palette.textPrimary),
-                    decoration: InputDecoration(
-                      hintText: l10n.deleteAccountPasswordHint,
-                      hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
-                      errorText: error,
+                  if (usesApple) ...[
+                    Text(l10n.deleteAccountAppleNote,
+                        style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                    if (error != null) ...[
+                      const SizedBox(height: 8),
+                      Text(error!, style: AppTypography.footnote.copyWith(color: palette.warning)),
+                    ],
+                  ] else
+                    TextField(
+                      controller: passwordController,
+                      obscureText: true,
+                      onChanged: (_) => setState(() {}),
+                      style: AppTypography.body.copyWith(color: palette.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: l10n.deleteAccountPasswordHint,
+                        hintStyle: AppTypography.body.copyWith(color: palette.textTertiary),
+                        errorText: error,
+                      ),
                     ),
-                  ),
                 ],
               ),
               actions: [
@@ -165,7 +197,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                   child: Text(l10n.commonCancel),
                 ),
                 TextButton(
-                  onPressed: busy || passwordController.text.isEmpty ? null : confirm,
+                  onPressed: busy || (!usesApple && passwordController.text.isEmpty) ? null : confirm,
                   child: Text(l10n.deleteAccountConfirm, style: TextStyle(color: palette.warning)),
                 ),
               ],

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
@@ -9,6 +10,7 @@ import '../../../core/l10n/language_switch.dart';
 import '../../../core/l10n/locale_controller.dart';
 import '../../../core/network/error_messages.dart';
 import '../../../l10n/app_localizations.dart';
+import '../data/apple_sign_in.dart';
 import 'auth_controller.dart';
 
 /// Classifies the login/register-specific status codes into what they
@@ -29,6 +31,8 @@ String authErrorMessage(AppLocalizations l10n, Object error) {
         return l10n.authErrorCheckDetails;
     }
   }
+  // Anything the native Apple sheet itself failed with (not the backend).
+  if (error is SignInWithAppleException || error is StateError) return l10n.authErrorApple;
   return friendlyErrorMessage(l10n, error);
 }
 
@@ -179,6 +183,34 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     loading: state.submitting,
                     onPressed: _submit,
                   ),
+                  if (appleSignInSupported) ...[
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(child: Divider(color: palette.separator, height: 1)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(l10n.authOrDivider,
+                              style: AppTypography.footnote.copyWith(color: palette.textTertiary)),
+                        ),
+                        Expanded(child: Divider(color: palette.separator, height: 1)),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    // Apple's own button artwork, in the colour that contrasts
+                    // with the current theme (Apple's HIG allows black or white).
+                    SignInWithAppleButton(
+                      text: l10n.authContinueWithApple,
+                      height: 52,
+                      borderRadius: const BorderRadius.all(Radius.circular(16)),
+                      style: Theme.of(context).brightness == Brightness.dark
+                          ? SignInWithAppleButtonStyle.white
+                          : SignInWithAppleButtonStyle.black,
+                      onPressed: state.submitting
+                          ? null
+                          : ref.read(authControllerProvider.notifier).signInWithApple,
+                    ),
+                  ],
                   const SizedBox(height: 14),
                   Center(
                     child: InkWell(
