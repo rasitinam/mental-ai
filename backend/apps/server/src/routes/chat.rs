@@ -80,11 +80,13 @@ const MAX_HISTORY_MESSAGES: usize = 16;
 /// person's mood/journal/research context, and the growing history window)
 /// plus a warm, non-terse reply tends to run ~1.5-2k tokens once a
 /// conversation has some back-and-forth, and someone actively chatting
-/// sends roughly a message a minute or two — so ~10 turns, i.e. about 15
-/// minutes of real conversation, lands around 20k tokens. Tune this once
-/// real usage data says otherwise; it only needs to be in the right
-/// neighborhood, since going over it just means an upsell, not an outage.
-const FREE_DAILY_CHAT_TOKEN_BUDGET: i64 = 20_000;
+/// sends roughly a message a minute or two — so ~5 turns, i.e. about 7-8
+/// minutes of real conversation, lands around 10k tokens. This used to be
+/// 20k (~10 turns); it was halved so the free tier reaches the paywall
+/// sooner. Tune this once real usage data says otherwise; it only needs to
+/// be in the right neighborhood, since going over it just means an upsell,
+/// not an outage.
+const FREE_DAILY_CHAT_TOKEN_BUDGET: i64 = 10_000;
 
 /// The client (`ChatApi.sendMessage`) matches on this exact status code to
 /// route to the paywall instead of showing a generic error — see
