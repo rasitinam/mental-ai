@@ -7,9 +7,11 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../stories/presentation/stories_controller.dart';
 import '../data/dm_badge.dart';
 import '../data/social_api.dart';
 import '../domain/social_models.dart';
+import 'block_dialog.dart';
 import 'user_profile_screen.dart' show UserAvatar;
 
 /// One conversation. A pending request the viewer received shows
@@ -95,6 +97,27 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
     if (mounted) Navigator.of(context).maybePop();
   }
 
+  /// Blocks the person on the other end and leaves the conversation: it
+  /// disappears from both inboxes and neither side can write again.
+  Future<void> _block(DmThread thread) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (!await confirmBlock(context) || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      await ref.read(socialApiProvider).blockUser(thread.otherUserId);
+      ref.invalidate(dmThreadsProvider);
+      ref.invalidate(dmRequestsProvider);
+      await ref.read(dmBadgeProvider.notifier).refresh();
+      await ref.read(storiesControllerProvider.notifier).loadFeed();
+      messenger.showSnackBar(SnackBar(content: Text(l10n.blockDone)));
+      navigator.maybePop();
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.commonError)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -141,6 +164,11 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
                               .copyWith(color: palette.textPrimary, fontSize: 17),
                         ),
                       ),
+                    ),
+                    IconButton(
+                      onPressed: () => _block(thread),
+                      tooltip: l10n.blockAction,
+                      icon: Icon(Icons.block_rounded, size: 20, color: palette.warning),
                     ),
                     IconButton(
                       onPressed: _decline,

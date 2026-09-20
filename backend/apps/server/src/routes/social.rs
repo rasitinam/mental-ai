@@ -37,6 +37,9 @@ async fn profile(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<PublicProfile>, (StatusCode, String)> {
+    if hidden_ids(&state, auth.user_id).await.contains(&id) {
+        return Err((StatusCode::NOT_FOUND, "user not found".to_string()));
+    }
     let user = user_for(&state, id)
         .await
         .ok_or((StatusCode::NOT_FOUND, "user not found".to_string()))?;
@@ -100,6 +103,7 @@ async fn follow(
     if id == auth.user_id {
         return Err((StatusCode::BAD_REQUEST, "cannot follow yourself".to_string()));
     }
+    ensure_not_blocked(&state, auth.user_id, id).await?;
     user_for(&state, id)
         .await
         .ok_or((StatusCode::NOT_FOUND, "user not found".to_string()))?;
@@ -119,19 +123,23 @@ async fn unfollow(
 
 async fn followers(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<UserCard>>, (StatusCode, String)> {
-    let ids = state.social.followers(id).await.map_err(internal)?;
+    let mut ids = state.social.followers(id).await.map_err(internal)?;
+    let hidden = hidden_ids(&state, auth.user_id).await;
+    ids.retain(|other| !hidden.contains(other));
     Ok(Json(cards_for(&state, &ids).await))
 }
 
 async fn following(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<UserCard>>, (StatusCode, String)> {
-    let ids = state.social.following(id).await.map_err(internal)?;
+    let mut ids = state.social.following(id).await.map_err(internal)?;
+    let hidden = hidden_ids(&state, auth.user_id).await;
+    ids.retain(|other| !hidden.contains(other));
     Ok(Json(cards_for(&state, &ids).await))
 }
 
@@ -174,4 +182,26 @@ pub(crate) async fn may_open_dm(
 
 pub(crate) fn internal(e: impl std::fmt::Display) -> (StatusCode, String) {
     (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+}
+
+/// Everyone `viewer` shouldn't see or hear from: people they blocked and
+/// people who blocked them. A failed lookup hides nobody rather than
+/// breaking the feed.
+pub(crate) async fn hidden_ids(state: &AppState, viewer: Uuid) -> std::collections::HashSet<Uuid> {
+    use mental_domain::repository::BlockRepository;
+    state.blocks.hidden_from(viewer).await.unwrap_or_default().into_iter().collect()
+}
+
+/// 403 when either person has blocked the other. Used before anything that
+/// would put the two in contact: following, opening or sending a DM.
+pub(crate) async fn ensure_not_blocked(
+    state: &AppState,
+    a: Uuid,
+    b: Uuid,
+) -> Result<(), (StatusCode, String)> {
+    use mental_domain::repository::BlockRepository;
+    if state.blocks.blocked_between(a, b).await.map_err(internal)? {
+        return Err((StatusCode::FORBIDDEN, "you can't interact with this person".to_string()));
+    }
+    Ok(())
 }

@@ -7,9 +7,12 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../core/storage/local_prefs.dart';
+import '../../stories/presentation/stories_controller.dart';
 import '../data/dm_badge.dart';
 import '../data/social_api.dart';
 import '../domain/social_models.dart';
+import 'block_dialog.dart';
 
 /// Someone else's account: their name, what they've shared, and the two
 /// things you can do about it — follow, or ask to talk. No diagnoses, no
@@ -34,6 +37,26 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       ref.invalidate(publicProfileProvider(widget.userId));
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Blocks this person and leaves their profile: from here on neither side
+  /// sees the other's stories or profile, and neither can message the other.
+  Future<void> _block(PublicProfile profile) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (!await confirmBlock(context) || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      await ref.read(socialApiProvider).blockUser(profile.userId);
+      ref.invalidate(dmThreadsProvider);
+      ref.invalidate(dmRequestsProvider);
+      await ref.read(storiesControllerProvider.notifier).loadFeed();
+      messenger.showSnackBar(SnackBar(content: Text(l10n.blockDone)));
+      navigator.maybePop();
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.commonError)));
     }
   }
 
@@ -115,6 +138,15 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     icon: Icons.arrow_back_rounded,
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
+                  const Spacer(),
+                  // Someone else's profile only: you can't block yourself.
+                  if (data.userId != ref.watch(currentUserIdProvider))
+                    TextButton.icon(
+                      onPressed: () => _block(data),
+                      icon: Icon(Icons.block_rounded, size: 18, color: palette.warning),
+                      label: Text(l10n.blockAction,
+                          style: AppTypography.footnote.copyWith(color: palette.warning, fontWeight: FontWeight.w600)),
+                    ),
                 ],
               ),
               const SizedBox(height: 22),

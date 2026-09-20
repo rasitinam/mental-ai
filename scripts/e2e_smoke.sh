@@ -135,6 +135,40 @@ t "DM accept (B)" 200\|204 POST "/dm/threads/$TID/accept" "$TB"
 t "DM send (A)" '200|201' POST "/dm/threads/$TID/messages" "$TA" "$(body dm '{"body":"Selam, hikayen çok iyi geldi."}')"
 t "DM messages" 200 GET "/dm/threads/$TID/messages" "$TB"
 t "DM threads" 200 GET /dm/threads "$TA"
+
+echo "##### BLOCKING"
+# Editing a story (the update test above) sends it back to review; publish it again.
+$SQ $DB "UPDATE life_stories SET status='approved', reviewed_at='2026-09-20T00:00:00+00:00' WHERE id='$SID';"
+# has FILE PATTERN -> present/absent assertion on the last response body
+expect_body() { # LABEL present|absent PATTERN
+  if grep -q "$3" "$W/last.json"; then found=present; else found=absent; fi
+  if [ "$found" = "$2" ]; then PASS=$((PASS+1)); printf 'PASS %-52s (%s)\n' "$1" "$found"; else FAIL=$((FAIL+1)); FAILS="$FAILS\n  - $1 (wanted $2, got $found)"; printf 'FAIL %-52s wanted %s, got %s\n' "$1" "$2" "$found"; fi
+}
+t "block yourself" 400 POST "/users/$UA/block" "$TA"
+t "block unknown user" 404 POST "/users/00000000-0000-4000-8000-000000000000/block" "$TA"
+t "feed shows B's story before the block" 200 GET /stories "$TA"; expect_body "  story visible" present "$SID"
+t "block B" 204 POST "/users/$UB/block" "$TA"
+t "block B again (idempotent)" 204 POST "/users/$UB/block" "$TA"
+t "blocked list names B" 200 GET /blocks "$TA"; expect_body "  B listed" present "QA Iki"; BID=$(jget id)
+t "feed hides B's story from A" 200 GET /stories "$TA"; expect_body "  story hidden" absent "$SID"
+t "profile of B (blocked) -> 404" 404 GET "/users/$UB" "$TA"
+t "profile of A (as the blocked B) -> 404" 404 GET "/users/$UA" "$TB"
+t "follow across a block -> 403" 403 POST "/users/$UB/follow" "$TA"
+t "DM open by A across a block -> 403" 403 POST "/dm/with/$UB" "$TA" "$(body dmb '{"body":"hi"}')"
+t "DM open by B across a block -> 403" 403 POST "/dm/with/$UA" "$TB" "$W/dmb.json"
+t "DM send by A across a block -> 403" 403 POST "/dm/threads/$TID/messages" "$TA" "$W/dmb.json"
+t "DM messages across a block -> 403" 403 GET "/dm/threads/$TID/messages" "$TB"
+t "DM inbox hides the blocked thread" 200 GET /dm/threads "$TA"; expect_body "  thread hidden" absent "$TID"
+t "unblock" 204 DELETE "/blocks/$BID" "$TA"
+t "blocked list is empty again" 200 GET /blocks "$TA"; expect_body "  B gone" absent "QA Iki"
+t "profile of B visible again" 200 GET "/users/$UB" "$TA"
+t "feed shows B's story again" 200 GET /stories "$TA"; expect_body "  story visible" present "$SID"
+t "block the author of an anonymous story" 204 POST "/stories/$SID/block-author" "$TA"
+t "blocked list does not reveal the anonymous author" 200 GET /blocks "$TA"; expect_body "  no name" absent "QA Iki"; expect_body "  no user id" absent "$UB"; expect_body "  flagged anonymous" present '"anonymous":true'; BID=$(jget id)
+t "feed hides the anonymous author's story" 200 GET /stories "$TA"; expect_body "  story hidden" absent "$SID"
+t "block-author on own story -> 400" 400 POST "/stories/$SID/block-author" "$TB"
+t "unblock the anonymous author" 204 DELETE "/blocks/$BID" "$TA"
+t "unblock someone else's block id is a no-op" 204 DELETE "/blocks/$BID" "$TB"
 t "unfollow B" 200\|204 DELETE "/users/$UB/follow" "$TA"
 t "story withdraw (B)" 200\|204 DELETE "/stories/$SID" "$TB"
 t "DM decline/delete thread" 200\|204 DELETE "/dm/threads/$TID" "$TB"
@@ -148,7 +182,7 @@ t "delete account without password" 401 DELETE /account "$TA2" "$(body dn '{}')"
 t "delete account A" 200\|204 DELETE /account "$TA2" "$(body dA "{\"password\":\"$PW\"}")"
 t "delete account B" 200\|204 DELETE /account "$TB" "$(body dB "{\"password\":\"$PW\"}")"
 t "login after delete -> 401" 401 POST /auth/login "" "$W/logA.json"
-LEFT=$($SQ $DB "select (select count(*) from users where id in ('$UA','$UB'))+(select count(*) from credentials where user_id in ('$UA','$UB'))+(select count(*) from subscriptions where user_id in ('$UA','$UB'))+(select count(*) from chat_token_usage where user_id in ('$UA','$UB'));")
+LEFT=$($SQ $DB "select (select count(*) from users where id in ('$UA','$UB'))+(select count(*) from credentials where user_id in ('$UA','$UB'))+(select count(*) from subscriptions where user_id in ('$UA','$UB'))+(select count(*) from chat_token_usage where user_id in ('$UA','$UB'))+(select count(*) from user_blocks where blocker_id in ('$UA','$UB') or blocked_id in ('$UA','$UB'));")
 echo "rows left behind by deleted test accounts: $LEFT (want 0)"
 
 echo; echo "=========== $PASS passed, $FAIL failed"; [ $FAIL -gt 0 ] && printf "$FAILS\n"

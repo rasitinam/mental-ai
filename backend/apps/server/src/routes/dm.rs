@@ -75,9 +75,13 @@ async fn views_for(state: &AppState, viewer: Uuid, threads: Vec<DmThread>) -> Ve
     let ids: Vec<Uuid> = threads.iter().map(|t| t.id).collect();
     let latest = state.dms.latest_messages(&ids).await.unwrap_or_default();
 
+    let hidden = crate::routes::social::hidden_ids(state, viewer).await;
     let mut views = Vec::with_capacity(threads.len());
     for thread in threads {
         let other = thread.other(viewer);
+        if hidden.contains(&other) {
+            continue;
+        }
         let Some(user) = user_for(state, other).await else { continue };
         views.push(ThreadView {
             id: thread.id.to_string(),
@@ -139,6 +143,7 @@ async fn open(
     if user_id == auth.user_id {
         return Err((StatusCode::BAD_REQUEST, "cannot message yourself".to_string()));
     }
+    crate::routes::social::ensure_not_blocked(&state, auth.user_id, user_id).await?;
 
     let body = req.body.trim().to_string();
     if body.is_empty() {
@@ -297,6 +302,7 @@ async fn send(
     }
 
     let thread = load_thread(&state, auth.user_id, id).await?;
+    crate::routes::social::ensure_not_blocked(&state, auth.user_id, thread.other(auth.user_id)).await?;
     send_into(&state, auth.user_id, thread, body).await
 }
 
@@ -305,7 +311,8 @@ async fn messages(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<MessageView>>, (StatusCode, String)> {
-    load_thread(&state, auth.user_id, id).await?;
+    let thread = load_thread(&state, auth.user_id, id).await?;
+    crate::routes::social::ensure_not_blocked(&state, auth.user_id, thread.other(auth.user_id)).await?;
 
     let messages = state.dms.messages(id, MESSAGE_LIMIT).await.map_err(internal)?;
 
@@ -329,6 +336,7 @@ async fn accept(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     let thread = load_thread(&state, auth.user_id, id).await?;
+    crate::routes::social::ensure_not_blocked(&state, auth.user_id, thread.other(auth.user_id)).await?;
     if thread.started_by == auth.user_id {
         return Err((StatusCode::FORBIDDEN, "you opened this request".to_string()));
     }

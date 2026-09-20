@@ -224,6 +224,11 @@ async fn public_feed(
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
+    // Stories by anyone the reader blocked, or who blocked the reader, never
+    // show up (see `routes::blocks`).
+    let hidden = crate::routes::social::hidden_ids(&state, auth.user_id).await;
+    items.retain(|item| !hidden.contains(&item.story.user_id));
+
     let mine: Vec<String> = user_for(&state, auth.user_id)
         .await
         .map(|u| u.diagnoses)

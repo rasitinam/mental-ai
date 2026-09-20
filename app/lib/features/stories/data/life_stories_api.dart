@@ -111,6 +111,12 @@ class LifeStoriesApi {
     await _dio.post('/stories/$id/report', data: {'note': ?note});
   }
 
+  /// Blocks whoever wrote a story. Works for anonymous stories without ever
+  /// revealing the author to the reader.
+  Future<void> blockAuthor(String id) async {
+    await _dio.post('/stories/$id/block-author');
+  }
+
   /// Admin-only; the backend returns 403 for anyone else.
   Future<List<AdminStoryView>> pending() async {
     final response = await _dio.get('/stories/pending');

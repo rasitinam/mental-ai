@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::report::LifeAnalysis;
 use crate::{
-    ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, DmMessage, DmPolicy,
+    BlockRecord, ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, DmMessage, DmPolicy,
     DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry, PushToken,
     ResearchArticle, Session, StoryFeedItem, StoryStatus, Subscription, User, UserState,
     WellbeingAssessment,
@@ -416,4 +416,24 @@ pub trait ChatUsageRepository: Send + Sync {
 pub trait DiscoveryRepository: Send + Sync {
     async fn get(&self, user_id: Uuid) -> anyhow::Result<Option<crate::discovery::CachedDiscoveries>>;
     async fn save(&self, user_id: Uuid, cached: &crate::discovery::CachedDiscoveries) -> anyhow::Result<()>;
+}
+
+/// Blocking between accounts (App Store Guideline 1.2 for user-generated
+/// content). Blocks are stored one way but enforced both ways — see
+/// `migrations/0024_user_blocks.sql`.
+#[async_trait]
+pub trait BlockRepository: Send + Sync {
+    /// Records `blocker` blocking `blocked` (idempotent) and, in the same
+    /// transaction, removes any follows between the two in either direction.
+    async fn block(&self, blocker: Uuid, blocked: Uuid, anonymous: bool) -> anyhow::Result<()>;
+    /// Removes one of `blocker`'s own blocks by its row id. Scoped to
+    /// `blocker` in the query, so someone else's id is a no-op.
+    async fn unblock(&self, blocker: Uuid, block_id: Uuid) -> anyhow::Result<()>;
+    /// The blocks `blocker` has made, newest first.
+    async fn list_for(&self, blocker: Uuid) -> anyhow::Result<Vec<BlockRecord>>;
+    /// Every account that should be invisible to `viewer`: the ones they
+    /// blocked and the ones that blocked them.
+    async fn hidden_from(&self, viewer: Uuid) -> anyhow::Result<Vec<Uuid>>;
+    /// Whether either of the two has blocked the other.
+    async fn blocked_between(&self, a: Uuid, b: Uuid) -> anyhow::Result<bool>;
 }

@@ -12,7 +12,7 @@ use mental_knowledge_base::{Embedder, SqliteVectorStore};
 use mental_llm_connector::openai_compatible::OpenAiCompatibleProvider;
 use mental_llm_connector::LlmProvider;
 use mental_storage::{
-    init_pool, SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository,
+    init_pool, SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
     SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
     SqliteDiscoveryRepository,
     SqliteDmRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
@@ -122,6 +122,7 @@ async fn main() -> anyhow::Result<()> {
             bundle_id: config.apple_iap.bundle_id.clone(),
         },
         apple_keys: Arc::new(apple_signin::AppleKeys::new()),
+        blocks: Arc::new(SqliteBlockRepository::new(pool.clone())),
     };
 
     if config.research_ingest.enabled {

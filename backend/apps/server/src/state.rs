@@ -6,7 +6,7 @@ use mental_push::PushProvider;
 
 use crate::rate_limit::LoginRateLimiter;
 use mental_storage::{
-    SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository,
+    SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
     SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
     SqliteDiscoveryRepository,
     SqliteDmRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
@@ -57,6 +57,8 @@ pub struct AppState {
     /// attempts outright rather than calling Apple with no password) and
     /// this app's own bundle id, checked against every verified receipt.
     pub apple_iap: AppleIapState,
+    /// Who has blocked whom — see `routes::blocks`.
+    pub blocks: Arc<SqliteBlockRepository>,
     /// Apple's identity-token signing keys, for Sign in with Apple — see
     /// `apple_signin`. Verified against the same `apple_iap.bundle_id`.
     pub apple_keys: Arc<crate::apple_signin::AppleKeys>,

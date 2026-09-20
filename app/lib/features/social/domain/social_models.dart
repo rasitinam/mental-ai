@@ -130,3 +130,31 @@ class DmMessage {
         createdAt: DateTime.parse(json['created_at'] as String),
       );
 }
+
+/// One row on the "Blocked people" screen. A block made from an anonymous
+/// story carries no name or user id — the app never learns who the author is,
+/// so the list must not either.
+class BlockedPerson {
+  /// The block's own id, which is what unblocking takes.
+  final String id;
+  final String? displayName;
+  final String? userId;
+  final bool hasAvatar;
+  final bool anonymous;
+
+  const BlockedPerson({
+    required this.id,
+    required this.displayName,
+    required this.userId,
+    required this.hasAvatar,
+    required this.anonymous,
+  });
+
+  factory BlockedPerson.fromJson(Map<String, dynamic> json) => BlockedPerson(
+        id: json['id'] as String,
+        displayName: json['display_name'] as String?,
+        userId: json['user_id'] as String?,
+        hasAvatar: json['has_avatar'] as bool? ?? false,
+        anonymous: json['anonymous'] as bool? ?? false,
+      );
+}

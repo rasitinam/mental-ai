@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
 use mental_domain::repository::{
-    ActivityRepository, AssessmentRepository, AuthRepository, ChatRepository, ChatUsageRepository,
+    ActivityRepository, AssessmentRepository, AuthRepository, BlockRepository, ChatRepository, ChatUsageRepository,
     ContentTranslationRepository, DiscoveryRepository, DmRepository, ExplainerRepository,
     InsightRepository,
     JournalRepository, LifeAnalysisRepository, LifeStoryRepository, MoodRepository,
@@ -13,7 +13,7 @@ use mental_domain::report::LifeAnalysis;
 use mental_domain::{CachedDiscoveries, Discovery};
 
 use mental_domain::{
-    ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, DmMessage,
+    BlockRecord, ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, DmMessage,
     DmPolicy, DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry,
     PushToken, ResearchArticle, Session, StoryFeedItem, StoryStatus, Subscription, User, UserState,
     WellbeingAssessment,
@@ -334,6 +334,7 @@ impl UserRepository for SqliteUserRepository {
             sqlx::query(&format!("DELETE FROM {table} WHERE user_id = ?1")).bind(&id).execute(&mut *tx).await?;
         }
 
+        sqlx::query("DELETE FROM user_blocks WHERE blocker_id = ?1 OR blocked_id = ?1").bind(&id).execute(&mut *tx).await?;
         sqlx::query("DELETE FROM users WHERE id = ?1").bind(&id).execute(&mut *tx).await?;
 
         tx.commit().await?;
@@ -2377,5 +2378,108 @@ impl DiscoveryRepository for SqliteDiscoveryRepository {
         .await?;
 
         Ok(())
+    }
+}
+
+pub struct SqliteBlockRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteBlockRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl BlockRepository for SqliteBlockRepository {
+    async fn block(&self, blocker: Uuid, blocked: Uuid, anonymous: bool) -> anyhow::Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        // An existing block keeps its original `anonymous` flag: blocking
+        // someone from a profile after blocking their anonymous story must
+        // not start revealing who they are on the blocked list.
+        sqlx::query(
+            "INSERT INTO user_blocks (id, blocker_id, blocked_id, anonymous, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(blocker_id, blocked_id) DO NOTHING",
+        )
+        .bind(Uuid::new_v4().to_string())
+        .bind(blocker.to_string())
+        .bind(blocked.to_string())
+        .bind(anonymous)
+        .bind(Utc::now())
+        .execute(&mut *tx)
+        .await?;
+
+        sqlx::query(
+            "DELETE FROM follows
+             WHERE (follower_id = ?1 AND followee_id = ?2) OR (follower_id = ?2 AND followee_id = ?1)",
+        )
+        .bind(blocker.to_string())
+        .bind(blocked.to_string())
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn unblock(&self, blocker: Uuid, block_id: Uuid) -> anyhow::Result<()> {
+        sqlx::query("DELETE FROM user_blocks WHERE id = ?1 AND blocker_id = ?2")
+            .bind(block_id.to_string())
+            .bind(blocker.to_string())
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn list_for(&self, blocker: Uuid) -> anyhow::Result<Vec<BlockRecord>> {
+        let rows = sqlx::query_as::<_, (String, String, bool, DateTime<Utc>)>(
+            "SELECT id, blocked_id, anonymous, created_at FROM user_blocks
+             WHERE blocker_id = ?1 ORDER BY created_at DESC",
+        )
+        .bind(blocker.to_string())
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .filter_map(|(id, blocked_id, anonymous, created_at)| {
+                Some(BlockRecord {
+                    id: Uuid::parse_str(&id).ok()?,
+                    blocked_id: Uuid::parse_str(&blocked_id).ok()?,
+                    anonymous,
+                    created_at,
+                })
+            })
+            .collect())
+    }
+
+    async fn hidden_from(&self, viewer: Uuid) -> anyhow::Result<Vec<Uuid>> {
+        let rows = sqlx::query_as::<_, (String,)>(
+            "SELECT blocked_id FROM user_blocks WHERE blocker_id = ?1
+             UNION
+             SELECT blocker_id FROM user_blocks WHERE blocked_id = ?1",
+        )
+        .bind(viewer.to_string())
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().filter_map(|(id,)| Uuid::parse_str(&id).ok()).collect())
+    }
+
+    async fn blocked_between(&self, a: Uuid, b: Uuid) -> anyhow::Result<bool> {
+        let (count,): (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM user_blocks
+             WHERE (blocker_id = ?1 AND blocked_id = ?2) OR (blocker_id = ?2 AND blocked_id = ?1)",
+        )
+        .bind(a.to_string())
+        .bind(b.to_string())
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(count > 0)
     }
 }

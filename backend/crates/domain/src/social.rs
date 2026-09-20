@@ -116,3 +116,14 @@ pub struct PublicProfile {
     pub viewer_follows: bool,
     pub accepts_dm: bool,
 }
+
+/// One block the viewer has made, as listed on their "Blocked people"
+/// screen. `blocked_id` is only ever shown to the viewer when the block did
+/// not come from an anonymous story (see `anonymous`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockRecord {
+    pub id: Uuid,
+    pub blocked_id: Uuid,
+    pub anonymous: bool,
+    pub created_at: DateTime<Utc>,
+}

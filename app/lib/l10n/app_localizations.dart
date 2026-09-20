@@ -2954,6 +2954,72 @@ abstract class AppLocalizations {
   /// **'Hesabın Apple ile açıldığı için silmeden önce Apple ile yeniden doğrulaman istenecek.'**
   String get deleteAccountAppleNote;
 
+  /// No description provided for @blockAction.
+  ///
+  /// In tr, this message translates to:
+  /// **'Engelle'**
+  String get blockAction;
+
+  /// No description provided for @blockAuthorAction.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yazarı engelle'**
+  String get blockAuthorAction;
+
+  /// No description provided for @blockConfirmTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu kişi engellensin mi?'**
+  String get blockConfirmTitle;
+
+  /// No description provided for @blockConfirmBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Birbirinizin hikayelerini ve profilini görmezsiniz, birbirinize mesaj yazamazsınız. Bunu istediğin zaman Ben > Ayarlar > Engellenenler bölümünden geri alabilirsin.'**
+  String get blockConfirmBody;
+
+  /// No description provided for @blockDone.
+  ///
+  /// In tr, this message translates to:
+  /// **'Engellendi.'**
+  String get blockDone;
+
+  /// No description provided for @settingsBlocked.
+  ///
+  /// In tr, this message translates to:
+  /// **'Engellenenler'**
+  String get settingsBlocked;
+
+  /// No description provided for @settingsBlockedBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Engellediğin kişileri gör, engeli kaldır'**
+  String get settingsBlockedBody;
+
+  /// No description provided for @blockedEmpty.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kimseyi engellemedin.'**
+  String get blockedEmpty;
+
+  /// No description provided for @blockedAnonymousAuthor.
+  ///
+  /// In tr, this message translates to:
+  /// **'Anonim yazar'**
+  String get blockedAnonymousAuthor;
+
+  /// No description provided for @blockedUnblock.
+  ///
+  /// In tr, this message translates to:
+  /// **'Engeli kaldır'**
+  String get blockedUnblock;
+
+  /// No description provided for @blockedUnblockDone.
+  ///
+  /// In tr, this message translates to:
+  /// **'Engel kaldırıldı.'**
+  String get blockedUnblockDone;
+
   /// No description provided for @deleteAccountConfirm.
   ///
   /// In tr, this message translates to:

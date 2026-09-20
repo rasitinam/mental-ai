@@ -76,6 +76,23 @@ class SocialApi {
     }
   }
 
+  /// Blocks someone from their profile or a DM thread. The backend enforces it
+  /// both ways: neither side sees the other's stories, profile or messages.
+  Future<void> blockUser(String userId) async {
+    await _dio.post('/users/$userId/block');
+  }
+
+  Future<void> unblock(String blockId) async {
+    await _dio.delete('/blocks/$blockId');
+  }
+
+  Future<List<BlockedPerson>> blocks() async {
+    final response = await _dio.get('/blocks');
+    return (response.data as List<dynamic>)
+        .map((e) => BlockedPerson.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<List<UserCard>> followers(String userId) async {
     final response = await _dio.get('/users/$userId/followers');
     return (response.data as List<dynamic>)
@@ -131,3 +148,8 @@ class SocialApi {
     await _dio.delete('/dm/threads/$threadId');
   }
 }
+
+/// Everyone the signed-in account has blocked, for the settings screen.
+final blockedPeopleProvider = FutureProvider.autoDispose<List<BlockedPerson>>(
+  (ref) => ref.watch(socialApiProvider).blocks(),
+);

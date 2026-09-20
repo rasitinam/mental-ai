@@ -37,7 +37,7 @@ pub use mood::MoodEntry;
 pub use push::PushToken;
 pub use report::DailyMentalReport;
 pub use research::ResearchArticle;
-pub use social::{DmMessage, DmPolicy, DmStatus, DmThread, PublicProfile};
+pub use social::{BlockRecord, DmMessage, DmPolicy, DmStatus, DmThread, PublicProfile};
 pub use state::UserState;
 pub use streak::StreakSummary;
 pub use subscription::Subscription;

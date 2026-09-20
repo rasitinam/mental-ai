@@ -1565,6 +1565,40 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account was created with Apple, so you\'ll be asked to verify with Apple again before it\'s deleted.';
 
   @override
+  String get blockAction => 'Block';
+
+  @override
+  String get blockAuthorAction => 'Block author';
+
+  @override
+  String get blockConfirmTitle => 'Block this person?';
+
+  @override
+  String get blockConfirmBody =>
+      'You won\'t see each other\'s stories or profile, and you can\'t message each other. You can undo this any time under Me > Settings > Blocked people.';
+
+  @override
+  String get blockDone => 'Blocked.';
+
+  @override
+  String get settingsBlocked => 'Blocked people';
+
+  @override
+  String get settingsBlockedBody => 'See who you\'ve blocked and unblock them';
+
+  @override
+  String get blockedEmpty => 'You haven\'t blocked anyone.';
+
+  @override
+  String get blockedAnonymousAuthor => 'Anonymous author';
+
+  @override
+  String get blockedUnblock => 'Unblock';
+
+  @override
+  String get blockedUnblockDone => 'Unblocked.';
+
+  @override
   String get deleteAccountConfirm => 'Permanently Delete';
 
   @override

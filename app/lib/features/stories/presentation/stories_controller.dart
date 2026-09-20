@@ -187,6 +187,18 @@ class StoriesController extends Notifier<StoriesState> {
     }
   }
 
+  /// Blocks the story's author (without learning who they are, if the story
+  /// is anonymous) and reloads the feed so their stories disappear at once.
+  Future<bool> blockAuthor(String id) async {
+    try {
+      await ref.read(lifeStoriesApiProvider).blockAuthor(id);
+      await loadFeed();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> report(String id, {String? note}) async {
     try {
       await ref.read(lifeStoriesApiProvider).report(id, note: note);

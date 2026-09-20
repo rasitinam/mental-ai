@@ -1,5 +1,6 @@
 mod assessment;
 mod auth;
+mod blocks;
 mod catalog;
 mod chat;
 mod discoveries;
@@ -47,6 +48,7 @@ pub fn build_router(app_state: AppState) -> Router {
         .merge(state::router())
         .merge(stories::router())
         .merge(social::router())
+        .merge(blocks::router())
         .merge(dm::router())
         .merge(streak::router())
         .merge(purchases::router())

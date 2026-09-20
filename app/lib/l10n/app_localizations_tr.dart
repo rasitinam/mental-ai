@@ -1562,6 +1562,40 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hesabın Apple ile açıldığı için silmeden önce Apple ile yeniden doğrulaman istenecek.';
 
   @override
+  String get blockAction => 'Engelle';
+
+  @override
+  String get blockAuthorAction => 'Yazarı engelle';
+
+  @override
+  String get blockConfirmTitle => 'Bu kişi engellensin mi?';
+
+  @override
+  String get blockConfirmBody =>
+      'Birbirinizin hikayelerini ve profilini görmezsiniz, birbirinize mesaj yazamazsınız. Bunu istediğin zaman Ben > Ayarlar > Engellenenler bölümünden geri alabilirsin.';
+
+  @override
+  String get blockDone => 'Engellendi.';
+
+  @override
+  String get settingsBlocked => 'Engellenenler';
+
+  @override
+  String get settingsBlockedBody => 'Engellediğin kişileri gör, engeli kaldır';
+
+  @override
+  String get blockedEmpty => 'Kimseyi engellemedin.';
+
+  @override
+  String get blockedAnonymousAuthor => 'Anonim yazar';
+
+  @override
+  String get blockedUnblock => 'Engeli kaldır';
+
+  @override
+  String get blockedUnblockDone => 'Engel kaldırıldı.';
+
+  @override
   String get deleteAccountConfirm => 'Kalıcı Olarak Sil';
 
   @override

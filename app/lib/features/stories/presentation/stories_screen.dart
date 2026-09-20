@@ -18,6 +18,7 @@ import '../../catalog/domain/disorder_category.dart';
 import '../../insights/presentation/insights_screen.dart' show SearchField, CategoryStrip;
 import '../../profile/data/profile_api.dart';
 import '../../social/data/dm_badge.dart';
+import '../../social/presentation/block_dialog.dart';
 import '../../social/presentation/user_profile_screen.dart' show UserAvatar;
 import '../data/life_stories_api.dart' show storyTranslationProvider;
 import '../domain/life_story.dart';
@@ -111,6 +112,44 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(ok ? l10n.storiesReportSent : l10n.commonError)));
+  }
+
+  /// The flag on a story card: report it, or block whoever wrote it. Blocking
+  /// works for anonymous stories too — the backend resolves the author, the
+  /// reader never sees who it was.
+  Future<void> _storyActions(String id) async {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.flag_outlined, color: palette.warning),
+              title: Text(l10n.storiesReport),
+              onTap: () => Navigator.pop(sheetContext, 'report'),
+            ),
+            ListTile(
+              leading: Icon(Icons.block_rounded, color: palette.warning),
+              title: Text(l10n.blockAuthorAction),
+              onTap: () => Navigator.pop(sheetContext, 'block'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'report') return _report(id);
+
+    if (!await confirmBlock(context) || !mounted) return;
+    final ok = await ref.read(storiesControllerProvider.notifier).blockAuthor(id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(ok ? l10n.blockDone : l10n.commonError)));
   }
 
   @override
@@ -256,7 +295,7 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
                           story: story,
                           resolved: _resolve(categories, story.diagnosisSlug),
                           myUserId: myUserId,
-                          onReport: _report,
+                          onReport: _storyActions,
                           onReact: controller.setReaction,
                         ),
                       );

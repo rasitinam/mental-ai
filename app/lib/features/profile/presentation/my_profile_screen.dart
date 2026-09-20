@@ -453,6 +453,13 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                   subtitle: data?.dmPolicy == 'following' ? l10n.meDmPolicyFollowing : l10n.meDmPolicyEveryone,
                   onTap: () => context.push('/settings/privacy'),
                 ),
+                ListRow(
+                  icon: Icons.block_rounded,
+                  tint: palette.lilac,
+                  label: l10n.settingsBlocked,
+                  subtitle: l10n.settingsBlockedBody,
+                  onTap: () => context.push('/settings/blocked'),
+                ),
               ],
             ),
             const SizedBox(height: 30),
