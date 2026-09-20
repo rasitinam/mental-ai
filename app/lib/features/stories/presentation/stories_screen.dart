@@ -119,27 +119,29 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
   /// reader never sees who it was.
   Future<void> _storyActions(String id) async {
     final l10n = AppLocalizations.of(context)!;
-    final palette = AppPalette.of(context);
 
+    // The app theme makes bottom sheets transparent on purpose; `SheetFrame`
+    // supplies the surface, like every other sheet in the app.
     final action = await showModalBottomSheet<String>(
       context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(Icons.flag_outlined, color: palette.warning),
-              title: Text(l10n.storiesReport),
-              onTap: () => Navigator.pop(sheetContext, 'report'),
-            ),
-            ListTile(
-              leading: Icon(Icons.block_rounded, color: palette.warning),
-              title: Text(l10n.blockAuthorAction),
-              onTap: () => Navigator.pop(sheetContext, 'block'),
-            ),
-          ],
-        ),
+      useRootNavigator: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SheetFrame(
+        children: [
+          OutlineBlockButton(
+            icon: Icons.flag_outlined,
+            label: l10n.storiesReport,
+            onTap: () => Navigator.of(sheetContext).pop('report'),
+          ),
+          const SizedBox(height: 10),
+          OutlineBlockButton(
+            icon: Icons.block_rounded,
+            label: l10n.blockAuthorAction,
+            onTap: () => Navigator.of(sheetContext).pop('block'),
+          ),
+          const SizedBox(height: 4),
+          TextButton(onPressed: () => Navigator.of(sheetContext).pop(), child: Text(l10n.commonClose)),
+        ],
       ),
     );
     if (!mounted || action == null) return;
