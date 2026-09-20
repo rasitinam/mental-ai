@@ -35,3 +35,19 @@ powershell -NoProfile -File "G:\mental-ai\scripts\start-backend-background.ps1"
 powershell -NoProfile -File "G:\mental-ai\scripts\stop-backend-background.ps1"
 schtasks /Delete /TN "MentalAI Backend" /F
 ```
+
+## ngrok tüneli (TestFlight / telefon erişimi için)
+
+Uygulama backend'e `https://status-enticing-easeful.ngrok-free.dev` (ngrok'un ücretsiz statik domain'i) üzerinden bağlanır. Bilgisayar yeniden başlayınca tünelin de kendiliğinden kalkması için backend'dekine benzer ikinci bir görev vardır:
+
+```powershell
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "G:\mental-ai\scripts\start-ngrok-background.ps1"'
+$trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+Register-ScheduledTask -TaskName "MentalAI ngrok" -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force
+```
+
+- `scripts/start-ngrok-background.ps1`: ngrok'u gizli pencerede başlatır, zaten çalışıyorsa hiçbir şey yapmaz. Çıktısı `backend/data/ngrok.log`'a gider; ngrok bulunamazsa `backend/data/startup.log`'a yazar.
+- Tünel açık mı kontrol: `https://status-enticing-easeful.ngrok-free.dev/health` 200 dönmeli.
+- Elle durdurmak: `Stop-Process -Name ngrok`. Kaldırmak: `Unregister-ScheduledTask -TaskName "MentalAI ngrok" -Confirm:$false`.
