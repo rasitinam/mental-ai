@@ -80,7 +80,13 @@ jobs:
 
       - name: Build signed IPA
         run: |
-          flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+          # Without API_BASE_URL the app falls back to 127.0.0.1, which on a
+          # TestFlight phone means "check your internet connection" on every
+          # request. The build number must also be unique per upload.
+          flutter build ipa --release \
+            --build-number="${{ github.run_number }}" \
+            --dart-define=API_BASE_URL=https://status-enticing-easeful.ngrok-free.dev \
+            --export-options-plist=ios/ExportOptions.plist
           echo "Contents of build/ios/ipa:"
           ls -la build/ios/ipa/
 
