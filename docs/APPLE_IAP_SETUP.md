@@ -50,6 +50,15 @@ Açılışta sunucu log'unda "no Apple shared secret found" uyarısı çıkmıyo
 - Akış: Profil → Hearth Plus → *Abone Ol*. Başarılı olunca sohbet limiti kalkar.
 - Ücretsiz limit dolunca sohbet zaten paywall'a yönlendirir. Limit `backend/apps/server/src/routes/chat.rs` içindeki `FREE_DAILY_CHAT_TOKEN_BUDGET` sabitidir (şu an 10.000 token/gün).
 
+## Durum (2026-09-20)
+
+- Ürün `com.rasitinam.hearth.premium.monthly` (1 ay, 9,99$ taban) ve "Hearth Plus" abonelik grubu App Store Connect'te hazır.
+- Sürüm 1.0 **build 9** (API adresi düzeltilmiş build) + abonelik + grup birlikte incelemeye gönderildi. Eski build 1 hatalıydı (`127.0.0.1`'e bağlanıyordu), incelemeden çekildi.
+- `MENTAL_AI_APPLE_SHARED_SECRET` kullanıcı ortam değişkeni olarak ayarlı, backend onunla çalışıyor.
+- Paid Apps Agreement gönderim sırasında hâlâ "Pending User Info" idi (banka işleniyor, W-8BEN vergi formu). Aktif olana kadar ürün StoreKit'e yüklenmeyebilir.
+- İnceleyici giriş hesabı olarak `inamrasit@gmail.com` girili. İnceleme sürerken bu hesaba elle Plus **verme**: inceleyici "Abone Ol" yerine "zaten aktif" görüp satın almayı test edemez. Onaydan sonra geri verilebilir:
+  `INSERT INTO subscriptions (user_id,platform,product_id,original_transaction_id,expires_at,updated_at) VALUES ('eea925a7-aa57-4ad5-bae1-2ea10bdd2644','manual','com.rasitinam.hearth.premium.monthly','manual-owner-grant','2099-12-31T00:00:00+00:00', datetime('now'));`
+
 ## 5. App Store incelemesi
 
 İlk abonelik, uygulamanın bir sürümüyle birlikte incelemeye gönderilmelidir: sürüm sayfasında *Uygulama İçi Satın Almalar ve Abonelikler* bölümünden aboneliği seç. Apple incelemesi sırasında hem sunucunun (backend + ngrok) hem de paywall'daki gizlilik/koşullar bağlantılarının açık olması gerekir.
