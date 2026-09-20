@@ -223,30 +223,43 @@ class _CheckinTile extends ConsumerWidget {
                   ),
                 ],
                 const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppPrimaryButton(
-                        label: l10n.todayWriteJournal,
-                        icon: Icons.edit_outlined,
-                        height: 52,
-                        radius: 16,
-                        fontSize: 16,
-                        onPressed: () => context.go('/journal'),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlineBlockButton(
-                        icon: Icons.mic_none_rounded,
-                        label: l10n.todaySpeak,
-                        onTap: () {
-                          ref.read(journalStartDictationProvider.notifier).state = true;
-                          context.go('/journal');
-                        },
-                      ),
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final journalButton = AppPrimaryButton(
+                      label: l10n.todayWriteJournal,
+                      icon: Icons.edit_outlined,
+                      height: 52,
+                      radius: 16,
+                      fontSize: 16,
+                      onPressed: () => context.go('/journal'),
+                    );
+                    final speakButton = OutlineBlockButton(
+                      icon: Icons.mic_none_rounded,
+                      label: l10n.todaySpeak,
+                      onTap: () {
+                        ref.read(journalStartDictationProvider.notifier).state = true;
+                        context.go('/journal');
+                      },
+                    );
+
+                    // Side by side only while both labels fit whole. With a
+                    // large system font or a very narrow card they were being
+                    // cut to "Günlü…" / "Sesle …", so they stack instead.
+                    final stacked = MediaQuery.textScalerOf(context).scale(16) > 18.4 || constraints.maxWidth < 250;
+                    if (stacked) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [journalButton, const SizedBox(height: 10), speakButton],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Expanded(child: journalButton),
+                        const SizedBox(width: 10),
+                        Expanded(child: speakButton),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),

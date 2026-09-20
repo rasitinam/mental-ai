@@ -282,7 +282,7 @@ async fn synthesize_speech(
     Ok(([(header::CONTENT_TYPE, "audio/mpeg")], audio))
 }
 
-async fn persist_turn(state: &AppState, user_id: Uuid, role: ChatRole, content: &str, crisis_flag: bool) {
+pub(crate) async fn persist_turn(state: &AppState, user_id: Uuid, role: ChatRole, content: &str, crisis_flag: bool) {
     let record = ChatMessageRecord {
         id: Uuid::new_v4(),
         user_id,

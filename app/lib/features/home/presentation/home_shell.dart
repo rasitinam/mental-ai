@@ -158,16 +158,21 @@ class _Tab extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  data.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.fade,
-                  softWrap: false,
-                  style: AppTypography.caption.copyWith(
-                    fontSize: 12,
-                    height: 1,
-                    color: foreground,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                // Shrinks to fit rather than fading out the tail: at a large
+                // system font size on a narrow phone "Hikayeler" was cut to
+                // "Hikayele".
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    data.label,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: AppTypography.caption.copyWith(
+                      fontSize: 12,
+                      height: 1,
+                      color: foreground,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    ),
                   ),
                 ),
               ],

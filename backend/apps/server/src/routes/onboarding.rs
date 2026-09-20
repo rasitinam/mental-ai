@@ -1,10 +1,9 @@
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
 use chrono::Utc;
 use mental_analysis_engine::{interpret_intro_answer, MAX_INTRO_ANSWER_LEN};
-use mental_domain::repository::{ChatRepository, ChatUsageRepository, UserRepository};
-use mental_domain::{ChatMessageRecord, ChatRole};
+use mental_domain::repository::{ChatUsageRepository, UserRepository};
+use mental_domain::ChatRole;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use crate::auth::AuthUser;
 use crate::routes::user_for;
@@ -68,8 +67,8 @@ async fn intro(
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    persist_turn(&state, auth.user_id, ChatRole::User, answer).await;
-    persist_turn(&state, auth.user_id, ChatRole::Assistant, &understanding.reply).await;
+    crate::routes::chat::persist_turn(&state, auth.user_id, ChatRole::User, answer, false).await;
+    crate::routes::chat::persist_turn(&state, auth.user_id, ChatRole::Assistant, &understanding.reply, false).await;
 
     if let Some(tokens) = understanding.usage_tokens {
         if let Err(err) = state
@@ -86,18 +85,4 @@ async fn intro(
         boundaries: understanding.boundaries,
         note: understanding.note,
     }))
-}
-
-async fn persist_turn(state: &AppState, user_id: Uuid, role: ChatRole, content: &str) {
-    let record = ChatMessageRecord {
-        id: Uuid::new_v4(),
-        user_id,
-        role,
-        content: content.to_string(),
-        crisis_flag: false,
-        created_at: Utc::now(),
-    };
-    if let Err(err) = state.chats.add(&record).await {
-        tracing::warn!(error = %err, "failed to persist onboarding intro message");
-    }
 }

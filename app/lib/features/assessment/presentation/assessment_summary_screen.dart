@@ -44,18 +44,29 @@ class AssessmentSummaryScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 18),
-              Text(l10n.assessmentRetakeIntro(kAssessmentQuestionCount),
-                  style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
-              const SizedBox(height: 22),
-              latest.when(
-                loading: () => Center(child: CircularProgressIndicator(color: palette.accent)),
-                error: (_, _) => const SizedBox.shrink(),
-                data: (result) => result == null
-                    ? Text(l10n.assessmentNeverTaken,
-                        style: AppTypography.footnote.copyWith(color: palette.textSecondary))
-                    : _LatestSummary(result: result, palette: palette, l10n: l10n),
+              // Scrolls on its own so a small screen or a large text size can
+              // never push the button off the bottom or overflow the column.
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(l10n.assessmentRetakeIntro(kAssessmentQuestionCount),
+                          style: AppTypography.subheadline.copyWith(color: palette.textSecondary)),
+                      const SizedBox(height: 22),
+                      latest.when(
+                        loading: () => Center(child: CircularProgressIndicator(color: palette.accent)),
+                        error: (_, _) => const SizedBox.shrink(),
+                        data: (result) => result == null
+                            ? Text(l10n.assessmentNeverTaken,
+                                style: AppTypography.footnote.copyWith(color: palette.textSecondary))
+                            : _LatestSummary(result: result, palette: palette, l10n: l10n),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const Spacer(),
+              const SizedBox(height: 12),
               AppPrimaryButton(
                 label: latest.valueOrNull == null ? l10n.assessmentRetakeCta : l10n.assessmentRetakeAgain,
                 onPressed: () => context.go('/life-analysis/assessment/take'),

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,6 +33,8 @@ class _OfflineAdapter implements HttpClientAdapter {
 Dio _offlineDio() => Dio()..httpClientAdapter = _OfflineAdapter();
 
 void main() {
+  appleSignInTests();
+
   testWidgets('shows the login screen when signed out', (WidgetTester tester) async {
     // The language is pinned so the assertions below test routing, not
     // whatever locale the test host happens to report.
@@ -182,5 +185,49 @@ void main() {
 
     expect(find.text('Tekrar hoş geldin'), findsOneWidget);
     expect(prefs.getString(AppConstants.prefsPrivacyAcceptedKey), privacyPolicyVersion);
+  });
+}
+
+/// Pumps the signed-out login screen in Turkish, on the platform under test.
+Future<void> _pumpLogin(WidgetTester tester) async {
+  SharedPreferences.setMockInitialValues({
+    AppConstants.prefsPrivacyAcceptedKey: privacyPolicyVersion,
+    AppConstants.prefsLanguageKey: 'tr',
+  });
+  final prefs = await SharedPreferences.getInstance();
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        apiClientProvider.overrideWithValue(_offlineDio()),
+      ],
+      child: const MentalAiApp(),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+void appleSignInTests() {
+  testWidgets('login screen has no Sign in with Apple button on Android', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    try {
+      await _pumpLogin(tester);
+      expect(find.text('Apple ile devam et'), findsNothing);
+    } finally {
+      // Must be reset inside the body: the framework checks it before
+      // teardown callbacks run.
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets('login screen offers Sign in with Apple on iOS', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      await _pumpLogin(tester);
+      expect(find.text('Apple ile devam et'), findsOneWidget);
+      expect(find.text('veya'), findsOneWidget);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 }
