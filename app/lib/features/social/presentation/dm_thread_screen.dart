@@ -189,6 +189,7 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
                       style: AppTypography.subheadline.copyWith(color: palette.warning)),
                 ),
                 data: (list) => ListView.builder(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   controller: _scroll,
                   padding: const EdgeInsets.fromLTRB(22, 4, 22, 12),
                   itemCount: list.length,

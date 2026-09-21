@@ -238,6 +238,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(26, 40, 26, 24),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight - 64),

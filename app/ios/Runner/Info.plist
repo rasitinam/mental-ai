@@ -27,11 +27,11 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Günlüğünü ve sohbet mesajlarını sesle yazabilmen için mikrofon kullanılır.</string>
+	<string>Günlüğünü ve sohbet mesajlarını sesle yazabilmen için mikrofon kullanılır. / The microphone is used so you can dictate your journal and chat messages.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Söylediklerini yazıya çevirmek için cihazının konuşma tanıma özelliği kullanılır.</string>
+	<string>Söylediklerini yazıya çevirmek için cihazının konuşma tanıma özelliği kullanılır. / Your device's speech recognition turns what you say into text.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Profil fotoğrafı seçmek için galeriye erişim gerekiyor.</string>
+	<string>Profil fotoğrafı seçmek için galeriye erişim gerekiyor. / Access to your photo library is needed to choose a profile picture.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

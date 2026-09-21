@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/storage/local_prefs.dart';
+import '../core/ui/keyboard.dart';
 import '../features/assessment/presentation/assessment_screen.dart';
 import '../features/assessment/presentation/assessment_summary_screen.dart';
 import '../features/auth/presentation/auth_controller.dart';
@@ -59,7 +60,7 @@ class _SessionRefreshNotifier extends ChangeNotifier {
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refresh = _SessionRefreshNotifier(ref);
 
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: ref.read(sessionTokenProvider) != null ? '/report' : '/login',
     refreshListenable: refresh,
     redirect: (context, state) {
@@ -237,4 +238,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  // Moving to another page hides the keyboard, so it is not left hanging over
+  // the next screen (or animating along with the page transition).
+  router.routerDelegate.addListener(dismissKeyboard);
+  ref.onDispose(() => router.routerDelegate.removeListener(dismissKeyboard));
+  return router;
 });

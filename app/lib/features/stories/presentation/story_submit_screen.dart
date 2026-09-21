@@ -6,6 +6,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/network/error_messages.dart';
+import '../../../core/ui/keyboard.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../catalog/data/catalog_api.dart';
 import '../../catalog/domain/disorder_category.dart';
@@ -78,6 +79,8 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
   }
 
   Future<void> _pickDiagnosis() async {
+    // The keyboard would otherwise stay up behind the picker sheet.
+    dismissKeyboard();
     final categories = await ref.read(categoriesProvider.future);
     if (!mounted) return;
     final picked = await showModalBottomSheet<Disorder>(
@@ -113,6 +116,7 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_editing ? l10n.storiesEditSuccess : l10n.storiesSubmitSuccess)),
       );
+      dismissKeyboard();
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.commonError)));
@@ -134,6 +138,7 @@ class _StorySubmitScreenState extends ConsumerState<StorySubmitScreen> {
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           // Inside the shell: clear the floating tab bar (see `bottomClearance`).
           padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
           child: Column(

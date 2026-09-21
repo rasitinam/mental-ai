@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/ui/emergency_call.dart';
 import '../../l10n/app_localizations.dart';
 import 'app_colors.dart';
 import 'app_typography.dart';
@@ -169,7 +169,7 @@ Future<void> showSupportSheet(BuildContext context) {
               borderRadius: BorderRadius.circular(18),
               clipBehavior: Clip.antiAlias,
               child: InkWell(
-                onTap: () => launchUrl(Uri(scheme: 'tel', path: emergencyNumber)),
+                onTap: () => callEmergency(context, emergencyNumber),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

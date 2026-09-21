@@ -608,6 +608,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatCallEmergency => 'Call 112';
 
   @override
+  String emergencyCallUnavailable(String number) {
+    return 'This device can\'t place calls. In an emergency, call $number from another phone.';
+  }
+
+  @override
   String get chatContinue => 'Continue';
 
   @override

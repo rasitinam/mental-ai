@@ -287,6 +287,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
       body: SafeArea(
         bottom: false,
         child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           // Builds the whole page up front, so the Ayarlar button can
           // scroll to a section that hasn't been on screen yet.
           scrollCacheExtent: const ScrollCacheExtent.pixels(100000),

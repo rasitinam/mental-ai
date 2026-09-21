@@ -209,6 +209,8 @@
   "chatToday": "bugün",
   "chatCrisisTitle": "Bunu yalnız taşımak zorunda değilsin",
   "chatCallEmergency": "112'yi ara",
+  "emergencyCallUnavailable": "Bu cihaz arama yapamıyor. Acil durumda {number} numarasını başka bir telefondan ara.",
+  "@emergencyCallUnavailable": { "placeholders": { "number": { "type": "String" } } },
   "chatContinue": "Devam et",
 
   "lifeTitle": "Yaşam Analizi",

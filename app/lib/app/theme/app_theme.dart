@@ -33,7 +33,11 @@ class AppTheme {
       brightness: brightness,
       colorScheme: colorScheme,
       fontFamily: AppTypography.bodyFamily,
-      scaffoldBackgroundColor: Colors.transparent,
+      // Opaque, in the same colour `AppBackground` paints behind the app: a
+      // transparent page let the previous one show through it while a
+      // page slid in (iOS's push transition), ghosting the two screens
+      // together for the length of the animation.
+      scaffoldBackgroundColor: palette.canvasTop,
       splashFactory: NoSplash.splashFactory,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,

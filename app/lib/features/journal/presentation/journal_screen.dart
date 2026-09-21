@@ -106,6 +106,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           // The archive grows by one card a day forever, so it is built
           // lazily in its own sliver rather than in one eager list.
           child: CustomScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(22, 10, 22, 0),

@@ -118,6 +118,7 @@ class _OnboardingIntroChatViewState extends ConsumerState<OnboardingIntroChatVie
         ),
         Expanded(
           child: ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             controller: _scroll,
             padding: EdgeInsets.zero,
             children: [
@@ -198,6 +199,9 @@ class _Composer extends StatelessWidget {
               minLines: 1,
               maxLines: 5,
               textCapitalization: TextCapitalization.sentences,
+              // Multi-line, so on iPhone the return key only added a new line
+              // and `onSubmitted` below never ran: make it send.
+              textInputAction: TextInputAction.send,
               inputFormatters: [LengthLimitingTextInputFormatter(_maxAnswerLength)],
               style: AppTypography.subheadline.copyWith(color: palette.textPrimary, height: 1.45),
               cursorColor: palette.accent,

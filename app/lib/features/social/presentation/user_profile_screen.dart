@@ -130,6 +130,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 style: AppTypography.subheadline.copyWith(color: palette.warning)),
           ),
           data: (data) => ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
             children: [
               Row(

@@ -34,6 +34,9 @@ class PushService {
   final Ref _ref;
   final _localNotifications = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
+  /// False when Firebase could not start (no iOS `GoogleService-Info.plist`
+  /// is bundled yet): every FCM call throws in that state, so they are skipped.
+  bool _available = false;
 
   PushService(this._ref);
 
@@ -41,7 +44,15 @@ class PushService {
     if (_initialized) return;
     _initialized = true;
 
-    await Firebase.initializeApp();
+    try {
+      await Firebase.initializeApp();
+    } catch (e) {
+      // Push is an extra, not a requirement: without Firebase config the app
+      // runs without it instead of failing at start-up.
+      debugPrint('Push notifications are off: $e');
+      return;
+    }
+    _available = true;
     await _initLocalNotifications();
 
     FirebaseMessaging.onMessage.listen(_showForeground);
@@ -75,7 +86,15 @@ class PushService {
         ?.createNotificationChannel(channel);
 
     await _localNotifications.initialize(
-      const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
+      const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        // Permission is asked for by FirebaseMessaging below, not here.
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
+      ),
       onDidReceiveNotificationResponse: (response) {
         final payload = response.payload;
         if (payload == null) return;
@@ -85,11 +104,16 @@ class PushService {
   }
 
   Future<void> _requestPermissionAndRegister() async {
-    final settings = await FirebaseMessaging.instance.requestPermission();
-    if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+    try {
+      final settings = await FirebaseMessaging.instance.requestPermission();
+      if (settings.authorizationStatus == AuthorizationStatus.denied) return;
 
-    final token = await FirebaseMessaging.instance.getToken();
-    if (token != null) await _registerToken(token);
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) await _registerToken(token);
+    } catch (e) {
+      // e.g. iOS without an APNs token yet: try again at the next launch.
+      debugPrint('Push registration skipped: $e');
+    }
   }
 
   Future<void> _registerToken(String token) async {
@@ -109,6 +133,7 @@ class PushService {
   /// — must run while the auth token is still valid) so a signed-out
   /// device stops receiving notifications for the account it just left.
   Future<void> unregister() async {
+    if (!_available) return;
     final token = await FirebaseMessaging.instance.getToken();
     if (token == null) return;
     try {
@@ -133,6 +158,7 @@ class PushService {
           importance: Importance.high,
           priority: Priority.high,
         ),
+        iOS: DarwinNotificationDetails(),
       ),
       payload: jsonEncode(message.data),
     );

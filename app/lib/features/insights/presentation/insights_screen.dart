@@ -108,6 +108,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                       // eager list would build every card ever synthesized on
                       // the first frame.
                       child: CustomScrollView(
+                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                         slivers: [
                           SliverPadding(
                             padding: const EdgeInsets.fromLTRB(22, 12, 22, 0),
@@ -302,6 +303,7 @@ class CategoryStrip extends StatelessWidget {
     return SizedBox(
       height: 44,
       child: ListView.builder(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 22),
         // Twenty-one chips, each a Material with its own ink response —
@@ -412,6 +414,7 @@ class _SearchResults extends StatelessWidget {
     }
 
     return ListView.separated(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
       itemCount: matches.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),

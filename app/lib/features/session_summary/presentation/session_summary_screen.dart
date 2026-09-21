@@ -9,6 +9,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/network/error_messages.dart';
+import '../../../core/ui/share_origin.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/session_summary_api.dart';
 import 'session_summary_pdf.dart';
@@ -108,7 +109,12 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
       final bytes = await buildSessionSummaryPdf(summary: summary, l10n: l10n, locale: locale);
       final stamp = DateFormat('yyyy-MM-dd').format(summary.periodEnd);
       final file = XFile.fromData(bytes, name: 'hearth-seans-ozeti-$stamp.pdf', mimeType: 'application/pdf');
-      await Share.shareXFiles([file], subject: l10n.sessionDocTitle);
+      if (!mounted) return;
+      await Share.shareXFiles(
+        [file],
+        subject: l10n.sessionDocTitle,
+        sharePositionOrigin: shareOrigin(context),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(l10n, e))));
@@ -128,6 +134,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
       body: SafeArea(
         bottom: false,
         child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
           children: [
             Row(

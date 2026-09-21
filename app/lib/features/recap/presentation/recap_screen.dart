@@ -11,6 +11,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/widgets/hearth_flame.dart';
+import '../../../core/ui/share_origin.dart';
 import '../../../l10n/app_localizations.dart';
 import '../domain/recap_data.dart';
 import 'recap_controller.dart';
@@ -51,7 +52,12 @@ class _RecapScreenState extends ConsumerState<RecapScreen> {
       final bytes = byteData!.buffer.asUint8List();
 
       final file = XFile.fromData(bytes, name: 'hearth_recap.png', mimeType: 'image/png');
-      await Share.shareXFiles([file], text: l10n.recapShareText(data.checkins, data.streak));
+      if (!mounted) return;
+      await Share.shareXFiles(
+        [file],
+        text: l10n.recapShareText(data.checkins, data.streak),
+        sharePositionOrigin: shareOrigin(context),
+      );
     } finally {
       if (mounted) setState(() => _sharing = false);
     }

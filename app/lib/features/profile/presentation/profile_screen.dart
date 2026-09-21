@@ -88,6 +88,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: state.loading
             ? Center(child: CircularProgressIndicator(color: palette.accent))
             : ListView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: EdgeInsets.fromLTRB(22, 12, 22, bottomClearance(context)),
                 children: [
                   Row(

@@ -209,6 +209,8 @@
   "chatToday": "today",
   "chatCrisisTitle": "You don't have to carry this alone",
   "chatCallEmergency": "Call 112",
+  "emergencyCallUnavailable": "This device can't place calls. In an emergency, call {number} from another phone.",
+  "@emergencyCallUnavailable": { "placeholders": { "number": { "type": "String" } } },
   "chatContinue": "Continue",
 
   "lifeTitle": "Life Analysis",

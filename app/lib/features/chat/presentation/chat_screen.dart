@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
@@ -9,6 +8,7 @@ import '../../../app/theme/components.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/onboarding/first_run.dart';
 import '../../../core/voice/voice.dart';
+import '../../../core/ui/emergency_call.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../onboarding/presentation/chat_boundaries_screen.dart';
 import '../../streak/data/streak_api.dart';
@@ -125,6 +125,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ? Center(child: CircularProgressIndicator(color: palette.textPrimary))
                   : state.messages.isEmpty
                       ? SingleChildScrollView(
+                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                           padding: const EdgeInsets.fromLTRB(22, 8, 22, 8),
                           child: Column(
                             children: [
@@ -144,6 +145,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           ),
                         )
                       : ListView.builder(
+                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                           controller: _scrollController,
                           padding: const EdgeInsets.fromLTRB(22, 0, 22, 8),
                           itemCount: state.messages.length + 1,
@@ -341,7 +343,7 @@ class _ChatBubbleState extends State<_ChatBubble> {
                         child: _CrisisAction(
                           label: l10n.chatCallEmergency,
                           filled: true,
-                          onTap: () => launchUrl(Uri(scheme: 'tel', path: emergencyNumber)),
+                          onTap: () => callEmergency(context, emergencyNumber),
                         ),
                       ),
                       const SizedBox(width: 8),

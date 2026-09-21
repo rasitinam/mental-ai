@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -76,6 +77,11 @@ class ReadAloud extends ChangeNotifier {
       _loadingId = null;
       _speakingId = id;
       notifyListeners();
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        // Dictation leaves the shared iOS audio session in a record-oriented
+        // category (quiet, through the earpiece); take it back for playback.
+        await _player.setAudioContext(AudioContext(iOS: AudioContextIOS(category: AVAudioSessionCategory.playback)));
+      }
       await _player.play(BytesSource(bytes));
     } catch (_) {
       if (_loadingId == id) _clear();

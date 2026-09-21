@@ -608,6 +608,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get chatCallEmergency => '112\'yi ara';
 
   @override
+  String emergencyCallUnavailable(String number) {
+    return 'Bu cihaz arama yapamıyor. Acil durumda $number numarasını başka bir telefondan ara.';
+  }
+
+  @override
   String get chatContinue => 'Devam et';
 
   @override

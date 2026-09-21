@@ -87,6 +87,7 @@ class _ChatBoundariesViewState extends ConsumerState<ChatBoundariesView> {
       children: [
         Expanded(
           child: ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: EdgeInsets.zero,
             children: [
               Text(l10n.boundariesTitle,

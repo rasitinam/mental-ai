@@ -1202,6 +1202,12 @@ abstract class AppLocalizations {
   /// **'112\'yi ara'**
   String get chatCallEmergency;
 
+  /// No description provided for @emergencyCallUnavailable.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu cihaz arama yapamıyor. Acil durumda {number} numarasını başka bir telefondan ara.'**
+  String emergencyCallUnavailable(String number);
+
   /// No description provided for @chatContinue.
   ///
   /// In tr, this message translates to:

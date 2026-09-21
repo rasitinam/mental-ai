@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/layout/bottom_clearance.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../core/network/error_messages.dart';
+import '../../../core/ui/emergency_call.dart';
 import '../../../l10n/app_localizations.dart';
 import '../domain/assessment_result.dart';
 import '../domain/instruments.dart';
@@ -457,9 +457,7 @@ class _AssessmentCrisisBanner extends StatelessWidget {
 
   const _AssessmentCrisisBanner({required this.palette, required this.l10n});
 
-  Future<void> _call() async {
-    await launchUrl(Uri(scheme: 'tel', path: '112'));
-  }
+  Future<void> _call(BuildContext context) => callEmergency(context, '112');
 
   @override
   Widget build(BuildContext context) {
@@ -503,7 +501,7 @@ class _AssessmentCrisisBanner extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               clipBehavior: Clip.antiAlias,
               child: InkWell(
-                onTap: _call,
+                onTap: () => _call(context),
                 child: Center(
                   child: Text(l10n.chatCallEmergency,
                       style: TextStyle(color: AppPalette.of(context).warningSoft, fontWeight: FontWeight.w600, fontSize: 14)),

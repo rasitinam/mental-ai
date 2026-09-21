@@ -204,6 +204,7 @@ class _StoriesScreenState extends ConsumerState<StoriesScreen> {
             if (isAdmin) await ref.read(moderationControllerProvider.notifier).load();
           },
           child: CustomScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(22, 10, 22, 0),
@@ -590,6 +591,7 @@ class _StoryCardState extends ConsumerState<_StoryCard> {
           ],
           const SizedBox(height: 11),
           SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
             child: Row(
