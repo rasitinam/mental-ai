@@ -9,7 +9,7 @@ WHAT HEARTH IS
 Hearth (Turkish name: Acik Ocak) is a mood-tracking and self-reflection companion for people 13+ who deal with everyday mental-health struggles. It helps people notice patterns in how they feel, put words to it, and feel less alone. Available in Turkish and English (follows the device language, switchable in Settings). It is not a medical device and does not diagnose or treat anything.
 
 HOW TO ACCESS
-Demo account credentials are in Sign-In Information above (pre-filled with sample data). You can also tap "Create account". Tabs: Today (one-tap mood check-in, journal typed or dictated, "your state"), Chat (AI companion), Stories (moderated community), My path (weekly recap, pre-session summary for a therapist), Me (profile, Settings, Hearth Plus, Blocked people, delete account).
+Demo account credentials are in Sign-In Information above (pre-filled with sample data). You can also tap "Create account" (it emails a 6-digit code to the address you enter). Tabs: Today (one-tap mood check-in, journal typed or dictated, "your state"), Chat (AI companion), Stories (moderated community), My path (weekly recap, pre-session summary for a therapist), Me (profile, Settings, Hearth Plus, Blocked people, delete account).
 
 USER-GENERATED CONTENT (Guideline 1.2)
 - Stories are pre-moderated: an admin approves every story before anyone else can see it. Authors may stay anonymous.
@@ -59,7 +59,7 @@ Please let us know if you need anything else.
 Apple bunu **fiziksel iPhone**'dan istiyor. Kayıt: Denetim Merkezi > Ekran Kaydı, *uygulama açılırken başlar*. Sırayla:
 
 1. Uygulamayı aç. Gizlilik ekranını kaydırarak kabul et.
-2. **Kayıt**: "Hesap oluştur" > yeni e-posta ve şifre > onboarding'i geç. Sonra **Çıkış yap**.
+2. **Kayıt**: "Hesap oluştur" > yeni e-posta ve şifre > e-postana gelen **6 haneli kodu gir** > onboarding'i geç. (Gmail'de `inamrasit+apple1.com` gibi bir takma adres kullanırsan kod yine kendi kutuna gelir.) Sonra **Çıkış yap**.
 3. **Giriş**: aynı hesapla giriş yap (ve isteğe bağlı Apple ile devam et).
 4. Bugün'de ruh hali kaydı, günlük yaz. Sohbet'te birkaç mesaj yaz.
 5. **Hikayeler**: bir hikayeye bak, bayrak > **Bildir** (metin yazıp gönder), sonra bayrak > **Yazarı engelle** (onayla). Ben > Ayarlar > **Engellenenler**'de göründüğünü ve **Engeli kaldır**'ı göster.

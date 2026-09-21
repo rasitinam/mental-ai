@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
 use mental_domain::repository::{
     ActivityRepository, AssessmentRepository, AuthRepository, BlockRepository, ChatRepository, ChatUsageRepository,
+    EmailCodeRepository,
     ContentTranslationRepository, DiscoveryRepository, DmRepository, ExplainerRepository,
     InsightRepository,
     JournalRepository, LifeAnalysisRepository, LifeStoryRepository, MoodRepository,
@@ -14,6 +15,7 @@ use mental_domain::{CachedDiscoveries, Discovery};
 
 use mental_domain::{
     BlockRecord, ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, DmMessage,
+    EmailCodeRecord,
     DmPolicy, DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry,
     PushToken, ResearchArticle, Session, StoryFeedItem, StoryStatus, Subscription, User, UserState,
     WellbeingAssessment,
@@ -2481,5 +2483,86 @@ impl BlockRepository for SqliteBlockRepository {
         .await?;
 
         Ok(count > 0)
+    }
+}
+
+pub struct SqliteEmailCodeRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteEmailCodeRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl EmailCodeRepository for SqliteEmailCodeRepository {
+    async fn get(&self, email: &str) -> anyhow::Result<Option<EmailCodeRecord>> {
+        let row = sqlx::query_as::<_, (String, String, DateTime<Utc>, i64, DateTime<Utc>, DateTime<Utc>, i64)>(
+            "SELECT email, code_hash, expires_at, attempts, last_sent_at, window_started_at, sends_in_window
+             FROM email_verifications WHERE email = ?1",
+        )
+        .bind(email)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(
+            |(email, code_hash, expires_at, attempts, last_sent_at, window_started_at, sends_in_window)| {
+                EmailCodeRecord {
+                    email,
+                    code_hash,
+                    expires_at,
+                    attempts: attempts.max(0) as u32,
+                    last_sent_at,
+                    window_started_at,
+                    sends_in_window: sends_in_window.max(0) as u32,
+                }
+            },
+        ))
+    }
+
+    async fn put(&self, record: &EmailCodeRecord) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO email_verifications
+                (email, code_hash, expires_at, attempts, last_sent_at, window_started_at, sends_in_window)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+             ON CONFLICT(email) DO UPDATE SET
+                code_hash = excluded.code_hash,
+                expires_at = excluded.expires_at,
+                attempts = excluded.attempts,
+                last_sent_at = excluded.last_sent_at,
+                window_started_at = excluded.window_started_at,
+                sends_in_window = excluded.sends_in_window",
+        )
+        .bind(&record.email)
+        .bind(&record.code_hash)
+        .bind(record.expires_at)
+        .bind(record.attempts as i64)
+        .bind(record.last_sent_at)
+        .bind(record.window_started_at)
+        .bind(record.sends_in_window as i64)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn delete(&self, email: &str) -> anyhow::Result<()> {
+        sqlx::query("DELETE FROM email_verifications WHERE email = ?1")
+            .bind(email)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn prune_expired(&self, cutoff: DateTime<Utc>) -> anyhow::Result<()> {
+        sqlx::query("DELETE FROM email_verifications WHERE expires_at < ?1")
+            .bind(cutoff)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
     }
 }

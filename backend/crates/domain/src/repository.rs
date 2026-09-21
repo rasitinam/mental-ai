@@ -11,6 +11,7 @@ use uuid::Uuid;
 use crate::report::LifeAnalysis;
 use crate::{
     BlockRecord, ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, DmMessage, DmPolicy,
+    EmailCodeRecord,
     DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry, PushToken,
     ResearchArticle, Session, StoryFeedItem, StoryStatus, Subscription, User, UserState,
     WellbeingAssessment,
@@ -436,4 +437,16 @@ pub trait BlockRepository: Send + Sync {
     async fn hidden_from(&self, viewer: Uuid) -> anyhow::Result<Vec<Uuid>>;
     /// Whether either of the two has blocked the other.
     async fn blocked_between(&self, a: Uuid, b: Uuid) -> anyhow::Result<bool>;
+}
+
+/// Pending sign-up email codes. `put` replaces whatever is stored for the
+/// address; callers decide (from `get`) whether a new code may be sent at all.
+#[async_trait]
+pub trait EmailCodeRepository: Send + Sync {
+    async fn get(&self, email: &str) -> anyhow::Result<Option<EmailCodeRecord>>;
+    async fn put(&self, record: &EmailCodeRecord) -> anyhow::Result<()>;
+    async fn delete(&self, email: &str) -> anyhow::Result<()>;
+    /// Drops rows whose code expired before `cutoff`, so addresses that
+    /// asked for a code and never finished do not stay in the table.
+    async fn prune_expired(&self, cutoff: DateTime<Utc>) -> anyhow::Result<()>;
 }

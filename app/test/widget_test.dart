@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show TextField;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,7 @@ import 'package:mental_ai/app/app.dart';
 import 'package:mental_ai/core/constants/app_constants.dart';
 import 'package:mental_ai/core/network/api_client.dart';
 import 'package:mental_ai/core/storage/local_prefs.dart';
+import 'package:mental_ai/app/theme/glass.dart';
 import 'package:mental_ai/features/consent/presentation/privacy_consent_screen.dart';
 
 /// Fails every request immediately instead of letting the real client open
@@ -32,6 +34,7 @@ Dio _offlineDio() => Dio()..httpClientAdapter = _OfflineAdapter();
 
 void main() {
   appleSignInTests();
+  emailCodeTests();
 
   testWidgets('shows the login screen when signed out', (WidgetTester tester) async {
     // The language is pinned so the assertions below test routing, not
@@ -227,5 +230,92 @@ void appleSignInTests() {
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }
+  });
+}
+
+/// Answers the two sign-up calls the way the backend does, and remembers what
+/// was sent: the code request succeeds, and registering succeeds only with the
+/// code `123456`.
+class _SignUpAdapter implements HttpClientAdapter {
+  final requests = <String, Map<String, dynamic>>{};
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    final body = (options.data as Map).cast<String, dynamic>();
+    requests[options.path] = body;
+    ResponseBody json(int status, String text) => ResponseBody.fromString(
+          text,
+          status,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+    if (options.path == '/auth/register/code') {
+      return json(200, '{"resend_after_seconds":60,"expires_in_seconds":600}');
+    }
+    if (options.path == '/auth/register') {
+      return body['code'] == '123456'
+          ? json(
+              200,
+              '{"user_id":"11111111-1111-1111-1111-111111111111","token":"t","expires_at":"2099-01-01T00:00:00Z"}',
+            )
+          : json(422, '"incorrect verification code"');
+    }
+    throw DioException.connectionError(requestOptions: options, reason: 'unexpected call');
+  }
+}
+
+void emailCodeTests() {
+  testWidgets('registering asks for the emailed code before creating the account', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      AppConstants.prefsPrivacyAcceptedKey: privacyPolicyVersion,
+      AppConstants.prefsLanguageKey: 'tr',
+    });
+    final prefs = await SharedPreferences.getInstance();
+    final adapter = _SignUpAdapter();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          apiClientProvider.overrideWithValue(Dio()..httpClientAdapter = adapter),
+        ],
+        child: const MentalAiApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.textContaining('Hesap oluştur'));
+    await tester.pumpAndSettle();
+    // Name, email, password.
+    await tester.enterText(find.byType(TextField).at(1), 'kisi@example.com');
+    await tester.enterText(find.byType(TextField).at(2), 'sifre12345');
+    await tester.tap(find.byType(AppPrimaryButton));
+    await tester.pumpAndSettle();
+
+    // The code went out, and no account was created yet.
+    expect(adapter.requests['/auth/register/code']?['email'], 'kisi@example.com');
+    expect(adapter.requests.containsKey('/auth/register'), isFalse);
+    expect(find.text('E-postanı doğrula'), findsOneWidget);
+    expect(find.textContaining('kisi@example.com'), findsOneWidget);
+    expect(find.textContaining('sn sonra yeni kod'), findsOneWidget);
+
+    // A wrong code is refused with a message that says so.
+    await tester.enterText(find.byType(TextField), '000000');
+    await tester.pumpAndSettle();
+    expect(adapter.requests['/auth/register']?['code'], '000000');
+    expect(find.text('Kod hatalı ya da süresi dolmuş.'), findsOneWidget);
+
+    // Going back keeps what was typed, and stops the resend countdown.
+    await tester.tap(find.text('Başka bir e-posta kullan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hesabını oluştur'), findsOneWidget);
+    expect(find.text('kisi@example.com'), findsOneWidget);
   });
 }

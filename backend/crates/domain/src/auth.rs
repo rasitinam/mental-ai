@@ -14,6 +14,21 @@ pub struct Credentials {
     pub created_at: DateTime<Utc>,
 }
 
+/// A pending sign-up verification: the hash of the code emailed to `email`
+/// and the bookkeeping that limits how often it can be requested or guessed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EmailCodeRecord {
+    pub email: String,
+    pub code_hash: String,
+    pub expires_at: DateTime<Utc>,
+    /// Wrong guesses since this code was issued.
+    pub attempts: u32,
+    pub last_sent_at: DateTime<Utc>,
+    /// Start of the current hourly window for counting sends to this address.
+    pub window_started_at: DateTime<Utc>,
+    pub sends_in_window: u32,
+}
+
 /// An opaque bearer token issued on register/login. There is no refresh
 /// flow yet — a session is valid until `expires_at` and the client just
 /// has to log in again after that. Deliberately simple (a random token

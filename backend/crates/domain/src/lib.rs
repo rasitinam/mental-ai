@@ -25,7 +25,7 @@ pub mod subscription;
 pub mod user;
 
 pub use assessment::WellbeingAssessment;
-pub use auth::{Credentials, Session};
+pub use auth::{Credentials, EmailCodeRecord, Session};
 pub use catalog::{Disorder, DisorderCategory};
 pub use chat::{ChatMessageRecord, ChatRole};
 pub use discovery::{CachedDiscoveries, Discovery, DiscoveryKind};

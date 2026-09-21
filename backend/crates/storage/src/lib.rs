@@ -12,7 +12,7 @@ pub use repositories::{
     SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
     SqliteChatRepository,
     SqliteChatUsageRepository, SqliteContentTranslationRepository, SqliteDiscoveryRepository,
-    SqliteDmRepository,
+    SqliteDmRepository, SqliteEmailCodeRepository,
     SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,

@@ -176,6 +176,24 @@ abstract class AppLocalizations {
   /// **'Bilgileri kontrol et.'**
   String get authErrorCheckDetails;
 
+  /// No description provided for @authErrorWrongCode.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kod hatalı ya da süresi dolmuş.'**
+  String get authErrorWrongCode;
+
+  /// No description provided for @authErrorTooManyCodes.
+  ///
+  /// In tr, this message translates to:
+  /// **'Çok fazla deneme. Biraz bekleyip yeni kod iste.'**
+  String get authErrorTooManyCodes;
+
+  /// No description provided for @authErrorCodeSend.
+  ///
+  /// In tr, this message translates to:
+  /// **'E-posta gönderilemedi. Adresi kontrol edip tekrar dene.'**
+  String get authErrorCodeSend;
+
   /// No description provided for @navReport.
   ///
   /// In tr, this message translates to:
@@ -841,6 +859,60 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'veya'**
   String get authOrDivider;
+
+  /// No description provided for @authCodeTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'E-postanı doğrula'**
+  String get authCodeTitle;
+
+  /// No description provided for @authCodeNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'{email} adresine 6 haneli bir kod gönderdik. Hesabını oluşturmak için kodu gir.'**
+  String authCodeNote(String email);
+
+  /// No description provided for @authCodeLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Doğrulama kodu'**
+  String get authCodeLabel;
+
+  /// No description provided for @authCodeHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Göremiyorsan spam klasörüne de bak.'**
+  String get authCodeHint;
+
+  /// No description provided for @authCodeCta.
+  ///
+  /// In tr, this message translates to:
+  /// **'Doğrula ve hesabı oluştur'**
+  String get authCodeCta;
+
+  /// No description provided for @authCodeResend.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeni kod gönder'**
+  String get authCodeResend;
+
+  /// No description provided for @authCodeResendIn.
+  ///
+  /// In tr, this message translates to:
+  /// **'{seconds} sn sonra yeni kod gönderebilirsin'**
+  String authCodeResendIn(int seconds);
+
+  /// No description provided for @authCodeResent.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeni kod yolda.'**
+  String get authCodeResent;
+
+  /// No description provided for @authCodeChangeEmail.
+  ///
+  /// In tr, this message translates to:
+  /// **'Başka bir e-posta kullan'**
+  String get authCodeChangeEmail;
 
   /// No description provided for @authErrorApple.
   ///

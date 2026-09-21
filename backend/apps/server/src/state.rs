@@ -9,7 +9,7 @@ use mental_storage::{
     SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
     SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
     SqliteDiscoveryRepository,
-    SqliteDmRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
+    SqliteDmRepository, SqliteEmailCodeRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
     SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
@@ -62,6 +62,11 @@ pub struct AppState {
     /// Apple's identity-token signing keys, for Sign in with Apple — see
     /// `apple_signin`. Verified against the same `apple_iap.bundle_id`.
     pub apple_keys: Arc<crate::apple_signin::AppleKeys>,
+    /// Pending sign-up verification codes and the mail service that sends
+    /// them — see `email_verify` and `routes::auth`.
+    pub email_codes: Arc<SqliteEmailCodeRepository>,
+    pub mailer: Arc<crate::email_verify::Mailer>,
+    pub send_budget: Arc<crate::email_verify::SendBudget>,
 }
 
 #[derive(Clone)]

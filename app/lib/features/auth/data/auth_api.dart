@@ -10,15 +10,29 @@ class AuthApi {
   final Dio _dio;
   AuthApi(this._dio);
 
+  /// Emails a 6-digit verification code to [email] — step one of signing up;
+  /// the account itself is created by [register] once the code comes back.
+  /// Returns how many seconds to wait before another code can be requested.
+  Future<int> requestRegisterCode({required String email, String? language}) async {
+    final response = await _dio.post('/auth/register/code', data: {
+      'email': email,
+      'language': ?language,
+    });
+    final wait = (response.data as Map<String, dynamic>)['resend_after_seconds'];
+    return wait is num ? wait.toInt() : 60;
+  }
+
   Future<Session> register({
     required String email,
     required String password,
+    required String code,
     String? displayName,
     String? language,
   }) async {
     final response = await _dio.post('/auth/register', data: {
       'email': email,
       'password': password,
+      'code': code,
       'display_name': ?displayName,
       // Sent at sign-up so the very first generated report comes back in
       // the language the app is already showing.

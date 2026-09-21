@@ -52,6 +52,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authErrorCheckDetails => 'Check your details.';
 
   @override
+  String get authErrorWrongCode => 'That code is wrong or has expired.';
+
+  @override
+  String get authErrorTooManyCodes =>
+      'Too many tries. Wait a moment and ask for a new code.';
+
+  @override
+  String get authErrorCodeSend =>
+      'We couldn\'t send the email. Check the address and try again.';
+
+  @override
   String get navReport => 'Home';
 
   @override
@@ -410,6 +421,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authOrDivider => 'or';
+
+  @override
+  String get authCodeTitle => 'Verify your email';
+
+  @override
+  String authCodeNote(String email) {
+    return 'We sent a 6-digit code to $email. Enter it to create your account.';
+  }
+
+  @override
+  String get authCodeLabel => 'Verification code';
+
+  @override
+  String get authCodeHint => 'Can\'t find it? Check your spam folder.';
+
+  @override
+  String get authCodeCta => 'Verify and create account';
+
+  @override
+  String get authCodeResend => 'Send a new code';
+
+  @override
+  String authCodeResendIn(int seconds) {
+    return 'Send a new code in ${seconds}s';
+  }
+
+  @override
+  String get authCodeResent => 'A new code is on its way.';
+
+  @override
+  String get authCodeChangeEmail => 'Use a different email';
 
   @override
   String get authErrorApple =>

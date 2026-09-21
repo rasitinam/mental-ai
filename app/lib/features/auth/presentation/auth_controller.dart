@@ -35,12 +35,39 @@ class AuthController extends Notifier<AuthState> {
 
   void clearError() => state = state.copyWith(error: null);
 
-  Future<void> register({required String email, required String password, String? displayName}) async {
+  /// Step one of signing up: checks the form and emails a 6-digit code to
+  /// [email]. Returns the seconds to wait before another code can be
+  /// requested, or null when it did not go out (the reason is in
+  /// `state.error`).
+  Future<int?> sendRegisterCode({required String email, required String password}) async {
+    if (!_validate(email, password)) return null;
+    state = state.copyWith(submitting: true, error: null);
+    try {
+      final wait = await ref.read(authApiProvider).requestRegisterCode(
+            email: email,
+            language: ref.read(localeControllerProvider).languageCode,
+          );
+      state = state.copyWith(submitting: false);
+      return wait;
+    } catch (e) {
+      state = state.copyWith(submitting: false, error: e);
+      return null;
+    }
+  }
+
+  /// Step two: creates the account with the code that was emailed.
+  Future<void> register({
+    required String email,
+    required String password,
+    required String code,
+    String? displayName,
+  }) async {
     if (!_validate(email, password)) return;
     await _submit(
       () => ref.read(authApiProvider).register(
             email: email,
             password: password,
+            code: code,
             displayName: displayName,
             language: ref.read(localeControllerProvider).languageCode,
           ),

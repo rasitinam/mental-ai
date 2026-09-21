@@ -32,15 +32,45 @@ t() {
 }
 jget() { sed -n -E "s/.*\"$1\":\"([^\"]+)\".*/\1/p" "$W/last.json" | head -1; }
 
+# Registering needs the 6-digit code that is emailed. Only its hash is stored,
+# so the test asks for a code (exercising the endpoint) and then plants a hash
+# of a known one for that address.
+CODE=123456
+plant_code() {
+  local e="$1" h
+  h=$(printf '%s' "hearth-email-code:$e:$CODE" | sha256sum | cut -d' ' -f1)
+  $SQ $DB "INSERT OR REPLACE INTO email_verifications (email,code_hash,expires_at,attempts,last_sent_at,window_started_at,sends_in_window) VALUES ('$e','$h','2099-01-01T00:00:00+00:00',0,'2026-01-01T00:00:00+00:00','2026-01-01T00:00:00+00:00',1);"
+}
+# register_with_code LABEL EMAIL LANG NAME
+register_with_code() {
+  t "code requested for $1" 200 POST /auth/register/code "" "$(body "rc$1" "{\"email\":\"$2\",\"language\":\"$3\"}")"
+  plant_code "$2"
+  t "register $1" 200 POST /auth/register "" "$(body "reg$1" "{\"email\":\"$2\",\"password\":\"$PW\",\"display_name\":\"$4\",\"language\":\"$3\",\"code\":\"$CODE\"}")"
+}
+
 echo "##### AUTH"
 t "health" 200 GET /health ""
-t "register A" 200 POST /auth/register "" "$(body regA "{\"email\":\"$EA\",\"password\":\"$PW\",\"display_name\":\"QA Bir\",\"language\":\"tr\"}")"
+register_with_code A "$EA" tr "QA Bir"
 TA=$(jget token); UA=$(jget user_id)
-t "register B" 200 POST /auth/register "" "$(body regB "{\"email\":\"$EB\",\"password\":\"$PW\",\"display_name\":\"QA Iki\",\"language\":\"en\"}")"
+register_with_code B "$EB" en "QA Iki"
 TB=$(jget token); UB=$(jget user_id)
 t "register duplicate email" 409 POST /auth/register "" "$(body regA2 "{\"email\":\"$EA\",\"password\":\"$PW\"}")"
 t "register short password" 400 POST /auth/register "" "$(body regS "{\"email\":\"x$SUFFIX@example.com\",\"password\":\"123\"}")"
 t "register bad email" 400 POST /auth/register "" "$(body regE '{"email":"nope","password":"testpass123"}')"
+t "register needs a code" 422 POST /auth/register "" "$(body regNC "{\"email\":\"nc$SUFFIX@example.com\",\"password\":\"$PW\"}")"
+t "code request: bad email" 400 POST /auth/register/code "" "$(body rcBad '{"email":"nope"}')"
+t "code request: address already registered" 409 POST /auth/register/code "" "$(body rcDup "{\"email\":\"$EA\"}")"
+EC="qa.c$SUFFIX@example.com"
+t "code requested for C" 200 POST /auth/register/code "" "$(body rcC "{\"email\":\"$EC\",\"language\":\"en\"}")"
+t "second code within a minute is refused" 429 POST /auth/register/code "" "$(body rcC2 "{\"email\":\"$EC\"}")"
+plant_code "$EC"
+for n in 1 2 3 4 5; do
+  t "wrong code #$n" 422 POST /auth/register "" "$(body wc$n "{\"email\":\"$EC\",\"password\":\"$PW\",\"code\":\"00000$n\"}")"
+done
+t "right code refused after 5 wrong guesses" 429 POST /auth/register "" "$(body regCX "{\"email\":\"$EC\",\"password\":\"$PW\",\"code\":\"$CODE\"}")"
+plant_code "$EC"
+t "register C with a fresh code" 200 POST /auth/register "" "$(body regC "{\"email\":\"$EC\",\"password\":\"$PW\",\"code\":\" 123 456 \"}")"
+t "code is single-use (address now taken)" 409 POST /auth/register "" "$(body regC2 "{\"email\":\"$EC\",\"password\":\"$PW\",\"code\":\"$CODE\"}")"
 t "login ok" 200 POST /auth/login "" "$(body logA "{\"email\":\"$EA\",\"password\":\"$PW\"}")"
 t "login wrong password" 401 POST /auth/login "" "$(body logW "{\"email\":\"$EA\",\"password\":\"wrongpass1\"}")"
 t "login unknown email" 401 POST /auth/login "" "$(body logU '{"email":"nobody@example.com","password":"testpass123"}')"

@@ -52,6 +52,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authErrorCheckDetails => 'Bilgileri kontrol et.';
 
   @override
+  String get authErrorWrongCode => 'Kod hatalı ya da süresi dolmuş.';
+
+  @override
+  String get authErrorTooManyCodes =>
+      'Çok fazla deneme. Biraz bekleyip yeni kod iste.';
+
+  @override
+  String get authErrorCodeSend =>
+      'E-posta gönderilemedi. Adresi kontrol edip tekrar dene.';
+
+  @override
   String get navReport => 'Ana Ekran';
 
   @override
@@ -410,6 +421,37 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authOrDivider => 'veya';
+
+  @override
+  String get authCodeTitle => 'E-postanı doğrula';
+
+  @override
+  String authCodeNote(String email) {
+    return '$email adresine 6 haneli bir kod gönderdik. Hesabını oluşturmak için kodu gir.';
+  }
+
+  @override
+  String get authCodeLabel => 'Doğrulama kodu';
+
+  @override
+  String get authCodeHint => 'Göremiyorsan spam klasörüne de bak.';
+
+  @override
+  String get authCodeCta => 'Doğrula ve hesabı oluştur';
+
+  @override
+  String get authCodeResend => 'Yeni kod gönder';
+
+  @override
+  String authCodeResendIn(int seconds) {
+    return '$seconds sn sonra yeni kod gönderebilirsin';
+  }
+
+  @override
+  String get authCodeResent => 'Yeni kod yolda.';
+
+  @override
+  String get authCodeChangeEmail => 'Başka bir e-posta kullan';
 
   @override
   String get authErrorApple =>
