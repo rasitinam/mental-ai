@@ -5,11 +5,11 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use chrono::{Duration, Utc};
-use mental_analysis_engine::{generate_chat_reply, translate::translate_batch, PersonContext};
+use chrono::{Duration, FixedOffset, Utc};
+use mental_analysis_engine::{generate_chat_reply, translate::translate_batch, ChatBackground};
 use mental_domain::repository::{
-    ChatRepository, ChatUsageRepository, ContentTranslationRepository, JournalRepository, MoodRepository,
-    SubscriptionRepository,
+    ChatRepository, ChatUsageRepository, ContentTranslationRepository, JournalRepository, LifeAnalysisRepository,
+    MoodRepository, ReportRepository, SubscriptionRepository, UserStateRepository,
 };
 use mental_domain::{ChatMessageRecord, ChatRole};
 use mental_llm_connector::ChatMessage;
@@ -17,7 +17,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::auth::AuthUser;
-use crate::routes::{assessment_for, user_for};
+use crate::refresh::trigger_background_refresh;
+use crate::routes::{user_for, PersonData};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -146,12 +147,26 @@ async fn send_message(
     let history_start = req.history.len().saturating_sub(MAX_HISTORY_MESSAGES);
     let history = &req.history[history_start..];
 
-    let user = user_for(&state, auth.user_id).await;
-    let person = user
-        .as_ref()
-        .map(PersonContext::from_user)
-        .unwrap_or_else(PersonContext::unknown)
-        .with_assessment(assessment_for(&state, auth.user_id).await);
+    // Everything known about them: their own rules, their latest screening,
+    // and what the app has learned about them from past entries — plus, on
+    // top of that, what it has already worked out (background) rather than
+    // recomputing it here on every message.
+    let person_data = PersonData::load(&state, auth.user_id).await;
+    let person = person_data.context(true, true);
+
+    let local_time = person_data
+        .user()
+        .and_then(|u| FixedOffset::east_opt(u.utc_offset_minutes * 60))
+        .map(|offset| now.with_timezone(&offset).format("%A %H:%M").to_string());
+    let user_state = state.user_states.get(auth.user_id).await.ok().flatten();
+    let latest_report = state.reports.latest_for_user(auth.user_id).await.ok().flatten();
+    let latest_life_analysis = state.life_analyses.latest_for_user(auth.user_id).await.ok().flatten();
+    let background = ChatBackground {
+        local_time,
+        state: user_state.as_ref(),
+        report: latest_report.as_ref(),
+        life_analysis: latest_life_analysis.as_ref(),
+    };
 
     let result = generate_chat_reply(
         &req.message,
@@ -159,6 +174,7 @@ async fn send_message(
         &recent_moods,
         &recent_journal_entries,
         &person,
+        &background,
         state.llm.as_ref(),
         state.research.as_ref(),
         state.vector_store.as_ref(),
@@ -178,6 +194,11 @@ async fn send_message(
             tracing::warn!(error = %err, "failed to record chat token usage");
         }
     }
+
+    // A conversation like this one is exactly what should move the home
+    // screen's reading and, over time, the long-term memory — see
+    // `crate::refresh`. Fire-and-forget: the reply above doesn't wait on it.
+    trigger_background_refresh(state.clone(), auth.user_id);
 
     Ok(Json(ChatTurnResponse { reply: result.reply, crisis_flag: result.crisis_flag }))
 }

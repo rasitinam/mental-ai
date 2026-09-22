@@ -170,8 +170,8 @@ echo "##### BLOCKING"
 # Editing a story (the update test above) sends it back to review; publish it again.
 $SQ $DB "UPDATE life_stories SET status='approved', reviewed_at='2026-09-20T00:00:00+00:00' WHERE id='$SID';"
 # has FILE PATTERN -> present/absent assertion on the last response body
-expect_body() { # LABEL present|absent PATTERN
-  if grep -q "$3" "$W/last.json"; then found=present; else found=absent; fi
+expect_body() { # LABEL present|absent SUBSTRING (matched literally, not as a regex)
+  if grep -qF "$3" "$W/last.json"; then found=present; else found=absent; fi
   if [ "$found" = "$2" ]; then PASS=$((PASS+1)); printf 'PASS %-52s (%s)\n' "$1" "$found"; else FAIL=$((FAIL+1)); FAILS="$FAILS\n  - $1 (wanted $2, got $found)"; printf 'FAIL %-52s wanted %s, got %s\n' "$1" "$2" "$found"; fi
 }
 t "block yourself" 400 POST "/users/$UA/block" "$TA"
@@ -202,6 +202,19 @@ t "unblock someone else's block id is a no-op" 204 DELETE "/blocks/$BID" "$TB"
 t "unfollow B" 200\|204 DELETE "/users/$UB/follow" "$TA"
 t "story withdraw (B)" 200\|204 DELETE "/stories/$SID" "$TB"
 t "DM decline/delete thread" 200\|204 DELETE "/dm/threads/$TID" "$TB"
+
+echo "##### MEMORY"
+# Not asserted empty: mood/journal/chat activity earlier in this run already
+# triggered a background memory refresh for A (see backend/apps/server/src/refresh.rs),
+# so by now the items array may already hold real content — which is itself
+# evidence the auto-refresh works, not something to work around.
+t "memory is enabled by default" 200 GET /memory "$TA"; expect_body "  enabled by default" present '"enabled":true'
+t "turn memory off" 200 PUT /memory/enabled "$TA" "$(body memOff '{"enabled":false}')"; expect_body "  reports off" present '"enabled":false'
+t "turn memory back on" 200 PUT /memory/enabled "$TA" "$(body memOn '{"enabled":true}')"; expect_body "  reports on" present '"enabled":true'
+t "clear memory" 200 DELETE /memory "$TA"; expect_body "  cleared" present '"items":[]'
+# B, not A: A is over its free budget and no longer premium by this point in
+# the run (see the CHAT section above) — B hasn't chatted yet.
+t "chat still works with the memory route wired in" 200 POST /chat "$TB" "$(body memChat '{"message":"Bugün biraz daha iyiyim.","history":[]}')"
 
 echo "##### LOGOUT / DELETE ACCOUNT"
 t "logout A" 200\|204 POST /auth/logout "$TA"

@@ -9,7 +9,7 @@ use mental_storage::{
     SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
     SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
     SqliteDiscoveryRepository,
-    SqliteDmRepository, SqliteEmailCodeRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
+    SqliteDmRepository, SqliteEmailCodeRepository, SqlitePersonMemoryRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
     SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
@@ -67,6 +67,10 @@ pub struct AppState {
     pub email_codes: Arc<SqliteEmailCodeRepository>,
     pub mailer: Arc<crate::email_verify::Mailer>,
     pub send_budget: Arc<crate::email_verify::SendBudget>,
+    /// The person's long-term memory — see `refresh` and `routes::memory`.
+    pub person_memory: Arc<SqlitePersonMemoryRepository>,
+    /// At most one background refresh per person at a time — see `refresh`.
+    pub refresh_guard: Arc<crate::refresh::RefreshGuard>,
 }
 
 #[derive(Clone)]

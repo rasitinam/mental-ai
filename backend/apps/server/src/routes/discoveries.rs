@@ -1,6 +1,6 @@
 use axum::{extract::State, http::StatusCode, routing::get, Json, Router};
 use chrono::{DateTime, Duration, Utc};
-use mental_analysis_engine::{distinct_mood_days, generate_discoveries, PersonContext};
+use mental_analysis_engine::{distinct_mood_days, generate_discoveries};
 use mental_domain::discovery::{
     CachedDiscoveries, Discovery, DISCOVERY_WINDOW_DAYS, MIN_DAYS_FOR_DISCOVERIES,
 };
@@ -8,7 +8,7 @@ use mental_domain::repository::{DiscoveryRepository, JournalRepository, MoodRepo
 use serde::Serialize;
 
 use crate::auth::AuthUser;
-use crate::routes::user_for;
+use crate::routes::{user_for, PersonData};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -67,7 +67,8 @@ async fn discoveries(
     }
 
     let journals = state.journals.list_between(auth.user_id, since, now).await.unwrap_or_default();
-    let person = user.as_ref().map(PersonContext::from_user).unwrap_or_else(PersonContext::unknown);
+    let person_data = PersonData::load(&state, auth.user_id).await;
+    let person = person_data.context(false, true);
 
     match generate_discoveries(&moods, &journals, &person, state.llm.as_ref()).await {
         Ok(result) => {

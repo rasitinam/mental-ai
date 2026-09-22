@@ -461,6 +461,13 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                   subtitle: l10n.settingsBlockedBody,
                   onTap: () => context.push('/settings/blocked'),
                 ),
+                ListRow(
+                  icon: Icons.psychology_alt_outlined,
+                  tint: palette.mint,
+                  label: l10n.memoryTitle,
+                  subtitle: l10n.memoryRowBody,
+                  onTap: () => context.push('/settings/memory'),
+                ),
               ],
             ),
             const SizedBox(height: 30),

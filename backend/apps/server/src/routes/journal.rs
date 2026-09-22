@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::auth::AuthUser;
+use crate::refresh::trigger_background_refresh;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -70,6 +71,11 @@ async fn add_journal_entry(
         .add(&entry)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response())?;
+
+    // A new entry is exactly the kind of thing that should move the home
+    // screen's reading and, over time, the long-term memory — see
+    // `crate::refresh`.
+    trigger_background_refresh(state.clone(), auth.user_id);
 
     Ok(Json(entry))
 }

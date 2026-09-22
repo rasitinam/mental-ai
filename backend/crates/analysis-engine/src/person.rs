@@ -1,4 +1,4 @@
-use mental_domain::{User, WellbeingAssessment};
+use mental_domain::{MemoryItem, User, WellbeingAssessment};
 
 /// The screening-battery half of [`PersonContext`], reduced to what a
 /// prompt actually needs — scores and bands, not the raw item answers.
@@ -72,6 +72,10 @@ pub struct PersonContext<'a> {
     /// instructions, so `prompt_block` emits them last and loudest.
     pub chat_boundaries: &'a [String],
     pub chat_boundary_note: Option<&'a str>,
+    /// Short lines distilled from their own past entries (see
+    /// `mental_domain::memory`). Empty when they have none yet or have
+    /// switched the memory off.
+    pub memory: &'a [MemoryItem],
 }
 
 impl<'a> PersonContext<'a> {
@@ -85,6 +89,7 @@ impl<'a> PersonContext<'a> {
             assessment: None,
             chat_boundaries: &user.chat_boundaries,
             chat_boundary_note: user.chat_boundary_note.as_deref(),
+            memory: &[],
         }
     }
 
@@ -99,6 +104,7 @@ impl<'a> PersonContext<'a> {
             assessment: None,
             chat_boundaries: &[],
             chat_boundary_note: None,
+            memory: &[],
         }
     }
 
@@ -107,6 +113,12 @@ impl<'a> PersonContext<'a> {
     /// assessment comes from its own repository call, not from `User`.
     pub fn with_assessment(mut self, assessment: Option<AssessmentSummary>) -> Self {
         self.assessment = assessment;
+        self
+    }
+
+    /// Attaches their long-term memory lines.
+    pub fn with_memory(mut self, memory: &'a [MemoryItem]) -> Self {
+        self.memory = memory;
         self
     }
 
@@ -172,6 +184,10 @@ impl<'a> PersonContext<'a> {
             ));
         }
 
+        if !self.memory.is_empty() {
+            lines.push(memory_block(self.memory));
+        }
+
         // Last, and deliberately after the clinical context: everything
         // above describes them, this part tells the model how it is
         // allowed to talk to them — the closer to the end of the block
@@ -187,5 +203,71 @@ impl<'a> PersonContext<'a> {
         } else {
             format!("{}\n\n", lines.join("\n"))
         }
+    }
+}
+
+/// What the memory lines are called when handed to the model.
+fn memory_label(kind: &str) -> &'static str {
+    match kind {
+        "theme" => "keeps coming back to",
+        "trigger" => "tends to make things harder",
+        "helps" => "has helped them",
+        "context" => "life context",
+        "goal" => "hopes for",
+        _ => "noted",
+    }
+}
+
+/// The remembered lines as one paragraph of the person block. The framing
+/// matters as much as the lines: this is background for being specific and
+/// for not asking twice, never something to recite or to hold them to.
+fn memory_block(memory: &[MemoryItem]) -> String {
+    let lines = memory
+        .iter()
+        .map(|m| format!("- {}: {}", memory_label(&m.kind), m.text))
+        .collect::<Vec<_>>()
+        .join("\n");
+    format!(
+        "What they have told you before, distilled from their own entries. Use it to be specific \
+         and to avoid asking again what you already know. Never read it back as a list, never \
+         say you have records of them, and if it doesn't match what they are saying now, follow \
+         what they say now:\n{lines}"
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn item(kind: &str, text: &str) -> MemoryItem {
+        MemoryItem { kind: kind.to_string(), text: text.to_string() }
+    }
+
+    #[test]
+    fn nothing_known_adds_nothing() {
+        assert_eq!(PersonContext::unknown().prompt_block(), "");
+    }
+
+    #[test]
+    fn memory_lines_are_labelled_and_framed_as_background() {
+        let memory = vec![item("theme", "sınav kaygısı"), item("helps", "akşam yürüyüşü")];
+        let block = PersonContext::unknown().with_memory(&memory).prompt_block();
+        assert!(block.contains("keeps coming back to: sınav kaygısı"));
+        assert!(block.contains("has helped them: akşam yürüyüşü"));
+        assert!(block.contains("Never read it back as a list"));
+    }
+
+    #[test]
+    fn the_person_own_rules_still_come_last() {
+        let memory = vec![item("context", "yeni bir işe başladı")];
+        let boundaries = vec!["no_advice".to_string()];
+        let mut person = PersonContext::unknown().with_memory(&memory);
+        person.chat_boundaries = &boundaries;
+        person.chat_boundary_note = Some("lütfen nasihat verme");
+
+        let block = person.prompt_block();
+        let memory_at = block.find("yeni bir işe başladı").expect("memory present");
+        let rules_at = block.find("lütfen nasihat verme").expect("rules present");
+        assert!(rules_at > memory_at, "binding rules must stay after the descriptive context");
     }
 }

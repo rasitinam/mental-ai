@@ -4,7 +4,7 @@ use axum::{
     Json, Router,
 };
 use chrono::{Duration, Utc};
-use mental_analysis_engine::{generate_daily_report, translate::translate_daily_report, PersonContext};
+use mental_analysis_engine::{generate_daily_report, translate::translate_daily_report};
 use mental_domain::repository::{
     ChatRepository, ContentTranslationRepository, JournalRepository, MoodRepository,
     ReportRepository,
@@ -12,7 +12,7 @@ use mental_domain::repository::{
 use mental_domain::DailyMentalReport;
 
 use crate::auth::AuthUser;
-use crate::routes::{assessment_for, user_for};
+use crate::routes::{user_for, PersonData};
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -165,12 +165,8 @@ async fn generate_report(
         .filter(|m| m.created_at >= since)
         .collect::<Vec<_>>();
 
-    let user = user_for(&state, auth.user_id).await;
-    let person = user
-        .as_ref()
-        .map(PersonContext::from_user)
-        .unwrap_or_else(PersonContext::unknown)
-        .with_assessment(assessment_for(&state, auth.user_id).await);
+    let person_data = PersonData::load(&state, auth.user_id).await;
+    let person = person_data.context(true, true);
 
     let report = generate_daily_report(
         auth.user_id,

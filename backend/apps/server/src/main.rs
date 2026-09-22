@@ -2,6 +2,7 @@ mod apple_signin;
 mod auth;
 mod email_verify;
 mod rate_limit;
+mod refresh;
 mod routes;
 mod scheduler;
 mod state;
@@ -16,7 +17,7 @@ use mental_storage::{
     init_pool, SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
     SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
     SqliteDiscoveryRepository,
-    SqliteDmRepository, SqliteEmailCodeRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
+    SqliteDmRepository, SqliteEmailCodeRepository, SqlitePersonMemoryRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
     SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
@@ -127,6 +128,8 @@ async fn main() -> anyhow::Result<()> {
         email_codes: Arc::new(SqliteEmailCodeRepository::new(pool.clone())),
         mailer: Arc::new(email_verify::Mailer::from_env()),
         send_budget: Arc::new(email_verify::SendBudget::new()),
+        person_memory: Arc::new(SqlitePersonMemoryRepository::new(pool.clone())),
+        refresh_guard: Arc::new(refresh::RefreshGuard::new()),
     };
 
     if config.research_ingest.enabled {

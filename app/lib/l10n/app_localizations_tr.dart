@@ -1631,6 +1631,63 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsBlockedBody => 'Engellediğin kişileri gör, engeli kaldır';
 
   @override
+  String get memoryRowBody => 'Hearth senin hakkında ne öğrendi';
+
+  @override
+  String get memoryTitle => 'Hearth ne biliyor';
+
+  @override
+  String get memoryIntro =>
+      'Hearth\'ün kendi yazdıklarından sessizce çıkardığı birkaç şey — aynı şeyleri tekrar sormaması için. Kimseyle paylaşılmaz, istediğin an durdurabilir ya da silebilirsin.';
+
+  @override
+  String get memoryToggleLabel => 'Hakkımda bir şeyler hatırla';
+
+  @override
+  String get memoryToggleOnBody =>
+      'Hearth bunu yazdıklarından zaman zaman güncelliyor.';
+
+  @override
+  String get memoryToggleOffBody =>
+      'Kapalı — yeni bir şey hatırlanmıyor, bilinenler de silindi.';
+
+  @override
+  String get memoryPausedNote =>
+      'Hafıza duraklatıldı. Hearth\'ün yeniden öğrenmeye başlaması için tekrar aç.';
+
+  @override
+  String get memoryEmpty =>
+      'Henüz bir şey yok — Hearth\'ün hatırlanmaya değer bir şey bulması için birkaç kayıt daha gerekiyor.';
+
+  @override
+  String get memoryKindTheme => 'SIK SIK GERİ DÖNÜYOR';
+
+  @override
+  String get memoryKindTrigger => 'İŞLERİ ZORLAŞTIRABİLİYOR';
+
+  @override
+  String get memoryKindHelps => 'İYİ GELİYOR';
+
+  @override
+  String get memoryKindContext => 'BAĞLAM';
+
+  @override
+  String get memoryKindGoal => 'UMUT EDİYOR';
+
+  @override
+  String get memoryClearCta => 'Hearth\'ün hafızasını sil';
+
+  @override
+  String get memoryClearTitle => 'Bu hafıza silinsin mi?';
+
+  @override
+  String get memoryClearBody =>
+      'Hearth şimdiye kadar hakkında öğrendiği her şeyi unutacak. Bundan sonra yazdıklarınla yeniden öğrenmeye başlayabilir.';
+
+  @override
+  String get memoryCleared => 'Silindi.';
+
+  @override
   String get blockedEmpty => 'Kimseyi engellemedin.';
 
   @override

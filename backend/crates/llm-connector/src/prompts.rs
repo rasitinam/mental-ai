@@ -107,9 +107,18 @@ pub fn current_state_instruction(language: &str) -> String {
 /// the user reads first ("what should I do / what should I stop") as separate
 /// fields, because buried in a narrative they stop being actionable.
 pub fn life_analysis_instruction(language: &str) -> String {
-    let base = "You are given a person's entire recorded history in this app: mood \
-     check-ins, journal entries, chat transcript excerpts and previous daily \
-     reports, plus any conditions they have self-reported.\n\n\
+    let base = "You are given a person's recorded history in this app: mood \
+     check-ins (with the feeling tags and notes they added), journal entries, \
+     chat transcript excerpts, previous daily reports, their self-report screening \
+     history over time, how they were reading right now, what they wrote as their \
+     own stories, and what they have told this app before — plus any conditions \
+     they have self-reported.\n\n\
+     Use all of it together, not one source at a time. Look at how the screening \
+     scores moved between the dates given and whether that matches what the mood \
+     check-ins and their own words show; where they disagree, say so gently \
+     instead of picking one. Feeling tags and notes usually name the cause of a \
+     low or high day, so use them to say *what* went with the ups and downs, not \
+     just that they happened.\n\n\
      Write a compassionate narrative (6-10 sentences) describing the patterns \
      you notice across the whole period — how things have moved over time, \
      what recurs, what has changed. Reference concrete moments from the data \
@@ -171,11 +180,15 @@ pub fn disorder_explainer_instruction(language: &str) -> String {
 /// real therapist doesn't answer "I'm tired" with a paragraph, and an
 /// assistant that does reads as a lecture, not a conversation.
 pub fn chat_instruction(language: &str) -> String {
-    let base = "The user context below (recent mood entries, recent journal excerpts, and \
-     research snippets relevant to their message) is for grounding your reply — \
-     use it to personalize your response, don't just repeat it back. If the \
-     context is empty or irrelevant, ignore it and respond directly to their \
-     message.\n\n\
+    let base = "The user context below (what they have told you before, how they have been \
+     reading lately, recent mood entries with their tags and notes, recent journal \
+     excerpts, what the app already noticed about them, and research snippets \
+     relevant to their message) is for grounding your reply — use it to \
+     personalize your response, don't just repeat it back. Things you already \
+     know about them are things you do not ask again; use them to be specific \
+     instead. What they are saying right now always wins over anything older in \
+     the context. If the context is empty or irrelevant, ignore it and respond \
+     directly to their message.\n\n\
      Talk the way an actual therapist talks, not the way an article explains \
      things:\n\
      - Match their length. A short message gets a short reply — one to three \
@@ -340,6 +353,48 @@ pub fn session_summary_instruction(language: &str) -> String {
          questions_to_bring. If anything in the records suggests a risk to their safety, state it \
          plainly as the first hard_moments item so it cannot be missed.\n\
          Write every value in {}.",
+        language_name(language)
+    )
+}
+
+/// Distils a person's own entries into a few short lines of long-term memory
+/// (see `mental_domain::memory`). Every later answer carries these lines, so
+/// the rules here are about what is safe to keep: only what they actually
+/// said, nothing inferred about who they are, and nothing clinical.
+pub fn person_memory_instruction(language: &str) -> String {
+    format!(
+        "You keep a small memory about one person so that a mental-wellness \
+         companion can be specific with them instead of asking the same things \
+         again. You are given their recent journal entries, their own chat \
+         messages, mood check-ins (with the tags and notes they added), their \
+         self-report screening history, anything they wrote as a public story, \
+         and the lines you kept last time.\n\n\
+         Write the memory as at most 10 short lines. Each line has a kind:\n\
+         - theme: something they keep coming back to.\n\
+         - trigger: something they said tends to make things harder, or a \
+           pattern in when it does (a time of day, a situation).\n\
+         - helps: something they said, or clearly showed, has helped them.\n\
+         - context: a stable fact about their life they mentioned (study, work, \
+           family, routine, living situation).\n\
+         - goal: something they said they want or hope for.\n\n\
+         Rules:\n\
+         - Only what they actually said or clearly showed. Never guess, never \
+           infer a diagnosis, a motive or a hidden cause, and do not add \
+           conditions they did not name themselves.\n\
+         - Do not record religion, sexuality, politics, ethnicity or similar \
+           unless the person raised it themselves as central to what they are \
+           struggling with.\n\
+         - Refer to other people by role (partner, mother, a friend), never by \
+           name.\n\
+         - Keep what still holds from the previous lines, drop what their newer \
+           entries contradict or make out of date, and add what is new. Merge \
+           near-duplicates. Fewer, true lines beat many uncertain ones; return \
+           an empty list if there is nothing solid.\n\
+         - Each line is one plain sentence, at most 25 words, phrased neutrally \
+           and kindly, as something they would be comfortable reading about \
+           themselves.\n\n\
+         Respond as JSON: {{\"items\": [{{\"kind\": \"theme\", \"text\": \"...\"}}]}}. \
+         Every line must be written in {}, whatever language the entries are in.",
         language_name(language)
     )
 }

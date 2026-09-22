@@ -26,6 +26,7 @@ import '../features/profile/presentation/profile_screen.dart';
 import '../features/recap/presentation/recap_screen.dart';
 import '../features/session_summary/presentation/session_summary_screen.dart';
 import '../features/settings/presentation/notification_settings_screen.dart';
+import '../features/memory/presentation/person_memory_screen.dart';
 import '../features/settings/presentation/blocked_people_screen.dart';
 import '../features/settings/presentation/privacy_settings_screen.dart';
 import '../features/social/presentation/dm_inbox_screen.dart';
@@ -198,6 +199,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 GoRoute(
                   path: 'blocked',
                   builder: (context, state) => const BlockedPeopleScreen(),
+                ),
+                GoRoute(
+                  path: 'memory',
+                  builder: (context, state) => const PersonMemoryScreen(),
                 ),
               ],
             ),

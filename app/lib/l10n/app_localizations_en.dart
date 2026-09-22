@@ -1634,6 +1634,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsBlockedBody => 'See who you\'ve blocked and unblock them';
 
   @override
+  String get memoryRowBody => 'What Hearth has picked up about you';
+
+  @override
+  String get memoryTitle => 'What Hearth remembers';
+
+  @override
+  String get memoryIntro =>
+      'A few things Hearth has quietly picked up from your own entries, so it doesn\'t ask the same things again. It\'s never shared, and it\'s yours to pause or clear at any time.';
+
+  @override
+  String get memoryToggleLabel => 'Remember things about me';
+
+  @override
+  String get memoryToggleOnBody =>
+      'Hearth updates this from your entries every so often.';
+
+  @override
+  String get memoryToggleOffBody =>
+      'Turned off — nothing new is remembered, and what it knew has been cleared.';
+
+  @override
+  String get memoryPausedNote =>
+      'Memory is paused. Turn it back on to let Hearth start learning again.';
+
+  @override
+  String get memoryEmpty =>
+      'Nothing yet — Hearth needs a few more entries before it has something worth remembering.';
+
+  @override
+  String get memoryKindTheme => 'KEEPS COMING BACK TO';
+
+  @override
+  String get memoryKindTrigger => 'TENDS TO MAKE THINGS HARDER';
+
+  @override
+  String get memoryKindHelps => 'HAS HELPED';
+
+  @override
+  String get memoryKindContext => 'CONTEXT';
+
+  @override
+  String get memoryKindGoal => 'HOPES FOR';
+
+  @override
+  String get memoryClearCta => 'Clear what Hearth remembers';
+
+  @override
+  String get memoryClearTitle => 'Clear this memory?';
+
+  @override
+  String get memoryClearBody =>
+      'Hearth will forget everything it has picked up about you so far. It can start learning again from what you write next.';
+
+  @override
+  String get memoryCleared => 'Cleared.';
+
+  @override
   String get blockedEmpty => 'You haven\'t blocked anyone.';
 
   @override

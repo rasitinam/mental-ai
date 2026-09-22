@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
 use mental_domain::repository::{
     ActivityRepository, AssessmentRepository, AuthRepository, BlockRepository, ChatRepository, ChatUsageRepository,
-    EmailCodeRepository,
+    EmailCodeRepository, PersonMemoryRepository,
     ContentTranslationRepository, DiscoveryRepository, DmRepository, ExplainerRepository,
     InsightRepository,
     JournalRepository, LifeAnalysisRepository, LifeStoryRepository, MoodRepository,
@@ -15,7 +15,7 @@ use mental_domain::{CachedDiscoveries, Discovery};
 
 use mental_domain::{
     BlockRecord, ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, DmMessage,
-    EmailCodeRecord,
+    EmailCodeRecord, PersonMemory,
     DmPolicy, DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry,
     PushToken, ResearchArticle, Session, StoryFeedItem, StoryStatus, Subscription, User, UserState,
     WellbeingAssessment,
@@ -325,6 +325,7 @@ impl UserRepository for SqliteUserRepository {
             "chat_token_usage",
             "wellbeing_assessments",
             "user_states",
+            "person_memory",
             "discoveries",
 
             "subscriptions",
@@ -1199,63 +1200,84 @@ impl AssessmentRepository for SqliteAssessmentRepository {
     }
 
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<WellbeingAssessment>> {
-        // A derive-based row rather than a raw tuple: eighteen columns is
-        // past where hand-matching positional tuple fields stays safe to
-        // read, and sqlx's tuple `FromRow` impls don't reach this arity
-        // anyway.
-        #[derive(sqlx::FromRow)]
-        struct Row {
-            id: String,
-            user_id: String,
-            phq9_answers: String,
-            phq9_score: i32,
-            gad7_answers: String,
-            gad7_score: i32,
-            who5_answers: String,
-            who5_score: i32,
-            phq15_answers: String,
-            phq15_score: i32,
-            ptsd5_answers: String,
-            ptsd5_score: i32,
-            auditc_answers: String,
-            auditc_score: i32,
-            cageaid_answers: String,
-            cageaid_score: i32,
-            crisis_flag: bool,
-            created_at: DateTime<Utc>,
-        }
-
-        let row = sqlx::query_as::<_, Row>(
-            "SELECT id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score,
-                    who5_answers, who5_score, phq15_answers, phq15_score,
-                    ptsd5_answers, ptsd5_score, auditc_answers, auditc_score,
-                    cageaid_answers, cageaid_score, crisis_flag, created_at
-             FROM wellbeing_assessments WHERE user_id = ?1 ORDER BY created_at DESC LIMIT 1",
-        )
+        let row = sqlx::query_as::<_, AssessmentRow>(&format!(
+            "{ASSESSMENT_SELECT} WHERE user_id = ?1 ORDER BY created_at DESC LIMIT 1"
+        ))
         .bind(user_id.to_string())
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(|r| WellbeingAssessment {
-            id: Uuid::parse_str(&r.id).unwrap_or_default(),
-            user_id: Uuid::parse_str(&r.user_id).unwrap_or_default(),
-            phq9_answers: serde_json::from_str(&r.phq9_answers).unwrap_or_default(),
-            phq9_score: r.phq9_score as u8,
-            gad7_answers: serde_json::from_str(&r.gad7_answers).unwrap_or_default(),
-            gad7_score: r.gad7_score as u8,
-            who5_answers: serde_json::from_str(&r.who5_answers).unwrap_or_default(),
-            who5_score: r.who5_score as u8,
-            phq15_answers: serde_json::from_str(&r.phq15_answers).unwrap_or_default(),
-            phq15_score: r.phq15_score as u8,
-            ptsd5_answers: serde_json::from_str(&r.ptsd5_answers).unwrap_or_default(),
-            ptsd5_score: r.ptsd5_score as u8,
-            auditc_answers: serde_json::from_str(&r.auditc_answers).unwrap_or_default(),
-            auditc_score: r.auditc_score as u8,
-            cageaid_answers: serde_json::from_str(&r.cageaid_answers).unwrap_or_default(),
-            cageaid_score: r.cageaid_score as u8,
-            crisis_flag: r.crisis_flag,
-            created_at: r.created_at,
-        }))
+        Ok(row.map(AssessmentRow::into_assessment))
+    }
+
+    async fn list_for_user(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<WellbeingAssessment>> {
+        // Newest `limit`, then put back in reading order.
+        let mut rows = sqlx::query_as::<_, AssessmentRow>(&format!(
+            "{ASSESSMENT_SELECT} WHERE user_id = ?1 ORDER BY created_at DESC LIMIT ?2"
+        ))
+        .bind(user_id.to_string())
+        .bind(limit as i64)
+        .fetch_all(&self.pool)
+        .await?;
+        rows.reverse();
+
+        Ok(rows.into_iter().map(AssessmentRow::into_assessment).collect())
+    }
+}
+
+const ASSESSMENT_SELECT: &str = "SELECT id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score,
+        who5_answers, who5_score, phq15_answers, phq15_score,
+        ptsd5_answers, ptsd5_score, auditc_answers, auditc_score,
+        cageaid_answers, cageaid_score, crisis_flag, created_at
+ FROM wellbeing_assessments";
+
+// A derive-based row rather than a raw tuple: eighteen columns is past where
+// hand-matching positional tuple fields stays safe to read, and sqlx's tuple
+// `FromRow` impls don't reach this arity anyway.
+#[derive(sqlx::FromRow)]
+struct AssessmentRow {
+    id: String,
+    user_id: String,
+    phq9_answers: String,
+    phq9_score: i32,
+    gad7_answers: String,
+    gad7_score: i32,
+    who5_answers: String,
+    who5_score: i32,
+    phq15_answers: String,
+    phq15_score: i32,
+    ptsd5_answers: String,
+    ptsd5_score: i32,
+    auditc_answers: String,
+    auditc_score: i32,
+    cageaid_answers: String,
+    cageaid_score: i32,
+    crisis_flag: bool,
+    created_at: DateTime<Utc>,
+}
+
+impl AssessmentRow {
+    fn into_assessment(self) -> WellbeingAssessment {
+        WellbeingAssessment {
+            id: Uuid::parse_str(&self.id).unwrap_or_default(),
+            user_id: Uuid::parse_str(&self.user_id).unwrap_or_default(),
+            phq9_answers: serde_json::from_str(&self.phq9_answers).unwrap_or_default(),
+            phq9_score: self.phq9_score as u8,
+            gad7_answers: serde_json::from_str(&self.gad7_answers).unwrap_or_default(),
+            gad7_score: self.gad7_score as u8,
+            who5_answers: serde_json::from_str(&self.who5_answers).unwrap_or_default(),
+            who5_score: self.who5_score as u8,
+            phq15_answers: serde_json::from_str(&self.phq15_answers).unwrap_or_default(),
+            phq15_score: self.phq15_score as u8,
+            ptsd5_answers: serde_json::from_str(&self.ptsd5_answers).unwrap_or_default(),
+            ptsd5_score: self.ptsd5_score as u8,
+            auditc_answers: serde_json::from_str(&self.auditc_answers).unwrap_or_default(),
+            auditc_score: self.auditc_score as u8,
+            cageaid_answers: serde_json::from_str(&self.cageaid_answers).unwrap_or_default(),
+            cageaid_score: self.cageaid_score as u8,
+            crisis_flag: self.crisis_flag,
+            created_at: self.created_at,
+        }
     }
 }
 
@@ -2106,9 +2128,16 @@ impl ChatRepository for SqliteChatRepository {
     }
 
     async fn history_for_user(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<ChatMessageRecord>> {
+        // The *newest* `limit` messages, handed back oldest first. Taking the
+        // oldest `limit` (as this once did) made every reader — the daily
+        // report, the state reading, the life analysis, the chat screen —
+        // stop seeing new conversation once an account had that many
+        // messages, so the newest chat was exactly what they missed.
         let rows = sqlx::query_as::<_, (String, String, String, String, bool, DateTime<Utc>)>(
-            "SELECT id, user_id, role, content, crisis_flag, created_at FROM chat_messages
-             WHERE user_id = ?1 ORDER BY created_at ASC LIMIT ?2",
+            "SELECT id, user_id, role, content, crisis_flag, created_at FROM (
+                 SELECT id, user_id, role, content, crisis_flag, created_at FROM chat_messages
+                 WHERE user_id = ?1 ORDER BY created_at DESC LIMIT ?2
+             ) ORDER BY created_at ASC",
         )
         .bind(user_id.to_string())
         .bind(limit)
@@ -2562,6 +2591,57 @@ impl EmailCodeRepository for SqliteEmailCodeRepository {
             .bind(cutoff)
             .execute(&self.pool)
             .await?;
+
+        Ok(())
+    }
+}
+
+pub struct SqlitePersonMemoryRepository {
+    pool: SqlitePool,
+}
+
+impl SqlitePersonMemoryRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl PersonMemoryRepository for SqlitePersonMemoryRepository {
+    async fn get(&self, user_id: Uuid) -> anyhow::Result<Option<PersonMemory>> {
+        let row = sqlx::query_as::<_, (bool, String, String, Option<DateTime<Utc>>)>(
+            "SELECT enabled, items, language, generated_at FROM person_memory WHERE user_id = ?1",
+        )
+        .bind(user_id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|(enabled, items, language, generated_at)| PersonMemory {
+            user_id,
+            enabled,
+            items: serde_json::from_str(&items).unwrap_or_default(),
+            language,
+            generated_at,
+        }))
+    }
+
+    async fn save(&self, memory: &PersonMemory) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO person_memory (user_id, enabled, items, language, generated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(user_id) DO UPDATE SET
+                enabled = excluded.enabled,
+                items = excluded.items,
+                language = excluded.language,
+                generated_at = excluded.generated_at",
+        )
+        .bind(memory.user_id.to_string())
+        .bind(memory.enabled)
+        .bind(serde_json::to_string(&memory.items).unwrap_or_else(|_| "[]".to_string()))
+        .bind(&memory.language)
+        .bind(memory.generated_at)
+        .execute(&self.pool)
+        .await?;
 
         Ok(())
     }

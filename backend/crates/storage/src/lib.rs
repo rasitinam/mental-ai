@@ -7,12 +7,15 @@
 pub mod pool;
 pub mod repositories;
 
+#[cfg(test)]
+mod history_tests;
+
 pub use pool::init_pool;
 pub use repositories::{
     SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
     SqliteChatRepository,
     SqliteChatUsageRepository, SqliteContentTranslationRepository, SqliteDiscoveryRepository,
-    SqliteDmRepository, SqliteEmailCodeRepository,
+    SqliteDmRepository, SqliteEmailCodeRepository, SqlitePersonMemoryRepository,
     SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,

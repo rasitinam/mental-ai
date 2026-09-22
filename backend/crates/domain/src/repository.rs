@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::report::LifeAnalysis;
 use crate::{
     BlockRecord, ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, DmMessage, DmPolicy,
-    EmailCodeRecord,
+    EmailCodeRecord, PersonMemory,
     DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry, PushToken,
     ResearchArticle, Session, StoryFeedItem, StoryStatus, Subscription, User, UserState,
     WellbeingAssessment,
@@ -248,6 +248,9 @@ pub trait AssessmentRepository: Send + Sync {
     /// Most recent screening on file, for both showing "you last checked
     /// in N days ago" and for feeding `PersonContext`.
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<WellbeingAssessment>>;
+    /// The most recent `limit` screenings, oldest first, so a change over
+    /// time can be read off them (the latest alone cannot show one).
+    async fn list_for_user(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<WellbeingAssessment>>;
 }
 
 #[async_trait]
@@ -449,4 +452,12 @@ pub trait EmailCodeRepository: Send + Sync {
     /// Drops rows whose code expired before `cutoff`, so addresses that
     /// asked for a code and never finished do not stay in the table.
     async fn prune_expired(&self, cutoff: DateTime<Utc>) -> anyhow::Result<()>;
+}
+
+/// The person's long-term memory (see [`crate::PersonMemory`]): one row each.
+#[async_trait]
+pub trait PersonMemoryRepository: Send + Sync {
+    async fn get(&self, user_id: Uuid) -> anyhow::Result<Option<PersonMemory>>;
+    /// Replaces the whole row (items, on/off switch, language, time).
+    async fn save(&self, memory: &PersonMemory) -> anyhow::Result<()>;
 }

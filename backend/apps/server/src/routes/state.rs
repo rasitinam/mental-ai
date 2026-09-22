@@ -4,19 +4,17 @@ use axum::{
     Json, Router,
 };
 use chrono::{Duration, Utc};
-use mental_analysis_engine::{
-    assess_current_state, relabel_basis, translate::translate_current_state, PersonContext,
-    StateInputs,
-};
+use mental_analysis_engine::{assess_current_state, relabel_basis, translate::translate_current_state, StateInputs};
 use mental_domain::repository::{
-    ChatRepository, ContentTranslationRepository, JournalRepository, LifeAnalysisRepository,
-    MoodRepository, ReportRepository, UserRepository, UserStateRepository,
+    ChatRepository, ContentTranslationRepository, JournalRepository, LifeAnalysisRepository, MoodRepository,
+    ReportRepository, UserStateRepository,
 };
-use mental_domain::{User, UserState};
+use mental_domain::UserState;
 
 use crate::auth::AuthUser;
-use crate::routes::user_for;
+use crate::routes::{user_for, PersonData};
 use crate::state::AppState;
+use uuid::Uuid;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -38,8 +36,9 @@ struct StateTranslationPayload {
 }
 
 /// Same idea as `reports::latest_report`: the current-state snapshot is
-/// assessed on demand (pull-to-refresh) and cached as a single row per
-/// user in whatever language the account was set to at that moment
+/// kept fresh by every chat turn, journal entry and mood check-in (see
+/// `crate::refresh`), not just by a pull-to-refresh, and cached as a single
+/// row per user in whatever language the account was set to at that moment
 /// (`UserState::language`) — switching the interface language without
 /// triggering a fresh assessment used to leave the home screen's headline
 /// stuck in the old language. Translated on read and cached per (user,
@@ -118,44 +117,27 @@ async fn translated_state(
     Ok(payload)
 }
 
-/// Recomputes the home screen's reading from every current signal — this is
-/// what pull-to-refresh calls. Deliberately a full reassessment rather than a
-/// cache read: the whole point is that a conversation the person just had
-/// should move the number, and the cached row can't know that happened.
-async fn refresh_state(
-    State(state): State<AppState>,
-    auth: AuthUser,
-) -> Result<Json<UserState>, (axum::http::StatusCode, String)> {
+/// Recomputes the reading from every current signal, without persisting it —
+/// shared by the explicit `POST /state/refresh` below and by the background
+/// refresh in `crate::refresh` that follows ordinary activity, so the two
+/// paths can never drift apart. The memory lines are deliberately left out
+/// of the person context here: this is a reading of *right now*, and the
+/// chat/report/life-analysis sections already carry the longer view.
+pub(crate) async fn run_state_refresh(state: &AppState, user_id: Uuid) -> anyhow::Result<UserState> {
     let now = Utc::now();
     let since = now - Duration::hours(CHAT_WINDOW_HOURS);
 
-    let user: Option<User> = state.users.get(auth.user_id).await.ok().flatten();
-    let person = user
-        .as_ref()
-        .map(PersonContext::from_user)
-        .unwrap_or_else(PersonContext::unknown)
-        .with_assessment(crate::routes::assessment_for(&state, auth.user_id).await);
+    let person_data = PersonData::load(state, user_id).await;
+    let person = person_data.context(true, false);
 
-    let chat = state
-        .chats
-        .history_for_user(auth.user_id, CHAT_MESSAGES)
-        .await
-        .unwrap_or_default();
-    let moods = state
-        .moods
-        .list_between(auth.user_id, since, now)
-        .await
-        .unwrap_or_default();
-    let journal = state.journals.list_all(auth.user_id).await.unwrap_or_default();
-    let report = state.reports.latest_for_user(auth.user_id).await.unwrap_or_default();
-    let life_analysis = state
-        .life_analyses
-        .latest_for_user(auth.user_id)
-        .await
-        .unwrap_or_default();
+    let chat = state.chats.history_for_user(user_id, CHAT_MESSAGES).await.unwrap_or_default();
+    let moods = state.moods.list_between(user_id, since, now).await.unwrap_or_default();
+    let journal = state.journals.list_all(user_id).await.unwrap_or_default();
+    let report = state.reports.latest_for_user(user_id).await.unwrap_or_default();
+    let life_analysis = state.life_analyses.latest_for_user(user_id).await.unwrap_or_default();
 
-    let assessed = assess_current_state(
-        auth.user_id,
+    assess_current_state(
+        user_id,
         StateInputs {
             chat: &chat,
             moods: &moods,
@@ -167,7 +149,22 @@ async fn refresh_state(
         state.llm.as_ref(),
     )
     .await
-    .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()))?;
+}
+
+/// Recomputes and persists the home screen's reading — what pull-to-refresh
+/// calls. Deliberately a full reassessment rather than a cache read: the
+/// whole point is that a conversation the person just had should move the
+/// number, and the cached row can't know that happened on its own (which is
+/// also why ordinary activity now triggers this in the background too — see
+/// `crate::refresh` — and pull-to-refresh is for "I want it to reflect this
+/// exact moment, right now").
+async fn refresh_state(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Json<UserState>, (axum::http::StatusCode, String)> {
+    let assessed = run_state_refresh(&state, auth.user_id)
+        .await
+        .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()))?;
 
     // A failed write costs the cache, not the answer the caller is waiting on.
     if let Err(err) = state.user_states.save(&assessed).await {

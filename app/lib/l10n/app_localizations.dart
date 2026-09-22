@@ -3074,6 +3074,108 @@ abstract class AppLocalizations {
   /// **'Engellediğin kişileri gör, engeli kaldır'**
   String get settingsBlockedBody;
 
+  /// No description provided for @memoryRowBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth senin hakkında ne öğrendi'**
+  String get memoryRowBody;
+
+  /// No description provided for @memoryTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth ne biliyor'**
+  String get memoryTitle;
+
+  /// No description provided for @memoryIntro.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth\'ün kendi yazdıklarından sessizce çıkardığı birkaç şey — aynı şeyleri tekrar sormaması için. Kimseyle paylaşılmaz, istediğin an durdurabilir ya da silebilirsin.'**
+  String get memoryIntro;
+
+  /// No description provided for @memoryToggleLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hakkımda bir şeyler hatırla'**
+  String get memoryToggleLabel;
+
+  /// No description provided for @memoryToggleOnBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth bunu yazdıklarından zaman zaman güncelliyor.'**
+  String get memoryToggleOnBody;
+
+  /// No description provided for @memoryToggleOffBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kapalı — yeni bir şey hatırlanmıyor, bilinenler de silindi.'**
+  String get memoryToggleOffBody;
+
+  /// No description provided for @memoryPausedNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hafıza duraklatıldı. Hearth\'ün yeniden öğrenmeye başlaması için tekrar aç.'**
+  String get memoryPausedNote;
+
+  /// No description provided for @memoryEmpty.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz bir şey yok — Hearth\'ün hatırlanmaya değer bir şey bulması için birkaç kayıt daha gerekiyor.'**
+  String get memoryEmpty;
+
+  /// No description provided for @memoryKindTheme.
+  ///
+  /// In tr, this message translates to:
+  /// **'SIK SIK GERİ DÖNÜYOR'**
+  String get memoryKindTheme;
+
+  /// No description provided for @memoryKindTrigger.
+  ///
+  /// In tr, this message translates to:
+  /// **'İŞLERİ ZORLAŞTIRABİLİYOR'**
+  String get memoryKindTrigger;
+
+  /// No description provided for @memoryKindHelps.
+  ///
+  /// In tr, this message translates to:
+  /// **'İYİ GELİYOR'**
+  String get memoryKindHelps;
+
+  /// No description provided for @memoryKindContext.
+  ///
+  /// In tr, this message translates to:
+  /// **'BAĞLAM'**
+  String get memoryKindContext;
+
+  /// No description provided for @memoryKindGoal.
+  ///
+  /// In tr, this message translates to:
+  /// **'UMUT EDİYOR'**
+  String get memoryKindGoal;
+
+  /// No description provided for @memoryClearCta.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth\'ün hafızasını sil'**
+  String get memoryClearCta;
+
+  /// No description provided for @memoryClearTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu hafıza silinsin mi?'**
+  String get memoryClearTitle;
+
+  /// No description provided for @memoryClearBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth şimdiye kadar hakkında öğrendiği her şeyi unutacak. Bundan sonra yazdıklarınla yeniden öğrenmeye başlayabilir.'**
+  String get memoryClearBody;
+
+  /// No description provided for @memoryCleared.
+  ///
+  /// In tr, this message translates to:
+  /// **'Silindi.'**
+  String get memoryCleared;
+
   /// No description provided for @blockedEmpty.
   ///
   /// In tr, this message translates to:

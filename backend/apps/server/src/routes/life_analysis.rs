@@ -5,19 +5,17 @@ use axum::{
     Json, Router,
 };
 use chrono::{DateTime, Duration, Utc};
-use mental_analysis_engine::{
-    generate_life_analysis, translate::translate_life_analysis, PersonContext,
-};
+use mental_analysis_engine::{generate_life_analysis, translate::translate_life_analysis, LifeAnalysisInputs};
 use mental_domain::repository::{
-    ChatRepository, ContentTranslationRepository, JournalRepository, LifeAnalysisRepository,
-    MoodRepository, ReportRepository,
+    AssessmentRepository, ChatRepository, ContentTranslationRepository, JournalRepository, LifeAnalysisRepository,
+    LifeStoryRepository, MoodRepository, ReportRepository, UserStateRepository,
 };
 use mental_domain::report::LifeAnalysis;
 use serde::Serialize;
 
 use crate::auth::AuthUser;
+use crate::routes::{user_for, PersonData};
 use crate::state::AppState;
-use crate::routes::{assessment_for, user_for};
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -35,6 +33,7 @@ const COOLDOWN: Duration = Duration::days(7);
 /// the analysis engine caps what it actually sends to the model too.
 const MAX_CHAT_MESSAGES: u32 = 400;
 const MAX_REPORTS: u32 = 60;
+const MAX_ASSESSMENTS: u32 = 24;
 
 #[derive(Debug, Serialize)]
 struct CooldownError {
@@ -171,24 +170,28 @@ async fn generate_analysis(
         .list_recent(auth.user_id, MAX_REPORTS)
         .await
         .map_err(internal)?;
-    let user = user_for(&state, auth.user_id).await;
-    let person = user
-        .as_ref()
-        .map(PersonContext::from_user)
-        .unwrap_or_else(PersonContext::unknown)
-        .with_assessment(assessment_for(&state, auth.user_id).await);
+    // Every screening on file, not only the latest — the analysis reads how
+    // the scores moved, not just where they are today.
+    let assessments = state.assessments.list_for_user(auth.user_id, MAX_ASSESSMENTS).await.unwrap_or_default();
+    let current_state = state.user_states.get(auth.user_id).await.ok().flatten();
+    let stories = state.life_stories.list_for_user(auth.user_id).await.unwrap_or_default();
 
-    let analysis = generate_life_analysis(
-        auth.user_id,
-        &moods,
-        &journal_entries,
-        &chat_messages,
-        &reports,
-        &person,
-        state.llm.as_ref(),
-    )
-    .await
-    .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()).into_response())?;
+    let person_data = PersonData::load(&state, auth.user_id).await;
+    let person = person_data.context(true, true);
+
+    let inputs = LifeAnalysisInputs {
+        moods: &moods,
+        journal_entries: &journal_entries,
+        chat_messages: &chat_messages,
+        reports: &reports,
+        assessments: &assessments,
+        state: current_state.as_ref(),
+        stories: &stories,
+    };
+
+    let analysis = generate_life_analysis(auth.user_id, &inputs, &person, state.llm.as_ref())
+        .await
+        .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()).into_response())?;
 
     state.life_analyses.save(&analysis).await.map_err(internal)?;
 
