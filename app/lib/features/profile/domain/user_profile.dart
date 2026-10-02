@@ -35,6 +35,10 @@ class UserProfile {
   final bool checkinReminderEnabled;
   final int checkinReminderHour;
 
+  /// Whether they allowed their content to be sent to the AI service
+  /// (OpenAI). See `AiConsentScreen`.
+  final bool aiConsent;
+
   /// When the account was created, for "Hearth'te N aydır".
   final DateTime? createdAt;
 
@@ -54,6 +58,7 @@ class UserProfile {
     this.chatBoundaryNote,
     this.checkinReminderEnabled = true,
     this.checkinReminderHour = 21,
+    this.aiConsent = false,
     this.createdAt,
   });
 
@@ -73,6 +78,7 @@ class UserProfile {
         chatBoundaryNote: json['chat_boundary_note'] as String?,
         checkinReminderEnabled: json['checkin_reminder_enabled'] as bool? ?? true,
         checkinReminderHour: json['checkin_reminder_hour'] as int? ?? 21,
+        aiConsent: json['ai_consent'] as bool? ?? false,
         createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
 
       );

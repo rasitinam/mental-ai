@@ -3377,7 +3377,7 @@ abstract class AppLocalizations {
   /// No description provided for @consentAiBody.
   ///
   /// In tr, this message translates to:
-  /// **'Yanıt ve rapor yazabilmek için ilgili metin OpenAI\'a gönderilir. Verilerin reklam için kullanılmaz ve asla satılmaz.'**
+  /// **'Sohbet ve raporları OpenAI yazar. Hiçbir şey gönderilmeden önce ayrıntılarıyla ayrıca izin isteriz.'**
   String get consentAiBody;
 
   /// No description provided for @consentHealthTitle.
@@ -3439,6 +3439,126 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Kabul edildi'**
   String get consentAccepted;
+
+  /// No description provided for @aiConsentTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yapay zekâ servisiyle paylaşalım mı?'**
+  String get aiConsentTitle;
+
+  /// No description provided for @aiConsentLead.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hearth\'teki sohbet, günlük rapor, yaşam analizi ve okumaları OpenAI\'ın yapay zekâ modelleri yazar. Bunun için verilerinin bir kısmının OpenAI\'a gönderilmesi gerekir. Sen izin verene kadar hiçbir şey gönderilmez.'**
+  String get aiConsentLead;
+
+  /// No description provided for @aiConsentWhatTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ne gönderilir'**
+  String get aiConsentWhatTitle;
+
+  /// No description provided for @aiConsentWhatChat.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbet mesajların ve o ana kadarki konuşma'**
+  String get aiConsentWhatChat;
+
+  /// No description provided for @aiConsentWhatEntries.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ruh hali kayıtların, notları ve günlük yazıların'**
+  String get aiConsentWhatEntries;
+
+  /// No description provided for @aiConsentWhatProfile.
+  ///
+  /// In tr, this message translates to:
+  /// **'Test cevapların ve skorların (PHQ-9, GAD-7), eklediğin tanılar ve tercihler, adın, yaşın ve dilin'**
+  String get aiConsentWhatProfile;
+
+  /// No description provided for @aiConsentWhatStories.
+  ///
+  /// In tr, this message translates to:
+  /// **'Herkese açık paylaşmayı seçtiğin hikâyeler, başka dildeki okurlar için çevrilebilmeleri için'**
+  String get aiConsentWhatStories;
+
+  /// No description provided for @aiConsentWhoTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kime gönderilir'**
+  String get aiConsentWhoTitle;
+
+  /// No description provided for @aiConsentWhoBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'OpenAI, L.L.C. (ABD), API\'si üzerinden. OpenAI bu veriyi yalnızca yanıtı yazmak için kullanır ve modellerini onunla eğitmez; kötüye kullanım denetimi için en fazla 30 gün saklayabilir, sonra siler. E-posta adresin ve şifren asla gönderilmez; verilerin asla satılmaz, reklam için kullanılmaz.'**
+  String get aiConsentWhoBody;
+
+  /// No description provided for @aiConsentChoiceTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Seçim senin'**
+  String get aiConsentChoiceTitle;
+
+  /// No description provided for @aiConsentChoiceBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'İzin vermezsen hiçbir şey gönderilmez ve yapay zekâ özellikleri kapalı kalır. Ruh hali takibi, günlük ve hikâyeler çalışmaya devam eder. Bu kararı istediğin zaman Ben › OpenAI ile paylaşım\'dan değiştirebilirsin.'**
+  String get aiConsentChoiceBody;
+
+  /// No description provided for @aiConsentAllow.
+  ///
+  /// In tr, this message translates to:
+  /// **'İzin ver ve devam et'**
+  String get aiConsentAllow;
+
+  /// No description provided for @aiConsentDecline.
+  ///
+  /// In tr, this message translates to:
+  /// **'İzin verme'**
+  String get aiConsentDecline;
+
+  /// No description provided for @aiConsentRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu özellik OpenAI\'ı kullanır. Kullanmak için Ben › OpenAI ile paylaşım\'ı aç.'**
+  String get aiConsentRequired;
+
+  /// No description provided for @settingsAiSharingLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yapay zekâ servisi'**
+  String get settingsAiSharingLabel;
+
+  /// No description provided for @settingsAiSharingTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'OpenAI ile paylaşım'**
+  String get settingsAiSharingTitle;
+
+  /// No description provided for @settingsAiSharingBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbet, raporlar ve okumalar mesajlarından ve kayıtlarından OpenAI tarafından yazılır. Kapalıyken hiçbir şey gönderilmez ve bu özellikler kapalı kalır.'**
+  String get settingsAiSharingBody;
+
+  /// No description provided for @settingsAiSharingDetails.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tam olarak ne paylaşılıyor?'**
+  String get settingsAiSharingDetails;
+
+  /// No description provided for @meAiSharingOff.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kapalı · hiçbir şey gönderilmiyor'**
+  String get meAiSharingOff;
+
+  /// No description provided for @meAiSharingOn.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açık · sohbet ve raporları OpenAI yazar'**
+  String get meAiSharingOn;
 
   /// No description provided for @chatQuotaExceeded.
   ///

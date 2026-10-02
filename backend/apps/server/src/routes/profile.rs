@@ -29,6 +29,7 @@ pub fn router() -> Router<AppState> {
         .route("/profile/chat-boundaries", put(set_chat_boundaries))
         .route("/profile/preferences", put(set_preferences))
         .route("/profile/checkin-reminder", put(set_checkin_reminder))
+        .route("/profile/ai-consent", put(set_ai_consent))
         .route("/profile/avatar", put(upload_avatar).get(get_avatar))
         .layer(DefaultBodyLimit::max(MAX_AVATAR_BYTES + 1024))
         .route("/profile/push-token", put(register_push_token).delete(unregister_push_token))
@@ -59,6 +60,9 @@ struct ProfileResponse {
     chat_boundary_note: Option<String>,
     checkin_reminder_enabled: bool,
     checkin_reminder_hour: u8,
+    /// Whether they allowed their content to go to the AI service — see
+    /// `routes::require_ai_consent`.
+    ai_consent: bool,
     created_at: String,
 }
 
@@ -132,8 +136,35 @@ async fn profile(
         chat_boundary_note: user.chat_boundary_note.clone(),
         checkin_reminder_enabled: user.checkin_reminder_enabled,
         checkin_reminder_hour: user.checkin_reminder_hour,
+        ai_consent: crate::routes::has_ai_consent(&state, auth.user_id).await,
         created_at: user.created_at.to_rfc3339(),
     }))
+}
+
+#[derive(Debug, Deserialize)]
+struct SetAiConsentRequest {
+    granted: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct AiConsentResponse {
+    ai_consent: bool,
+}
+
+/// Records the answer to the in-app "share with the AI service?" question,
+/// or its withdrawal from settings. Withdrawing stops every AI feature for
+/// them at once; what was already generated stays theirs to read.
+async fn set_ai_consent(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(req): Json<SetAiConsentRequest>,
+) -> Result<Json<AiConsentResponse>, (StatusCode, String)> {
+    state
+        .ai_consent
+        .set(auth.user_id, req.granted)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(Json(AiConsentResponse { ai_consent: req.granted }))
 }
 
 /// Replaces the self-reported diagnosis list. Slugs are validated against the

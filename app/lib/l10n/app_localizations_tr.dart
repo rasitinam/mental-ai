@@ -1797,7 +1797,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get consentAiBody =>
-      'Yanıt ve rapor yazabilmek için ilgili metin OpenAI\'a gönderilir. Verilerin reklam için kullanılmaz ve asla satılmaz.';
+      'Sohbet ve raporları OpenAI yazar. Hiçbir şey gönderilmeden önce ayrıntılarıyla ayrıca izin isteriz.';
 
   @override
   String get consentHealthTitle => 'Sağlık bilgisi için açık rıza';
@@ -1832,6 +1832,74 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get consentAccepted => 'Kabul edildi';
+
+  @override
+  String get aiConsentTitle => 'Yapay zekâ servisiyle paylaşalım mı?';
+
+  @override
+  String get aiConsentLead =>
+      'Hearth\'teki sohbet, günlük rapor, yaşam analizi ve okumaları OpenAI\'ın yapay zekâ modelleri yazar. Bunun için verilerinin bir kısmının OpenAI\'a gönderilmesi gerekir. Sen izin verene kadar hiçbir şey gönderilmez.';
+
+  @override
+  String get aiConsentWhatTitle => 'Ne gönderilir';
+
+  @override
+  String get aiConsentWhatChat => 'Sohbet mesajların ve o ana kadarki konuşma';
+
+  @override
+  String get aiConsentWhatEntries =>
+      'Ruh hali kayıtların, notları ve günlük yazıların';
+
+  @override
+  String get aiConsentWhatProfile =>
+      'Test cevapların ve skorların (PHQ-9, GAD-7), eklediğin tanılar ve tercihler, adın, yaşın ve dilin';
+
+  @override
+  String get aiConsentWhatStories =>
+      'Herkese açık paylaşmayı seçtiğin hikâyeler, başka dildeki okurlar için çevrilebilmeleri için';
+
+  @override
+  String get aiConsentWhoTitle => 'Kime gönderilir';
+
+  @override
+  String get aiConsentWhoBody =>
+      'OpenAI, L.L.C. (ABD), API\'si üzerinden. OpenAI bu veriyi yalnızca yanıtı yazmak için kullanır ve modellerini onunla eğitmez; kötüye kullanım denetimi için en fazla 30 gün saklayabilir, sonra siler. E-posta adresin ve şifren asla gönderilmez; verilerin asla satılmaz, reklam için kullanılmaz.';
+
+  @override
+  String get aiConsentChoiceTitle => 'Seçim senin';
+
+  @override
+  String get aiConsentChoiceBody =>
+      'İzin vermezsen hiçbir şey gönderilmez ve yapay zekâ özellikleri kapalı kalır. Ruh hali takibi, günlük ve hikâyeler çalışmaya devam eder. Bu kararı istediğin zaman Ben › OpenAI ile paylaşım\'dan değiştirebilirsin.';
+
+  @override
+  String get aiConsentAllow => 'İzin ver ve devam et';
+
+  @override
+  String get aiConsentDecline => 'İzin verme';
+
+  @override
+  String get aiConsentRequired =>
+      'Bu özellik OpenAI\'ı kullanır. Kullanmak için Ben › OpenAI ile paylaşım\'ı aç.';
+
+  @override
+  String get settingsAiSharingLabel => 'Yapay zekâ servisi';
+
+  @override
+  String get settingsAiSharingTitle => 'OpenAI ile paylaşım';
+
+  @override
+  String get settingsAiSharingBody =>
+      'Sohbet, raporlar ve okumalar mesajlarından ve kayıtlarından OpenAI tarafından yazılır. Kapalıyken hiçbir şey gönderilmez ve bu özellikler kapalı kalır.';
+
+  @override
+  String get settingsAiSharingDetails => 'Tam olarak ne paylaşılıyor?';
+
+  @override
+  String get meAiSharingOff => 'Kapalı · hiçbir şey gönderilmiyor';
+
+  @override
+  String get meAiSharingOn => 'Açık · sohbet ve raporları OpenAI yazar';
 
   @override
   String get chatQuotaExceeded =>

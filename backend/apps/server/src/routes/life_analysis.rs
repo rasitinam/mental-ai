@@ -106,6 +106,13 @@ async fn translated_analysis(
         }
     }
 
+
+    // Translating sends the text to the AI service — only with permission.
+    // The caller falls back to the original on an error.
+    if !crate::routes::has_ai_consent(state, analysis.user_id).await {
+        anyhow::bail!("no AI consent");
+    }
+
     let (narrative, key_patterns, do_list, dont_list) = translate_life_analysis(
         &analysis.narrative,
         &analysis.key_patterns,
@@ -137,6 +144,7 @@ async fn generate_analysis(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<LifeAnalysis>, Response> {
+    crate::routes::require_ai_consent(&state, auth.user_id).await.map_err(IntoResponse::into_response)?;
     let internal = |e: anyhow::Error| {
         (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
     };

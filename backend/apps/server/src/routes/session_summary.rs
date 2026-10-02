@@ -66,6 +66,7 @@ async fn session_summary(
     auth: AuthUser,
     Json(req): Json<SessionSummaryRequest>,
 ) -> Result<Json<SessionSummaryResponse>, (StatusCode, String)> {
+    crate::routes::require_ai_consent(&state, auth.user_id).await?;
     if !ALLOWED_DAYS.contains(&req.days) {
         return Err((StatusCode::BAD_REQUEST, format!("unsupported period: {} days", req.days)));
     }

@@ -10,6 +10,7 @@ import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/auth_screen.dart';
 import '../features/catalog/presentation/disorder_detail_screen.dart';
 import '../features/chat/presentation/chat_screen.dart';
+import '../features/consent/presentation/ai_consent_screen.dart';
 import '../features/consent/presentation/privacy_consent_screen.dart';
 import '../features/daily_report/presentation/daily_report_screen.dart';
 import '../features/home/presentation/home_shell.dart';
@@ -64,11 +65,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: ref.read(sessionTokenProvider) != null ? '/report' : '/login',
     refreshListenable: refresh,
-    redirect: (context, state) {
+    redirect: (context, state) async {
       final loggedIn = ref.read(sessionTokenProvider) != null;
       final onLoginPage = state.matchedLocation == '/login';
       final onOnboarding = state.matchedLocation == '/onboarding';
       final onConsent = state.matchedLocation == '/before-you-go';
+      final onAiConsent = state.matchedLocation == '/ai-consent';
       final justRegistered = ref.read(justRegisteredProvider);
 
       // The privacy summary comes before everything else, once per policy
@@ -80,6 +82,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (!loggedIn && !onLoginPage) return '/login';
       if (loggedIn && onLoginPage) return justRegistered ? '/onboarding' : '/report';
+
+      // Before any AI feature (onboarding's first question already is one):
+      // a separate, explicit yes or no to sending their content to OpenAI.
+      if (loggedIn && !onAiConsent && await shouldAskAiConsent(ref)) return '/ai-consent';
+      if (onAiConsent) return null;
+
       if (loggedIn && justRegistered && !onOnboarding) return '/onboarding';
       return null;
     },
@@ -87,6 +95,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/before-you-go',
         builder: (context, state) => PrivacyConsentScreen(onAccepted: () => context.go('/login')),
+      ),
+      GoRoute(
+        path: '/ai-consent',
+        builder: (context, state) => AiConsentScreen(
+          onDone: (_) => context.go(ref.read(justRegisteredProvider) ? '/onboarding' : '/report'),
+        ),
       ),
       GoRoute(
         path: '/login',

@@ -57,6 +57,28 @@ pub fn build_router(app_state: AppState) -> Router {
         .with_state(app_state)
 }
 
+/// The status body a generator answers with when the person hasn't allowed
+/// their content to go to the AI service. The app recognises it and asks
+/// for permission instead of showing a generic error.
+pub(crate) const AI_CONSENT_REQUIRED: &str = "ai_consent_required";
+
+/// Whether this person allowed their own content (messages, moods, journal,
+/// answers, profile) to be sent to the AI service. Asked in the app before
+/// anything is sent — App Store guideline 5.1.2(i). A failed lookup counts
+/// as "no": when in doubt, nothing leaves.
+pub(crate) async fn has_ai_consent(state: &AppState, user_id: Uuid) -> bool {
+    matches!(state.ai_consent.granted_at(user_id).await, Ok(Some(_)))
+}
+
+/// Guard for every handler that sends the person's own data to the model.
+pub(crate) async fn require_ai_consent(state: &AppState, user_id: Uuid) -> Result<(), (StatusCode, String)> {
+    if has_ai_consent(state, user_id).await {
+        Ok(())
+    } else {
+        Err((StatusCode::FORBIDDEN, AI_CONSENT_REQUIRED.to_string()))
+    }
+}
+
 /// The account behind a request, for prompt context (diagnoses, age,
 /// language). Returns `None` rather than an error when the lookup fails:
 /// missing context should make an answer less tailored, never fail the

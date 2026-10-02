@@ -14,7 +14,7 @@ use mental_knowledge_base::{Embedder, SqliteVectorStore};
 use mental_llm_connector::openai_compatible::OpenAiCompatibleProvider;
 use mental_llm_connector::LlmProvider;
 use mental_storage::{
-    init_pool, SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
+    init_pool, SqliteActivityRepository, SqliteAiConsentRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
     SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
     SqliteDiscoveryRepository,
     SqliteDmRepository, SqliteEmailCodeRepository, SqlitePersonMemoryRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
@@ -130,6 +130,7 @@ async fn main() -> anyhow::Result<()> {
         send_budget: Arc::new(email_verify::SendBudget::new()),
         person_memory: Arc::new(SqlitePersonMemoryRepository::new(pool.clone())),
         refresh_guard: Arc::new(refresh::RefreshGuard::new()),
+        ai_consent: Arc::new(SqliteAiConsentRepository::new(pool.clone())),
     };
 
     if config.research_ingest.enabled {

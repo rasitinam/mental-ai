@@ -92,6 +92,13 @@ async fn translated_report(
         }
     }
 
+
+    // Translating sends the text to the AI service — only with permission.
+    // The caller falls back to the original on an error.
+    if !crate::routes::has_ai_consent(state, report.user_id).await {
+        anyhow::bail!("no AI consent");
+    }
+
     let (summary, recommendations) =
         translate_daily_report(&report.summary, &report.recommendations, target_language, state.llm.as_ref())
             .await?;
@@ -132,6 +139,7 @@ async fn generate_report(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<DailyMentalReport>, (axum::http::StatusCode, String)> {
+    crate::routes::require_ai_consent(&state, auth.user_id).await?;
     let now = Utc::now();
     let since = now - Duration::hours(24);
 

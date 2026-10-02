@@ -99,6 +99,12 @@ async fn translated_state(
         }
     }
 
+    // Translating sends the text to the AI service — only with permission.
+    // The caller falls back to the original on an error.
+    if !crate::routes::has_ai_consent(state, stored.user_id).await {
+        anyhow::bail!("no AI consent");
+    }
+
     let (headline, note) =
         translate_current_state(&stored.headline, &stored.note, target_language, state.llm.as_ref())
             .await?;
@@ -162,6 +168,7 @@ async fn refresh_state(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<UserState>, (axum::http::StatusCode, String)> {
+    crate::routes::require_ai_consent(&state, auth.user_id).await?;
     let assessed = run_state_refresh(&state, auth.user_id)
         .await
         .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()))?;

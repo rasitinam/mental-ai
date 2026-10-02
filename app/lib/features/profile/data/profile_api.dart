@@ -82,6 +82,13 @@ class ProfileApi {
     return UserProfile.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Records whether they allow their content to be sent to the AI
+  /// service, or withdraws that permission. Returns the stored answer.
+  Future<bool> setAiConsent(bool granted) async {
+    final response = await _dio.put('/profile/ai-consent', data: {'granted': granted});
+    return (response.data as Map<String, dynamic>)['ai_consent'] as bool? ?? granted;
+  }
+
   /// Replaces the profile photo with the picked image. The content type is
   /// read off the file's extension rather than `XFile.mimeType` — that
   /// field isn't reliably populated across every platform image_picker

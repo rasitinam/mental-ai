@@ -92,6 +92,11 @@ impl Default for RefreshGuard {
 /// already gone out — a failure here is only logged.
 pub fn trigger_background_refresh(state: AppState, user_id: Uuid) {
     tokio::spawn(async move {
+        // Nothing of theirs goes to the AI service without their permission.
+        if !crate::routes::has_ai_consent(&state, user_id).await {
+            return;
+        }
+
         if state.refresh_guard.try_begin_state(user_id) {
             if let Err(err) = refresh_current_state(&state, user_id).await {
                 tracing::warn!(error = %err, %user_id, "background state refresh failed");

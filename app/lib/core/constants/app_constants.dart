@@ -26,6 +26,9 @@ class AppConstants {
   static const String prefsUserIdKey = 'mental_ai.user_id';
   /// The Privacy Policy version this device accepted on the consent screen.
   static const String prefsPrivacyAcceptedKey = 'mental_ai.privacy_accepted_version';
+  /// The account (user id) that said no on the AI consent screen on this
+  /// device, so the question isn't asked again on every launch.
+  static const String prefsAiConsentDeclinedKey = 'mental_ai.ai_consent_declined_user';
   static const String prefsLanguageKey = 'mental_ai.language';
   static const String prefsThemeModeKey = 'mental_ai.theme_mode';
   static const String prefsSessionTokenKey = 'mental_ai.session_token';

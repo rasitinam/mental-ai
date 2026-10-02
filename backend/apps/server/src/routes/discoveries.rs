@@ -35,6 +35,7 @@ async fn discoveries(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<DiscoveriesResponse>, (StatusCode, String)> {
+    crate::routes::require_ai_consent(&state, auth.user_id).await?;
     let now = Utc::now();
     let since = now - Duration::days(DISCOVERY_WINDOW_DAYS);
 

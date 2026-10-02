@@ -43,6 +43,7 @@ async fn intro(
     auth: AuthUser,
     Json(req): Json<IntroRequest>,
 ) -> Result<Json<IntroResponse>, (StatusCode, String)> {
+    crate::routes::require_ai_consent(&state, auth.user_id).await?;
     let answer = req.answer.trim();
     if answer.is_empty() {
         return Err((StatusCode::BAD_REQUEST, "answer can't be empty".to_string()));

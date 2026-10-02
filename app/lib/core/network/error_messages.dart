@@ -43,6 +43,11 @@ String friendlyErrorMessage(AppLocalizations l10n, Object error) {
       // enough to actually be that kind of message rather than, say, an
       // HTML error page from a proxy in between.
       final body = error.response?.data;
+      // An AI feature refused because they haven't allowed sharing with
+      // the AI service (`routes::require_ai_consent`): say where to allow it.
+      if (status == 403 && body is String && body.trim() == 'ai_consent_required') {
+        return l10n.aiConsentRequired;
+      }
       if (body is String && body.trim().isNotEmpty && body.length < 200) {
         return body.trim();
       }

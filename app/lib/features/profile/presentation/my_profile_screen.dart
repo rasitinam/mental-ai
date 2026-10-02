@@ -441,6 +441,13 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
             ListGroup(
               children: [
                 ListRow(
+                  icon: Icons.auto_awesome_outlined,
+                  tint: palette.sun,
+                  label: l10n.settingsAiSharingTitle,
+                  subtitle: data == null ? null : (data.aiConsent ? l10n.meAiSharingOn : l10n.meAiSharingOff),
+                  onTap: () => context.push('/settings/privacy'),
+                ),
+                ListRow(
                   icon: Icons.tune_rounded,
                   tint: palette.sky,
                   label: l10n.settingsChatBoundaries,

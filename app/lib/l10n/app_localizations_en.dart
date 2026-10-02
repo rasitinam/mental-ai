@@ -1799,7 +1799,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get consentAiBody =>
-      'To write replies and reports, the relevant text is sent to OpenAI. Your data isn\'t used for advertising and is never sold.';
+      'Chat and reports are written by OpenAI. We ask you separately, with the details, before anything is sent.';
 
   @override
   String get consentHealthTitle => 'Explicit consent for health data';
@@ -1834,6 +1834,75 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get consentAccepted => 'Accepted';
+
+  @override
+  String get aiConsentTitle => 'Share with the AI service?';
+
+  @override
+  String get aiConsentLead =>
+      'Hearth\'s chat, daily report, life analysis and readings are written by AI models from OpenAI. To write them, Hearth has to send some of your data to OpenAI. Nothing is sent until you allow it.';
+
+  @override
+  String get aiConsentWhatTitle => 'What is sent';
+
+  @override
+  String get aiConsentWhatChat =>
+      'Your chat messages and the conversation so far';
+
+  @override
+  String get aiConsentWhatEntries =>
+      'Your mood check-ins, their notes and your journal entries';
+
+  @override
+  String get aiConsentWhatProfile =>
+      'Test answers and scores (PHQ-9, GAD-7), the conditions and preferences you added, your name, age and language';
+
+  @override
+  String get aiConsentWhatStories =>
+      'Stories you choose to share publicly, so they can be translated for readers in other languages';
+
+  @override
+  String get aiConsentWhoTitle => 'Who receives it';
+
+  @override
+  String get aiConsentWhoBody =>
+      'OpenAI, L.L.C. (USA), through its API. OpenAI uses it only to write the answer and doesn\'t train its models on it; it may keep it for up to 30 days for abuse monitoring, then deletes it. Your email address and password are never sent, and your data is never sold or used for advertising.';
+
+  @override
+  String get aiConsentChoiceTitle => 'Your choice';
+
+  @override
+  String get aiConsentChoiceBody =>
+      'If you don\'t allow it, nothing is sent and the AI features stay off. Mood tracking, the journal and stories keep working. You can change this any time under Me › Sharing with OpenAI.';
+
+  @override
+  String get aiConsentAllow => 'Allow and continue';
+
+  @override
+  String get aiConsentDecline => 'Don\'t allow';
+
+  @override
+  String get aiConsentRequired =>
+      'This feature uses OpenAI. To use it, turn on Me › Sharing with OpenAI.';
+
+  @override
+  String get settingsAiSharingLabel => 'AI service';
+
+  @override
+  String get settingsAiSharingTitle => 'Sharing with OpenAI';
+
+  @override
+  String get settingsAiSharingBody =>
+      'Chat, reports and readings are written by OpenAI from your messages and entries. When this is off, nothing is sent and those features stay off.';
+
+  @override
+  String get settingsAiSharingDetails => 'What exactly is shared?';
+
+  @override
+  String get meAiSharingOff => 'Off · nothing is sent';
+
+  @override
+  String get meAiSharingOn => 'On · chat and reports are written by OpenAI';
 
   @override
   String get chatQuotaExceeded =>

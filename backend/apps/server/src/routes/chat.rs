@@ -110,6 +110,7 @@ async fn send_message(
     auth: AuthUser,
     Json(req): Json<ChatTurnRequest>,
 ) -> Result<Json<ChatTurnResponse>, (axum::http::StatusCode, String)> {
+    crate::routes::require_ai_consent(&state, auth.user_id).await?;
     let now = Utc::now();
     let today = now.date_naive();
 
@@ -216,6 +217,12 @@ async fn chat_history(
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
+    // Without permission the transcript stays as written: translating it
+    // would send it to the AI service.
+    if !crate::routes::has_ai_consent(&state, auth.user_id).await {
+        return Ok(Json(history));
+    }
+
     if let Some(user) = user_for(&state, auth.user_id).await {
         translate_assistant_turns(&state, &mut history, &user.language).await;
     }
@@ -284,9 +291,10 @@ async fn translate_assistant_turns(state: &AppState, history: &mut [ChatMessageR
 /// just fails the one request, nothing durable to clean up.
 async fn synthesize_speech(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Json(req): Json<SpeechRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    crate::routes::require_ai_consent(&state, auth.user_id).await?;
     if req.text.trim().is_empty() {
         return Err((StatusCode::BAD_REQUEST, "text must not be empty".to_string()));
     }

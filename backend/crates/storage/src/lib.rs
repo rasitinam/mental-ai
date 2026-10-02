@@ -12,7 +12,7 @@ mod history_tests;
 
 pub use pool::init_pool;
 pub use repositories::{
-    SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
+    SqliteActivityRepository, SqliteAiConsentRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
     SqliteChatRepository,
     SqliteChatUsageRepository, SqliteContentTranslationRepository, SqliteDiscoveryRepository,
     SqliteDmRepository, SqliteEmailCodeRepository, SqlitePersonMemoryRepository,

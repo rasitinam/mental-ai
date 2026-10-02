@@ -6,11 +6,12 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../consent/presentation/ai_consent_screen.dart';
 import '../../profile/data/profile_api.dart';
 import '../../profile/presentation/profile_controller.dart';
 
 /// The account's "Gizlilik" (Privacy) sub-page, reached from Hesap. Holds
-/// message privacy today — who may open a DM thread with you — and is
+/// sharing with the AI service and message privacy — who may open a DM thread with you — and is
 /// where any future privacy toggle (who sees a follower list, etc.)
 /// belongs, rather than growing the top-level Hesap group.
 class PrivacySettingsScreen extends ConsumerWidget {
@@ -42,11 +43,114 @@ class PrivacySettingsScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 22),
-              const Expanded(child: SingleChildScrollView(child: _DmPolicyGroup())),
+              const Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [_AiSharingGroup(), SizedBox(height: 28), _DmPolicyGroup()],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Whether their content may be sent to the AI service (OpenAI): the same
+/// permission the AI consent screen asks for, withdrawable here at any time.
+/// Turning it on goes through that screen, so the details are always read
+/// before saying yes; turning it off takes effect at once.
+class _AiSharingGroup extends ConsumerStatefulWidget {
+  const _AiSharingGroup();
+
+  @override
+  ConsumerState<_AiSharingGroup> createState() => _AiSharingGroupState();
+}
+
+class _AiSharingGroupState extends ConsumerState<_AiSharingGroup> {
+  bool _saving = false;
+
+  void _openDetails() {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (context) => AiConsentScreen(
+        fromSettings: true,
+        onDone: (_) => Navigator.of(context).pop(),
+      ),
+    ));
+  }
+
+  Future<void> _turnOff() async {
+    setState(() => _saving = true);
+    try {
+      await ref.read(profileApiProvider).setAiConsent(false);
+      ref.read(aiConsentProvider.notifier).state = false;
+      ref.invalidate(myProfileProvider);
+    } catch (_) {
+      // The switch stays on: the profile still says so.
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+    final granted = ref.watch(myProfileProvider).valueOrNull?.aiConsent ?? false;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionLabel(l10n.settingsAiSharingLabel),
+        const SizedBox(height: 8),
+        GlassSurface(
+          radius: 16,
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 10, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(l10n.settingsAiSharingTitle,
+                          style: AppTypography.label.copyWith(color: palette.textPrimary)),
+                    ),
+                    Switch(
+                      value: granted,
+                      activeThumbColor: palette.accent,
+                      onChanged: _saving ? null : (on) => on ? _openDetails() : _turnOff(),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, thickness: 1, color: palette.separator),
+              InkWell(
+                onTap: _openDetails,
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 52),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(l10n.settingsAiSharingDetails,
+                            style: AppTypography.label.copyWith(color: palette.textPrimary)),
+                      ),
+                      Icon(Icons.chevron_right_rounded, size: 22, color: palette.textSecondary),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(l10n.settingsAiSharingBody,
+            style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+      ],
     );
   }
 }

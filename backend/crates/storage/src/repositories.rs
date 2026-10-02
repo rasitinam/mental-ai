@@ -326,6 +326,7 @@ impl UserRepository for SqliteUserRepository {
             "wellbeing_assessments",
             "user_states",
             "person_memory",
+            "ai_consent",
             "discoveries",
 
             "subscriptions",
@@ -2643,6 +2644,45 @@ impl PersonMemoryRepository for SqlitePersonMemoryRepository {
         .execute(&self.pool)
         .await?;
 
+        Ok(())
+    }
+}
+
+/// Whether the person allowed their content to be sent to the AI service —
+/// see `migrations/0027_ai_consent.sql`.
+pub struct SqliteAiConsentRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteAiConsentRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+
+    pub async fn granted_at(&self, user_id: Uuid) -> anyhow::Result<Option<DateTime<Utc>>> {
+        let row = sqlx::query_as::<_, (DateTime<Utc>,)>("SELECT granted_at FROM ai_consent WHERE user_id = ?1")
+            .bind(user_id.to_string())
+            .fetch_optional(&self.pool)
+            .await?;
+        Ok(row.map(|(at,)| at))
+    }
+
+    pub async fn set(&self, user_id: Uuid, granted: bool) -> anyhow::Result<()> {
+        if granted {
+            sqlx::query(
+                "INSERT INTO ai_consent (user_id, granted_at) VALUES (?1, ?2)
+                 ON CONFLICT(user_id) DO NOTHING",
+            )
+            .bind(user_id.to_string())
+            .bind(Utc::now())
+            .execute(&self.pool)
+            .await?;
+        } else {
+            sqlx::query("DELETE FROM ai_consent WHERE user_id = ?1")
+                .bind(user_id.to_string())
+                .execute(&self.pool)
+                .await?;
+        }
         Ok(())
     }
 }

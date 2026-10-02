@@ -17,7 +17,7 @@ import '../../../l10n/app_localizations.dart';
 /// The version of the hosted Privacy Policy this summary describes. Bump
 /// it when the policy changes materially and everyone sees the summary
 /// once more.
-const privacyPolicyVersion = '2026-09-15';
+const privacyPolicyVersion = '2026-10-02';
 
 bool hasAcceptedPrivacy(SharedPreferences prefs) =>
     prefs.getString(AppConstants.prefsPrivacyAcceptedKey) == privacyPolicyVersion;

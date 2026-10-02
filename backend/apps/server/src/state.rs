@@ -6,7 +6,7 @@ use mental_push::PushProvider;
 
 use crate::rate_limit::LoginRateLimiter;
 use mental_storage::{
-    SqliteActivityRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
+    SqliteActivityRepository, SqliteAiConsentRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
     SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
     SqliteDiscoveryRepository,
     SqliteDmRepository, SqliteEmailCodeRepository, SqlitePersonMemoryRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
@@ -71,6 +71,9 @@ pub struct AppState {
     pub person_memory: Arc<SqlitePersonMemoryRepository>,
     /// At most one background refresh per person at a time — see `refresh`.
     pub refresh_guard: Arc<crate::refresh::RefreshGuard>,
+    /// Whether each person allowed their content to go to the AI service —
+    /// see `routes::require_ai_consent`.
+    pub ai_consent: Arc<SqliteAiConsentRepository>,
 }
 
 #[derive(Clone)]
