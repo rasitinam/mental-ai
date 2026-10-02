@@ -44,10 +44,10 @@ powershell -NoProfile -File "G:\mental-ai\scripts\start-backend-background.ps1"
 Sunucuyu derleme süresince (birkaç dakika) kapatmamak için ayrı bir klasörde derleyip yalnızca exe'yi değiştir — kesinti birkaç saniye sürer:
 
 ```powershell
-cd G:\mental-aiackend
+cd G:\mental-ai\backend
 cargo build --release -p mental-ai-server --target-dir target-staging
 powershell -NoProfile -File "G:\mental-ai\scripts\stop-backend-background.ps1"
-Copy-Item target-stagingelease\mental-ai-server.exe targetelease\mental-ai-server.exe -Force
+Copy-Item target-staging\release\mental-ai-server.exe target\release\mental-ai-server.exe -Force
 powershell -NoProfile -File "G:\mental-ai\scripts\start-backend-background.ps1"
 ```
 
