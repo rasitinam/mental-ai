@@ -35,7 +35,7 @@ void main() {
           ),
         ),
       );
-      final focus = () => tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus;
+      bool focus() => tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus;
 
       await tester.tap(find.byType(TextField));
       await tester.pump();

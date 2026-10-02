@@ -52,6 +52,24 @@ jobs:
         with:
           channel: stable
       - run: flutter pub get
+      # google-services.json is gitignored (it holds the Firebase project's
+      # keys), and the Google Services Gradle plugin refuses to build
+      # without one. This check only needs a file that parses for the app's
+      # package name, so it writes a placeholder when none is present.
+      - name: Placeholder Firebase config
+        run: |
+          [ -f android/app/google-services.json ] || cat > android/app/google-services.json <<'JSON'
+          {
+            "project_info": {"project_number": "000000000000", "project_id": "ci-placeholder", "storage_bucket": "ci-placeholder.appspot.com"},
+            "client": [{
+              "client_info": {"mobilesdk_app_id": "1:000000000000:android:0000000000000000", "android_client_info": {"package_name": "com.mentalai.mental_ai"}},
+              "oauth_client": [],
+              "api_key": [{"current_key": "ci-placeholder"}],
+              "services": {"appinvite_service": {"other_platform_oauth_client": []}}
+            }],
+            "configuration_version": "1"
+          }
+          JSON
       - run: flutter build apk --debug
 
   app-build-ios:

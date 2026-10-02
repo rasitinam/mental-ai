@@ -6,9 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:pdf/pdf.dart';
 
-import '../lib/features/session_summary/data/session_summary_api.dart';
-import '../lib/features/session_summary/presentation/session_summary_pdf.dart';
-import '../lib/l10n/app_localizations.dart';
+import 'package:mental_ai/features/session_summary/data/session_summary_api.dart';
+import 'package:mental_ai/features/session_summary/presentation/session_summary_pdf.dart';
+import 'package:mental_ai/l10n/app_localizations.dart';
 
 /// The PDF is the one part of the session summary a person hands to
 /// someone else, and the PDF standard fonts have no ş, ğ or ı — so this
