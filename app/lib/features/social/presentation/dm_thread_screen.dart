@@ -118,6 +118,26 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
     }
   }
 
+  /// Reports the other person's side of this conversation to the moderators.
+  Future<void> _report(DmThread thread) async {
+    final l10n = AppLocalizations.of(context)!;
+    final note = await askReport(context, title: l10n.reportConversationTitle);
+    if (note == null || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(socialApiProvider).reportUser(
+            thread.otherUserId,
+            kind: 'dm',
+            threadId: thread.id,
+            note: note.isEmpty ? null : note,
+          );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.storiesReportSent)));
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.commonError)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -164,6 +184,11 @@ class _DmThreadScreenState extends ConsumerState<DmThreadScreen> {
                               .copyWith(color: palette.textPrimary, fontSize: 17),
                         ),
                       ),
+                    ),
+                    IconButton(
+                      onPressed: () => _report(thread),
+                      tooltip: l10n.reportAction,
+                      icon: Icon(Icons.flag_outlined, size: 20, color: palette.warning),
                     ),
                     IconButton(
                       onPressed: () => _block(thread),

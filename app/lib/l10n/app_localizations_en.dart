@@ -1625,6 +1625,36 @@ class AppLocalizationsEn extends AppLocalizations {
       'You won\'t see each other\'s stories or profile, and you can\'t message each other. You can undo this any time under Me > Settings > Blocked people.';
 
   @override
+  String get reportAction => 'Report';
+
+  @override
+  String get reportPersonTitle => 'Report this person';
+
+  @override
+  String get reportConversationTitle => 'Report this conversation';
+
+  @override
+  String get reportBody =>
+      'Our team reviews every report. Their latest messages, or their name and photo, are attached so we can see what you saw.';
+
+  @override
+  String get moderationPeopleReports => 'Reported people';
+
+  @override
+  String moderationReportedBy(String name) {
+    return 'Reported by $name';
+  }
+
+  @override
+  String get moderationKindProfile => 'Profile';
+
+  @override
+  String get moderationKindDm => 'Messages';
+
+  @override
+  String get moderationResolve => 'Mark as handled';
+
+  @override
   String get blockDone => 'Blocked.';
 
   @override
@@ -1736,10 +1766,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get premiumFeatureChat => 'Unlimited AI chat';
 
   @override
-  String get premiumFeatureAnalysis => 'More frequent life analysis';
+  String get premiumFeatureAnalysis =>
+      'Life analysis every day, not once a week';
 
   @override
-  String get premiumFeatureInsights => 'Deeper, more personalized insights';
+  String get premiumFeatureInsights =>
+      'Deeper life analysis that reads twice as much of your history';
 
   @override
   String premiumPricePerMonth(String price) {
@@ -1762,7 +1794,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumTerms =>
-      'Subscription renews automatically. You\'ll be charged unless you cancel at least 24 hours before the current period ends. Cancel anytime in App Store > Settings.';
+      'Subscription renews automatically. You\'ll be charged unless you cancel at least 24 hours before the current period ends. Cancel anytime in Settings > your name > Subscriptions.';
 
   @override
   String get premiumUnavailable => 'Purchases aren\'t available right now.';

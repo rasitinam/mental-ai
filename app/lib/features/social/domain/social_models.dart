@@ -158,3 +158,39 @@ class BlockedPerson {
         anonymous: json['anonymous'] as bool? ?? false,
       );
 }
+
+/// A report about a person, as the moderation queue shows it.
+class UserReport {
+  final String id;
+  /// "profile" or "dm".
+  final String kind;
+  final String reportedUserId;
+  final String reportedName;
+  final String reporterName;
+  /// The server's copy of what was reported.
+  final String content;
+  final String? note;
+  final DateTime createdAt;
+
+  const UserReport({
+    required this.id,
+    required this.kind,
+    required this.reportedUserId,
+    required this.reportedName,
+    required this.reporterName,
+    required this.content,
+    required this.note,
+    required this.createdAt,
+  });
+
+  factory UserReport.fromJson(Map<String, dynamic> json) => UserReport(
+        id: json['id'] as String,
+        kind: json['kind'] as String,
+        reportedUserId: json['reported_user_id'] as String,
+        reportedName: json['reported_name'] as String,
+        reporterName: json['reporter_name'] as String,
+        content: json['content'] as String,
+        note: json['note'] as String?,
+        createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      );
+}

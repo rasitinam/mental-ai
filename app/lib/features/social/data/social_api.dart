@@ -86,6 +86,29 @@ class SocialApi {
     await _dio.delete('/blocks/$blockId');
   }
 
+  /// Reports someone's profile (`kind: "profile"`) or what they wrote to you
+  /// in a conversation (`kind: "dm"` with [threadId]). The server attaches
+  /// its own copy of that content for the moderators.
+  Future<void> reportUser(String userId, {required String kind, String? threadId, String? note}) async {
+    await _dio.post('/users/$userId/report', data: {
+      'kind': kind,
+      'thread_id': ?threadId,
+      'note': ?note,
+    });
+  }
+
+  /// Open reports about people. Admin-only; 403 for anyone else.
+  Future<List<UserReport>> userReports() async {
+    final response = await _dio.get('/moderation/user-reports');
+    return (response.data as List<dynamic>)
+        .map((e) => UserReport.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> resolveUserReport(String id) async {
+    await _dio.post('/moderation/user-reports/$id/resolve');
+  }
+
   Future<List<BlockedPerson>> blocks() async {
     final response = await _dio.get('/blocks');
     return (response.data as List<dynamic>)

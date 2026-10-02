@@ -1,3 +1,4 @@
+mod apple_revoke;
 mod apple_signin;
 mod auth;
 mod email_verify;
@@ -21,7 +22,7 @@ use mental_storage::{
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
     SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
-    SqliteUserStateRepository,
+    SqliteUserReportRepository, SqliteUserStateRepository,
 };
 use axum::http::{header, HeaderValue};
 use tower_http::{
@@ -131,6 +132,7 @@ async fn main() -> anyhow::Result<()> {
         person_memory: Arc::new(SqlitePersonMemoryRepository::new(pool.clone())),
         refresh_guard: Arc::new(refresh::RefreshGuard::new()),
         ai_consent: Arc::new(SqliteAiConsentRepository::new(pool.clone())),
+        user_reports: Arc::new(SqliteUserReportRepository::new(pool.clone())),
     };
 
     if config.research_ingest.enabled {

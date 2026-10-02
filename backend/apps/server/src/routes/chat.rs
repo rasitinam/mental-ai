@@ -9,7 +9,7 @@ use chrono::{Duration, FixedOffset, Utc};
 use mental_analysis_engine::{generate_chat_reply, translate::translate_batch, ChatBackground};
 use mental_domain::repository::{
     ChatRepository, ChatUsageRepository, ContentTranslationRepository, JournalRepository, LifeAnalysisRepository,
-    MoodRepository, ReportRepository, SubscriptionRepository, UserStateRepository,
+    MoodRepository, ReportRepository, UserStateRepository,
 };
 use mental_domain::{ChatMessageRecord, ChatRole};
 use mental_llm_connector::ChatMessage;
@@ -117,13 +117,7 @@ async fn send_message(
     // Hearth Plus subscribers chat without a cap; everyone else draws down
     // a daily token budget (see `FREE_DAILY_CHAT_TOKEN_BUDGET`) and gets
     // sent to the paywall once it's gone for the day.
-    let is_premium = state
-        .subscriptions
-        .for_user(auth.user_id)
-        .await
-        .ok()
-        .flatten()
-        .is_some_and(|sub| sub.is_active());
+    let is_premium = crate::routes::is_premium(&state, auth.user_id).await;
 
     if !is_premium {
         let used_today = state.chat_usage.tokens_used(auth.user_id, today).await.unwrap_or(0);

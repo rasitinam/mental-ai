@@ -23,11 +23,15 @@ pub fn router() -> Router<AppState> {
         .route("/life-analysis/generate", post(generate_analysis))
 }
 
-/// Once a week. A whole-history analysis reads everything the account has
-/// ever recorded, so it is both the most expensive call in the app and the
-/// one whose answer changes least from day to day — regenerating it daily
-/// would cost the most and say the least.
+/// Once a week on the free plan. A whole-history analysis reads everything
+/// the account has ever recorded, so it is both the most expensive call in
+/// the app and the one whose answer changes least from day to day.
 const COOLDOWN: Duration = Duration::days(7);
+
+/// Hearth Plus: once a day, and a deeper read (see `LifeAnalysisInputs::deep`).
+/// The paywall promises "more frequent life analysis" and "deeper insights";
+/// these two are what make that true.
+const PLUS_COOLDOWN: Duration = Duration::days(1);
 
 /// Bounded so a long-lived account doesn't grow this query without limit;
 /// the analysis engine caps what it actually sends to the model too.
@@ -155,11 +159,17 @@ async fn generate_analysis(
         .await
         .map_err(internal)?;
 
+    let plus = crate::routes::is_premium(&state, auth.user_id).await;
+
     if let Some(previous) = previous {
-        let retry_after = previous.generated_at + COOLDOWN;
+        let retry_after = previous.generated_at + if plus { PLUS_COOLDOWN } else { COOLDOWN };
         if retry_after > Utc::now() {
             let body = CooldownError {
-                error: "Yaşam analizi haftada bir oluşturulabilir.",
+                error: if plus {
+                    "Yaşam analizi günde bir oluşturulabilir."
+                } else {
+                    "Yaşam analizi haftada bir oluşturulabilir."
+                },
                 retry_after,
             };
             return Err((axum::http::StatusCode::TOO_MANY_REQUESTS, Json(body)).into_response());
@@ -195,6 +205,7 @@ async fn generate_analysis(
         assessments: &assessments,
         state: current_state.as_ref(),
         stories: &stories,
+        deep: plus,
     };
 
     let analysis = generate_life_analysis(auth.user_id, &inputs, &person, state.llm.as_ref())

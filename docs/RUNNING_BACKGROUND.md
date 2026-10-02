@@ -18,6 +18,18 @@ powershell -NoProfile -File "G:\mental-ai\scripts\start-backend-background.ps1"
 - `scripts/start-backend-background.ps1`: `target/release/mental-ai-server.exe`'i görünmez bir pencerede başlatır. Zaten çalışıyorsa hiçbir şey yapmaz. API anahtarı yoksa `backend/data/startup.log`'a yazıp sessizce çıkar.
 - `scripts/stop-backend-background.ps1`: arka plandaki süreci durdurur.
 
+## Bekçi (watchdog)
+
+Oturum açılışındaki görevler süreçleri yalnızca bir kez başlatır. Backend ya da ngrok sonradan çökerse (güncelleme, hata, kopan tünel) bir sonraki oturum açılışına kadar kapalı kalırdı. `scripts/watchdog.ps1` her 5 dakikada bir önce yerel `/health`'i, sonra ngrok üzerinden genel adresi dener ve yalnızca düşen parçayı yeniden başlatır. Her yeniden başlatma `backend/data/watchdog.log`'a bir satır yazar; her şey yolundaysa hiçbir şey yazmaz.
+
+Kurulum (bir kere, yönetici hakkı gerekmez; `conhost --headless` pencere açılmasını engeller):
+
+```powershell
+schtasks /Create /TN "MentalAI Watchdog" /TR "conhost.exe --headless powershell.exe -NoProfile -ExecutionPolicy Bypass -File G:\mental-ai\scripts\watchdog.ps1" /SC MINUTE /MO 5 /RL LIMITED /F
+```
+
+Sınırı: görevler oturum açıkken çalışır. Bilgisayar yeniden başlar ve kimse oturum açmazsa (ör. gece Windows Update yeniden başlatması) sunucu, oturum açılana kadar kapalı kalır.
+
 ## Kod üzerinde değişiklik yapılacaksa
 
 Çalışan `.exe` Windows'ta kilitli olduğu için yeniden derlemeden önce durdurulması gerekir:

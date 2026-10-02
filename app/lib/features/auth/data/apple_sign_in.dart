@@ -17,11 +17,21 @@ class AppleCredential {
   final String identityToken;
   final String nonce;
 
+  /// Apple's one-time authorization code. Account deletion sends it so the
+  /// backend can revoke this app's access to the Apple ID (guideline
+  /// 5.1.1(v)); it expires within minutes and works once.
+  final String authorizationCode;
+
   /// Only present on the very first authorization between this app and this
   /// Apple ID; Apple never repeats it.
   final String? displayName;
 
-  const AppleCredential({required this.identityToken, required this.nonce, this.displayName});
+  const AppleCredential({
+    required this.identityToken,
+    required this.nonce,
+    required this.authorizationCode,
+    this.displayName,
+  });
 }
 
 String _randomNonce([int length = 32]) {
@@ -48,6 +58,7 @@ Future<AppleCredential?> requestAppleCredential() async {
     return AppleCredential(
       identityToken: token,
       nonce: rawNonce,
+      authorizationCode: credential.authorizationCode,
       displayName: name.isEmpty ? null : name,
     );
   } on SignInWithAppleAuthorizationException catch (e) {

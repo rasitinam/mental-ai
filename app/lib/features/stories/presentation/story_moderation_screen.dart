@@ -7,6 +7,8 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/glass.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../social/data/social_api.dart';
+import '../../social/domain/social_models.dart';
 import '../domain/life_story.dart';
 import 'moderation_controller.dart';
 
@@ -391,35 +393,135 @@ class _ReportsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (reports.isEmpty) {
-      return ListView(
-        padding: const EdgeInsets.fromLTRB(28, 50, 28, 0),
-        children: [
-          Icon(Icons.flag_outlined, size: 28, color: palette.accent),
-          const SizedBox(height: 14),
-          Text(l10n.storiesModerationNoReports,
-              textAlign: TextAlign.center,
-              style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17)),
-        ],
-      );
-    }
-
-    return ListView.builder(
+    return ListView(
       padding: EdgeInsets.fromLTRB(22, 0, 22, bottomClearance(context)),
-      itemCount: reports.length,
-      itemBuilder: (context, i) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: _ReviewCard(
-          story: reports[i].story,
-          note: reports[i].note,
-          busy: processing.contains(reports[i].story.id),
-          approveLabel: l10n.storiesModerationKeep,
-          palette: palette,
-          l10n: l10n,
-          onApprove: () => controller.approve(reports[i].story.id),
-          onReject: () => controller.reject(reports[i].story.id),
-        ),
-      ),
+      children: [
+        if (reports.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(6, 30, 6, 10),
+            child: Column(
+              children: [
+                Icon(Icons.flag_outlined, size: 28, color: palette.accent),
+                const SizedBox(height: 14),
+                Text(l10n.storiesModerationNoReports,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.headline.copyWith(color: palette.textPrimary, fontSize: 17)),
+              ],
+            ),
+          ),
+        for (final report in reports)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _ReviewCard(
+              story: report.story,
+              note: report.note,
+              busy: processing.contains(report.story.id),
+              approveLabel: l10n.storiesModerationKeep,
+              palette: palette,
+              l10n: l10n,
+              onApprove: () => controller.approve(report.story.id),
+              onReject: () => controller.reject(report.story.id),
+            ),
+          ),
+        const _PeopleReports(),
+      ],
+    );
+  }
+}
+
+/// Open reports about people (their profile, or their side of a private
+/// conversation), loaded straight from the API whenever this tab is shown.
+final _userReportsProvider =
+    FutureProvider.autoDispose<List<UserReport>>((ref) => ref.watch(socialApiProvider).userReports());
+
+class _PeopleReports extends ConsumerStatefulWidget {
+  const _PeopleReports();
+
+  @override
+  ConsumerState<_PeopleReports> createState() => _PeopleReportsState();
+}
+
+class _PeopleReportsState extends ConsumerState<_PeopleReports> {
+  final _resolving = <String>{};
+
+  Future<void> _resolve(String id) async {
+    setState(() => _resolving.add(id));
+    try {
+      await ref.read(socialApiProvider).resolveUserReport(id);
+      ref.invalidate(_userReportsProvider);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.commonError)));
+      }
+    } finally {
+      if (mounted) setState(() => _resolving.remove(id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final palette = AppPalette.of(context);
+    final reports = ref.watch(_userReportsProvider).valueOrNull ?? const <UserReport>[];
+    if (reports.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 12),
+        SectionLabel(l10n.moderationPeopleReports),
+        const SizedBox(height: 8),
+        for (final report in reports)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: GlassSurface(
+              radius: 18,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(report.reportedName,
+                            style: AppTypography.label.copyWith(color: palette.textPrimary, fontWeight: FontWeight.w700)),
+                      ),
+                      Text(report.kind == 'dm' ? l10n.moderationKindDm : l10n.moderationKindProfile,
+                          style: AppTypography.footnote.copyWith(color: palette.textSecondary)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${l10n.moderationReportedBy(report.reporterName)} · ${DateFormat.yMMMd().add_Hm().format(report.createdAt)}',
+                    style: AppTypography.footnote.copyWith(color: palette.textSecondary),
+                  ),
+                  if (report.note != null) ...[
+                    const SizedBox(height: 8),
+                    Text('"${report.note}"',
+                        style: AppTypography.subheadline.copyWith(color: palette.textPrimary, fontStyle: FontStyle.italic)),
+                  ],
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: palette.surfaceMuted, borderRadius: BorderRadius.circular(12)),
+                    child: Text(report.content,
+                        style: AppTypography.subheadline.copyWith(color: palette.textPrimary, height: 1.4)),
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _resolving.contains(report.id) ? null : () => _resolve(report.id),
+                      child: Text(l10n.moderationResolve),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

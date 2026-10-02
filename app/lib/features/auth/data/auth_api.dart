@@ -78,11 +78,13 @@ class AuthApi {
     String? password,
     String? appleIdentityToken,
     String? appleNonce,
+    String? appleAuthorizationCode,
   }) async {
     await _dio.delete('/account', data: {
       'password': ?password,
       'apple_identity_token': ?appleIdentityToken,
       'apple_nonce': ?appleNonce,
+      'apple_authorization_code': ?appleAuthorizationCode,
     });
   }
 }

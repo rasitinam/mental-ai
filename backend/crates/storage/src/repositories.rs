@@ -339,6 +339,10 @@ impl UserRepository for SqliteUserRepository {
         }
 
         sqlx::query("DELETE FROM user_blocks WHERE blocker_id = ?1 OR blocked_id = ?1").bind(&id).execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM user_reports WHERE reporter_id = ?1 OR reported_user_id = ?1")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("DELETE FROM users WHERE id = ?1").bind(&id).execute(&mut *tx).await?;
 
         tx.commit().await?;
@@ -2684,5 +2688,79 @@ impl SqliteAiConsentRepository {
                 .await?;
         }
         Ok(())
+    }
+}
+
+/// One report about a person — see `migrations/0028_user_reports.sql`.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct UserReport {
+    pub id: Uuid,
+    pub reporter_id: Uuid,
+    pub reported_user_id: Uuid,
+    pub kind: String,
+    pub content: String,
+    pub note: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+pub struct SqliteUserReportRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteUserReportRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+
+    pub async fn add(&self, report: &UserReport) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO user_reports (id, reporter_id, reported_user_id, kind, content, note, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        )
+        .bind(report.id.to_string())
+        .bind(report.reporter_id.to_string())
+        .bind(report.reported_user_id.to_string())
+        .bind(&report.kind)
+        .bind(&report.content)
+        .bind(&report.note)
+        .bind(report.created_at)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    /// Unresolved reports, oldest first — the order they should be handled in.
+    pub async fn list_open(&self) -> anyhow::Result<Vec<UserReport>> {
+        let rows = sqlx::query_as::<_, (String, String, String, String, String, Option<String>, DateTime<Utc>)>(
+            "SELECT id, reporter_id, reported_user_id, kind, content, note, created_at
+             FROM user_reports WHERE resolved_at IS NULL ORDER BY created_at",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .filter_map(|(id, reporter, reported, kind, content, note, created_at)| {
+                Some(UserReport {
+                    id: Uuid::parse_str(&id).ok()?,
+                    reporter_id: Uuid::parse_str(&reporter).ok()?,
+                    reported_user_id: Uuid::parse_str(&reported).ok()?,
+                    kind,
+                    content,
+                    note,
+                    created_at,
+                })
+            })
+            .collect())
+    }
+
+    /// Returns whether an open report with this id existed.
+    pub async fn resolve(&self, id: Uuid) -> anyhow::Result<bool> {
+        let done = sqlx::query("UPDATE user_reports SET resolved_at = ?2 WHERE id = ?1 AND resolved_at IS NULL")
+            .bind(id.to_string())
+            .bind(Utc::now())
+            .execute(&self.pool)
+            .await?;
+        Ok(done.rows_affected() > 0)
     }
 }

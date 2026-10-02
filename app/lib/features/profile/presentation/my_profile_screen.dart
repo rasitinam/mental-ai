@@ -416,25 +416,29 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 Text(l10n.settingsTitle, style: AppTypography.title2.copyWith(color: palette.textPrimary, fontSize: 28)),
               ],
             ),
-            const SizedBox(height: 18),
-            SectionHeader(title: l10n.meReminders),
-            const SizedBox(height: 8),
-            ListGroup(
-              children: [
-                ListRow(
-                  icon: Icons.notifications_none_rounded,
-                  tint: palette.sun,
-                  label: l10n.notificationsCheckinTitle,
-                  subtitle: data == null ? null : (reminderOn ? l10n.meReminderOn(reminderTimeLabel(reminderHour)) : l10n.meReminderOff),
-                  trailing: AppToggle(
-                    value: reminderOn,
-                    semanticLabel: l10n.notificationsCheckinTitle,
-                    onChanged: data == null || _reminderOverride != null ? null : (value) => _setReminder(value, reminderHour),
+            // The evening reminder is a push notification: where push isn't
+            // set up (iOS today), the switch would do nothing.
+            if (ref.read(pushServiceProvider).available) ...[
+              const SizedBox(height: 18),
+              SectionHeader(title: l10n.meReminders),
+              const SizedBox(height: 8),
+              ListGroup(
+                children: [
+                  ListRow(
+                    icon: Icons.notifications_none_rounded,
+                    tint: palette.sun,
+                    label: l10n.notificationsCheckinTitle,
+                    subtitle: data == null ? null : (reminderOn ? l10n.meReminderOn(reminderTimeLabel(reminderHour)) : l10n.meReminderOff),
+                    trailing: AppToggle(
+                      value: reminderOn,
+                      semanticLabel: l10n.notificationsCheckinTitle,
+                      onChanged: data == null || _reminderOverride != null ? null : (value) => _setReminder(value, reminderHour),
+                    ),
+                    onTap: () => context.push('/settings/notifications'),
                   ),
-                  onTap: () => context.push('/settings/notifications'),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
             const SizedBox(height: 30),
             SectionHeader(title: l10n.meChatAndMessages),
             const SizedBox(height: 8),

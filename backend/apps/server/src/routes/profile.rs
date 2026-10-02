@@ -493,6 +493,10 @@ struct DeleteAccountRequest {
     apple_identity_token: Option<String>,
     #[serde(default)]
     apple_nonce: Option<String>,
+    /// The one-time code from that same fresh Apple sign-in, used to revoke
+    /// this app's Apple tokens (guideline 5.1.1(v)) — see `apple_revoke`.
+    #[serde(default)]
+    apple_authorization_code: Option<String>,
 }
 
 /// Permanently deletes the signed-in account and everything it owns.
@@ -536,6 +540,16 @@ async fn delete_account(
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
         if linked.as_deref() != Some(identity.subject.as_str()) {
             return Err((StatusCode::UNAUTHORIZED, "this Apple ID does not own the account".to_string()));
+        }
+
+        // Best-effort: Apple-side revocation failing (or not configured yet)
+        // must not keep someone from deleting their account.
+        if let Some(code) = req.apple_authorization_code.as_deref() {
+            match crate::apple_revoke::revoke_with_code(&state.apple_iap.bundle_id, code).await {
+                Ok(true) => tracing::info!(user_id = %auth.user_id, "revoked Sign in with Apple tokens"),
+                Ok(false) => tracing::warn!("Sign in with Apple key not configured; tokens not revoked"),
+                Err(err) => tracing::warn!(error = %err, "could not revoke Sign in with Apple tokens"),
+            }
         }
     } else if !req.password.as_deref().is_some_and(|p| verify_password(p, &credentials.password_hash)) {
         return Err((StatusCode::UNAUTHORIZED, "incorrect password".to_string()));

@@ -40,6 +40,21 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     }
   }
 
+  /// Reports this person's profile (name and photo) to the moderators.
+  Future<void> _report(PublicProfile profile) async {
+    final l10n = AppLocalizations.of(context)!;
+    final note = await askReport(context, title: l10n.reportPersonTitle);
+    if (note == null || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(socialApiProvider).reportUser(profile.userId, kind: 'profile', note: note.isEmpty ? null : note);
+      messenger.showSnackBar(SnackBar(content: Text(l10n.storiesReportSent)));
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.commonError)));
+    }
+  }
+
   /// Blocks this person and leaves their profile: from here on neither side
   /// sees the other's stories or profile, and neither can message the other.
   Future<void> _block(PublicProfile profile) async {
@@ -140,14 +155,21 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
                   const Spacer(),
-                  // Someone else's profile only: you can't block yourself.
-                  if (data.userId != ref.watch(currentUserIdProvider))
+                  // Someone else's profile only: you can't report or block yourself.
+                  if (data.userId != ref.watch(currentUserIdProvider)) ...[
+                    TextButton.icon(
+                      onPressed: () => _report(data),
+                      icon: Icon(Icons.flag_outlined, size: 18, color: palette.warning),
+                      label: Text(l10n.reportAction,
+                          style: AppTypography.footnote.copyWith(color: palette.warning, fontWeight: FontWeight.w600)),
+                    ),
                     TextButton.icon(
                       onPressed: () => _block(data),
                       icon: Icon(Icons.block_rounded, size: 18, color: palette.warning),
                       label: Text(l10n.blockAction,
                           style: AppTypography.footnote.copyWith(color: palette.warning, fontWeight: FontWeight.w600)),
                     ),
+                  ],
                 ],
               ),
               const SizedBox(height: 22),

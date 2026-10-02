@@ -38,6 +38,11 @@ class PushService {
   /// is bundled yet): every FCM call throws in that state, so they are skipped.
   bool _available = false;
 
+  /// Whether this device can receive Hearth's notifications at all. Settings
+  /// that only work through a push (the evening reminder) are hidden when
+  /// it can't, rather than offered as a switch that does nothing.
+  bool get available => _available;
+
   PushService(this._ref);
 
   Future<void> init() async {

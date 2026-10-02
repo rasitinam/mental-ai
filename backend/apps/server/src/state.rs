@@ -13,7 +13,7 @@ use mental_storage::{
     SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
     SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
     SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
-    SqliteUserStateRepository,
+    SqliteUserReportRepository, SqliteUserStateRepository,
 };
 
 /// Composition root: the one place that knows every concrete
@@ -74,6 +74,9 @@ pub struct AppState {
     /// Whether each person allowed their content to go to the AI service —
     /// see `routes::require_ai_consent`.
     pub ai_consent: Arc<SqliteAiConsentRepository>,
+    /// Reports about a person's profile or private messages — see
+    /// `routes::user_reports`.
+    pub user_reports: Arc<SqliteUserReportRepository>,
 }
 
 #[derive(Clone)]

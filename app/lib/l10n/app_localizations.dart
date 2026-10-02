@@ -3056,6 +3056,60 @@ abstract class AppLocalizations {
   /// **'Birbirinizin hikayelerini ve profilini görmezsiniz, birbirinize mesaj yazamazsınız. Bunu istediğin zaman Ben > Ayarlar > Engellenenler bölümünden geri alabilirsin.'**
   String get blockConfirmBody;
 
+  /// No description provided for @reportAction.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildir'**
+  String get reportAction;
+
+  /// No description provided for @reportPersonTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu kişiyi bildir'**
+  String get reportPersonTitle;
+
+  /// No description provided for @reportConversationTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu konuşmayı bildir'**
+  String get reportConversationTitle;
+
+  /// No description provided for @reportBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ekibimiz her bildirimi inceler. Gördüğünü görebilmemiz için son mesajları ya da adı ve fotoğrafı bildirime eklenir.'**
+  String get reportBody;
+
+  /// No description provided for @moderationPeopleReports.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirilen kişiler'**
+  String get moderationPeopleReports;
+
+  /// No description provided for @moderationReportedBy.
+  ///
+  /// In tr, this message translates to:
+  /// **'{name} bildirdi'**
+  String moderationReportedBy(String name);
+
+  /// No description provided for @moderationKindProfile.
+  ///
+  /// In tr, this message translates to:
+  /// **'Profil'**
+  String get moderationKindProfile;
+
+  /// No description provided for @moderationKindDm.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mesajlar'**
+  String get moderationKindDm;
+
+  /// No description provided for @moderationResolve.
+  ///
+  /// In tr, this message translates to:
+  /// **'İncelendi olarak işaretle'**
+  String get moderationResolve;
+
   /// No description provided for @blockDone.
   ///
   /// In tr, this message translates to:
@@ -3269,13 +3323,13 @@ abstract class AppLocalizations {
   /// No description provided for @premiumFeatureAnalysis.
   ///
   /// In tr, this message translates to:
-  /// **'Daha sık yaşam analizi'**
+  /// **'Haftada bir değil, her gün yaşam analizi'**
   String get premiumFeatureAnalysis;
 
   /// No description provided for @premiumFeatureInsights.
   ///
   /// In tr, this message translates to:
-  /// **'Gelişmiş, kişiselleştirilmiş içgörüler'**
+  /// **'Geçmişinin iki katını okuyan, daha derin yaşam analizi'**
   String get premiumFeatureInsights;
 
   /// No description provided for @premiumPricePerMonth.
@@ -3311,7 +3365,7 @@ abstract class AppLocalizations {
   /// No description provided for @premiumTerms.
   ///
   /// In tr, this message translates to:
-  /// **'Abonelik otomatik olarak yenilenir; mevcut dönem bitmeden en az 24 saat önce iptal etmezsen ücret otomatik tahsil edilir. Aboneliği istediğin zaman App Store > Ayarlar üzerinden iptal edebilirsin.'**
+  /// **'Abonelik otomatik olarak yenilenir; mevcut dönem bitmeden en az 24 saat önce iptal etmezsen ücret otomatik tahsil edilir. Aboneliği istediğin zaman Ayarlar > adın > Abonelikler üzerinden iptal edebilirsin.'**
   String get premiumTerms;
 
   /// No description provided for @premiumUnavailable.

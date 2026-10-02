@@ -20,11 +20,12 @@ pub(crate) mod social;
 pub(crate) mod state;
 mod stories;
 mod streak;
+mod user_reports;
 
 use axum::http::StatusCode;
 use axum::Router;
 use mental_analysis_engine::{AssessmentSummary, PersonContext};
-use mental_domain::repository::{AssessmentRepository, PersonMemoryRepository, UserRepository};
+use mental_domain::repository::{AssessmentRepository, PersonMemoryRepository, SubscriptionRepository, UserRepository};
 use mental_domain::{MemoryItem, User};
 use uuid::Uuid;
 
@@ -54,6 +55,7 @@ pub fn build_router(app_state: AppState) -> Router {
         .merge(dm::router())
         .merge(streak::router())
         .merge(purchases::router())
+        .merge(user_reports::router())
         .with_state(app_state)
 }
 
@@ -77,6 +79,18 @@ pub(crate) async fn require_ai_consent(state: &AppState, user_id: Uuid) -> Resul
     } else {
         Err((StatusCode::FORBIDDEN, AI_CONSENT_REQUIRED.to_string()))
     }
+}
+
+/// Whether the person has an active Hearth Plus subscription. A failed
+/// lookup counts as the free plan.
+pub(crate) async fn is_premium(state: &AppState, user_id: Uuid) -> bool {
+    state
+        .subscriptions
+        .for_user(user_id)
+        .await
+        .ok()
+        .flatten()
+        .is_some_and(|sub| sub.is_active())
 }
 
 /// The account behind a request, for prompt context (diagnoses, age,

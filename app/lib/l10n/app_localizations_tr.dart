@@ -1622,6 +1622,36 @@ class AppLocalizationsTr extends AppLocalizations {
       'Birbirinizin hikayelerini ve profilini görmezsiniz, birbirinize mesaj yazamazsınız. Bunu istediğin zaman Ben > Ayarlar > Engellenenler bölümünden geri alabilirsin.';
 
   @override
+  String get reportAction => 'Bildir';
+
+  @override
+  String get reportPersonTitle => 'Bu kişiyi bildir';
+
+  @override
+  String get reportConversationTitle => 'Bu konuşmayı bildir';
+
+  @override
+  String get reportBody =>
+      'Ekibimiz her bildirimi inceler. Gördüğünü görebilmemiz için son mesajları ya da adı ve fotoğrafı bildirime eklenir.';
+
+  @override
+  String get moderationPeopleReports => 'Bildirilen kişiler';
+
+  @override
+  String moderationReportedBy(String name) {
+    return '$name bildirdi';
+  }
+
+  @override
+  String get moderationKindProfile => 'Profil';
+
+  @override
+  String get moderationKindDm => 'Mesajlar';
+
+  @override
+  String get moderationResolve => 'İncelendi olarak işaretle';
+
+  @override
   String get blockDone => 'Engellendi.';
 
   @override
@@ -1734,10 +1764,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get premiumFeatureChat => 'Sınırsız AI sohbet';
 
   @override
-  String get premiumFeatureAnalysis => 'Daha sık yaşam analizi';
+  String get premiumFeatureAnalysis =>
+      'Haftada bir değil, her gün yaşam analizi';
 
   @override
-  String get premiumFeatureInsights => 'Gelişmiş, kişiselleştirilmiş içgörüler';
+  String get premiumFeatureInsights =>
+      'Geçmişinin iki katını okuyan, daha derin yaşam analizi';
 
   @override
   String premiumPricePerMonth(String price) {
@@ -1760,7 +1792,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get premiumTerms =>
-      'Abonelik otomatik olarak yenilenir; mevcut dönem bitmeden en az 24 saat önce iptal etmezsen ücret otomatik tahsil edilir. Aboneliği istediğin zaman App Store > Ayarlar üzerinden iptal edebilirsin.';
+      'Abonelik otomatik olarak yenilenir; mevcut dönem bitmeden en az 24 saat önce iptal etmezsen ücret otomatik tahsil edilir. Aboneliği istediğin zaman Ayarlar > adın > Abonelikler üzerinden iptal edebilirsin.';
 
   @override
   String get premiumUnavailable => 'Satın alma şu anda kullanılamıyor.';

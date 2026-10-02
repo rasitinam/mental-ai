@@ -31,6 +31,10 @@ const EXCERPT_CHARS: usize = 220;
 const STORY_CHARS: usize = 500;
 const NOTE_CHARS: usize = 120;
 
+/// How much more a Hearth Plus analysis reads: every cap above, doubled —
+/// twice the history and twice the length of each excerpt.
+const DEEP_FACTOR: usize = 2;
+
 /// Everything the analysis reads, oldest first, gathered by the caller.
 pub struct LifeAnalysisInputs<'a> {
     pub moods: &'a [MoodEntry],
@@ -43,6 +47,8 @@ pub struct LifeAnalysisInputs<'a> {
     pub state: Option<&'a UserState>,
     /// Stories they wrote themselves.
     pub stories: &'a [LifeStory],
+    /// Hearth Plus: read [`DEEP_FACTOR`] times more of every source.
+    pub deep: bool,
 }
 
 /// The user-role message: the person block, then every source under a label.
@@ -53,7 +59,10 @@ pub fn build_user_content(
     period_start: DateTime<Utc>,
     period_end: DateTime<Utc>,
 ) -> String {
-    let mood_series = tail(inputs.moods, MAX_MOODS)
+    let k = if inputs.deep { DEEP_FACTOR } else { 1 };
+    let excerpt = |text: &str| clip(text, EXCERPT_CHARS * k);
+
+    let mood_series = tail(inputs.moods, MAX_MOODS * k)
         .iter()
         .map(|m| {
             let mut line = format!(
@@ -67,20 +76,20 @@ pub fn build_user_content(
                 line.push_str(&format!(" [{}]", m.tags.join(", ")));
             }
             if let Some(note) = m.note.as_deref().map(str::trim).filter(|n| !n.is_empty()) {
-                line.push_str(&format!(" \"{}\"", clip(note, NOTE_CHARS)));
+                line.push_str(&format!(" \"{}\"", clip(note, NOTE_CHARS * k)));
             }
             line
         })
         .collect::<Vec<_>>()
         .join("\n");
 
-    let journal_excerpts = tail(inputs.journal_entries, MAX_JOURNAL_ENTRIES)
+    let journal_excerpts = tail(inputs.journal_entries, MAX_JOURNAL_ENTRIES * k)
         .iter()
         .map(|j| format!("{}: {}", j.created_at.format("%Y-%m-%d"), excerpt(&j.body)))
         .collect::<Vec<_>>()
         .join("\n");
 
-    let chat_excerpts = tail(inputs.chat_messages, MAX_CHAT_MESSAGES)
+    let chat_excerpts = tail(inputs.chat_messages, MAX_CHAT_MESSAGES * k)
         .iter()
         .map(|m| {
             format!(
@@ -95,7 +104,7 @@ pub fn build_user_content(
 
     // Reports arrive newest-first from the repository; the model reads the
     // history more naturally oldest-first, like the other sections.
-    let mut recent_reports = inputs.reports.iter().take(MAX_REPORTS).collect::<Vec<_>>();
+    let mut recent_reports = inputs.reports.iter().take(MAX_REPORTS * k).collect::<Vec<_>>();
     recent_reports.reverse();
     let report_excerpts = recent_reports
         .iter()
@@ -105,7 +114,7 @@ pub fn build_user_content(
 
     // Every reading in the window, not only the newest: one score says where
     // someone is, the run of them says which way they are going.
-    let screening = tail(inputs.assessments, MAX_ASSESSMENTS)
+    let screening = tail(inputs.assessments, MAX_ASSESSMENTS * k)
         .iter()
         .map(|a| {
             format!(
@@ -129,14 +138,14 @@ pub fn build_user_content(
                 "assessed {}: {} — {}",
                 age_label(s.generated_at, period_end),
                 s.headline.trim(),
-                clip(&s.note, NOTE_CHARS * 2)
+                clip(&s.note, NOTE_CHARS * 2 * k)
             )
         })
         .unwrap_or_default();
 
-    let stories = tail(inputs.stories, MAX_STORIES)
+    let stories = tail(inputs.stories, MAX_STORIES * k)
         .iter()
-        .map(|s| format!("{}: {}", s.created_at.format("%Y-%m-%d"), clip(&s.body, STORY_CHARS)))
+        .map(|s| format!("{}: {}", s.created_at.format("%Y-%m-%d"), clip(&s.body, STORY_CHARS * k)))
         .collect::<Vec<_>>()
         .join("\n");
 
@@ -224,10 +233,6 @@ fn tail<T>(items: &[T], max: usize) -> &[T] {
     &items[items.len().saturating_sub(max)..]
 }
 
-fn excerpt(text: &str) -> String {
-    clip(text, EXCERPT_CHARS)
-}
-
 fn clip(text: &str, max: usize) -> String {
     let flat = text.trim().replace('\n', " ");
     if flat.chars().count() <= max {
@@ -303,6 +308,7 @@ mod tests {
             assessments: &[],
             state: None,
             stories: &[],
+            deep: false,
         }
     }
 
