@@ -1,5 +1,6 @@
 # --- Rust / backend ---
 /backend/target/
+/backend/target-staging/
 /backend/data/
 /backend/config/local.toml
 # A `flutter build web` copy, placed here so the server can optionally

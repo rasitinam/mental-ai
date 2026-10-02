@@ -446,6 +446,12 @@ async fn translate(
         return Ok(Json(TranslationResponse { body: cached, source_language: story.language }));
     }
 
+    // Translating sends the author's words to the AI service: only when the
+    // author allowed that. Otherwise the reader gets the original.
+    if !crate::routes::has_ai_consent(&state, story.user_id).await {
+        return Ok(Json(TranslationResponse { body: story.body, source_language: story.language }));
+    }
+
     let translated = translate_text(&story.body, &reader_language, state.llm.as_ref())
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
