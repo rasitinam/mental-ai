@@ -52,7 +52,7 @@ Apple has rejected 1.0 three times. Before changing anything listed here, read t
 
 - **No "therapy" / "terapi"** in the name, keywords or copy (guidelines 1.4.1, 2.3.7 and 5.1.1(ix); this is an individual developer account). Hearth is a support and self-reflection tool, not a clinician.
 - **OpenAI consent (5.1.2(i))**: the `/ai-consent` screen comes after sign-in. Every backend handler that sends a person's data to the LLM must call `routes::require_ai_consent`, or `has_ai_consent` for background and translation paths. New AI features must do the same.
-- **Hearth Plus claims must be real**: unlimited chat, daily life analysis, and deeper analysis (`LifeAnalysisInputs::deep`). Don't add paywall claims without backend support.
+- **Hearth Plus claims must be real**: unlimited chat, daily life analysis, and deeper analysis (`LifeAnalysisInputs::deep`). Don't add paywall claims without backend support. The App Store description must mark these as paid (guideline 2.3.2, rejected 2026-10-12): free features sit under "FREE FEATURES" with their free limits, and Plus features sit in a separate "purchase required" section.
 - **App Privacy labels** in App Store Connect, `ios/Runner/PrivacyInfo.xcprivacy` and policy §6 must stay in sync. They currently declare 8 data types: app functionality only, linked to the user, no tracking.
 - **User-generated content (1.2)**: stories are pre-moderated. Users can report stories, profiles and DMs (the `user_reports` table, shown in the admin moderation screen) and can block people.
 - **App Review notes** are close to the 4000-character limit. Trim before adding.
