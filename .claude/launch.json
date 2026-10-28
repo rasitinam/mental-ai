@@ -4,7 +4,7 @@
     {
       "name": "flutter-web",
       "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "cd /d G:\\mental-ai\\app\\build\\web && C:\\Users\\rashit\\AppData\\Local\\Pub\\Cache\\bin\\dhttpd.bat --port 5173"],
+      "runtimeArgs": ["/c", "cd /d C:\\mental-ai\\app\\build\\web && C:\\Users\\rashit\\AppData\\Local\\Pub\\Cache\\bin\\dhttpd.bat --port 5173"],
       "port": 5173
     }
   ]

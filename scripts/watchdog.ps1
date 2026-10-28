@@ -35,6 +35,11 @@ if (-not (Test-Url "http://127.0.0.1:8787/health")) {
     Start-Sleep -Seconds 10
 }
 
+# A single failed probe is often a short network blip that ngrok rides out on
+# its own, so look again before killing a tunnel that may be reconnecting.
+if (-not (Test-Url $publicHealth)) {
+    Start-Sleep -Seconds 30
+}
 if (-not (Test-Url $publicHealth)) {
     Write-Log "tunnel down - restarting ngrok"
     Get-Process -Name "ngrok" | Stop-Process -Force
