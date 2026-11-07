@@ -38,8 +38,9 @@ jobs:
       - run: flutter test
 
   # Build Android APK and upload it as a downloadable artifact.
+  
   app-build-android:
-    name: Flutter app (Android APK)
+    name: Flutter app (Android release APKs)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -82,18 +83,19 @@ jobs:
           }
           JSON
 
-      # Build APK connected to the production VPS backend.
-      - name: Build Android APK
-        run: flutter build apk --debug --dart-define=API_BASE_URL=https://status-enticing-easeful.ngrok-free.dev
+      # Build optimized APKs separately for each Android architecture.
+      - name: Build Android Release APKs
+        run: flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=https://status-enticing-easeful.ngrok-free.dev
 
-      # Upload the generated APK to GitHub Actions.
-      - name: Upload Android APK
+      # Upload all generated APK variants.
+      - name: Upload Android Release APKs
         uses: actions/upload-artifact@v7
         with:
-          name: mental-ai-android-apk
-          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          name: mental-ai-android-release
+          path: app/build/app/outputs/flutter-apk/*-release.apk
           if-no-files-found: error
           retention-days: 7
+
 
   app-build-ios:
     name: Flutter app (iOS build check)
