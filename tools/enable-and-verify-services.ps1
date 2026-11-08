@@ -10,15 +10,15 @@ $TaskUser = ([string]$Task.Principal.UserId -replace '^.*\\', '')
 $RunsAsSystem = $TaskUser -match "^(SYSTEM|LOCAL SERVICE|NETWORK SERVICE)$"
 
 function Import-PersistedEnvironment([string]$Name) {
-    if (![string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($Name, "Process"))) {
-        if (!$RunsAsSystem) { return }
-    }
-
-    # SYSTEM tasks cannot inherit the interactive administrator's User scope.
     if ($RunsAsSystem) {
+        # Ignore inherited administrator values. The backend task only sees Machine scope.
+        Remove-Item -Path "Env:$Name" -ErrorAction SilentlyContinue
         $Value = [Environment]::GetEnvironmentVariable($Name, "Machine")
     } else {
-        $Value = [Environment]::GetEnvironmentVariable($Name, "User")
+        $Value = [Environment]::GetEnvironmentVariable($Name, "Process")
+        if ([string]::IsNullOrWhiteSpace($Value)) {
+            $Value = [Environment]::GetEnvironmentVariable($Name, "User")
+        }
         if ([string]::IsNullOrWhiteSpace($Value)) {
             $Value = [Environment]::GetEnvironmentVariable($Name, "Machine")
         }
@@ -55,6 +55,23 @@ $EnvironmentNames = @(
 )
 foreach ($Name in $EnvironmentNames) { Import-PersistedEnvironment $Name }
 
+if ($RunsAsSystem -and [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable("MENTAL_AI_LLM_API_KEY", "Machine"))) {
+    $LlmCandidate = [Environment]::GetEnvironmentVariable("MENTAL_AI_LLM_API_KEY", "User")
+    if ([string]::IsNullOrWhiteSpace($LlmCandidate)) {
+        $LlmCandidate = [Environment]::GetEnvironmentVariable("MENTAL_AI_LLM_API_KEY", "Process")
+    }
+    if (![string]::IsNullOrWhiteSpace($LlmCandidate)) {
+        $Answer = Read-Host "LLM API key exists only in this interactive account. Copy it to Machine scope for the SYSTEM backend task? Type YES"
+        if ($Answer -ceq "YES") {
+            [Environment]::SetEnvironmentVariable("MENTAL_AI_LLM_API_KEY", $LlmCandidate, "Machine")
+            Set-Item -Path "Env:MENTAL_AI_LLM_API_KEY" -Value $LlmCandidate
+        }
+    }
+}
+
+if ($RunsAsSystem -and [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable("MENTAL_AI_LLM_API_KEY", "Machine"))) {
+    throw "MENTAL_AI_LLM_API_KEY is not available at Machine scope. The SYSTEM backend cannot read an administrator's User-scoped key. Copy it to Machine scope when prompted, or set it at Machine scope, then rerun."
+}
 if ([string]::IsNullOrWhiteSpace($env:MENTAL_AI_LLM_API_KEY)) {
     throw "MENTAL_AI_LLM_API_KEY is missing for this Windows account. Research embeddings and AI features cannot work without it."
 }
