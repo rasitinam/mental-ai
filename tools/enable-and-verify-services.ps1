@@ -50,10 +50,8 @@ foreach ($Name in $EnvironmentNames) { Import-PersistedEnvironment $Name }
 if ([string]::IsNullOrWhiteSpace($env:MENTAL_AI_LLM_API_KEY)) {
     throw "MENTAL_AI_LLM_API_KEY is missing for this Windows account. Research embeddings and AI features cannot work without it."
 }
-if ([string]::IsNullOrWhiteSpace($env:MENTAL_AI_SMTP_USER) -or
-    [string]::IsNullOrWhiteSpace($env:MENTAL_AI_SMTP_PASSWORD)) {
-    throw "SMTP_USER or SMTP_PASSWORD is missing for this Windows account. Backend will otherwise fall back to log-only mode."
-}
+$SmtpOk = $false
+$SmtpFailure = $null
 if (!(Test-Path "$Live\backend\firebase-service-account.json")) {
     throw "Firebase service-account JSON is missing from the live backend folder."
 }
@@ -66,9 +64,17 @@ Write-Host "`n=== 3. Send one real SMTP self-test ===" -ForegroundColor Cyan
 $SmtpTest = Join-Path $Repo "tools\test_smtp.py"
 if (!(Test-Path $SmtpTest)) { throw "SMTP test utility missing: $SmtpTest" }
 
-py -3 $SmtpTest
-if ($LASTEXITCODE -ne 0) {
-    throw "SMTP test failed. Backend will not be restarted until SMTP credentials/network are fixed."
+if ([string]::IsNullOrWhiteSpace($env:MENTAL_AI_SMTP_USER) -or
+    [string]::IsNullOrWhiteSpace($env:MENTAL_AI_SMTP_PASSWORD)) {
+    $SmtpFailure = "SMTP_USER or SMTP_PASSWORD is missing for this Windows account."
+    Write-Host $SmtpFailure -ForegroundColor Yellow
+} else {
+    py -3 $SmtpTest
+    $SmtpOk = ($LASTEXITCODE -eq 0)
+    if (!$SmtpOk) {
+        $SmtpFailure = "SMTP delivery self-test failed. The research engine will still be activated; check the SMTP error above."
+        Write-Host $SmtpFailure -ForegroundColor Yellow
+    }
 }
 
 Write-Host "`n=== 4. Activate research ingestion in the live startup script ===" -ForegroundColor Cyan
@@ -156,7 +162,11 @@ if (!$ResearchLine) {
 Write-Host "`n=== Service activation summary ===" -ForegroundColor Green
 Write-Host "Commit: $Commit"
 Write-Host "Research ingest: enabled"
-Write-Host "SMTP self-test: accepted by SMTP server; check inbox/spam"
+if ($SmtpOk) {
+    Write-Host "SMTP self-test: ACCEPTED by SMTP server; check inbox/spam." -ForegroundColor Green
+} else {
+    Write-Host "SMTP self-test: NOT VERIFIED - $SmtpFailure" -ForegroundColor Yellow
+}
 Write-Host "Firebase service-account file: present"
 Write-Host "Backend health: OK"
 Write-Host "Database was not copied, deleted, or modified by this helper."
