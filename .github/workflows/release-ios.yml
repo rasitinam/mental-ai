@@ -31,12 +31,12 @@ jobs:
             echo "::error::IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 secret is missing"
             exit 1
           fi
-          printf '%s' "$IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 --decode > app/ios/Runner/GoogleService-Info.plist
+          printf '%s' "$IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 --decode > ios/Runner/GoogleService-Info.plist
           python - <<'PY'
           import plistlib
           from pathlib import Path
 
-          path = Path("app/ios/Runner/GoogleService-Info.plist")
+          path = Path("ios/Runner/GoogleService-Info.plist")
           with path.open("rb") as f:
               config = plistlib.load(f)
 
