@@ -128,6 +128,26 @@ if (!$Healthy) { throw "Backend did not become healthy after restart. Inspect $L
 Write-Host "Backend health: OK" -ForegroundColor Green
 Write-Host "Scheduled task: $((Get-ScheduledTask -TaskName $TaskName).State)"
 
+$StartupLines = @(Get-Content $Log -Tail 10000)
+$MarkerIndex = -1
+for ($j = $StartupLines.Count - 1; $j -ge 0; $j--) {
+    if ($StartupLines[$j] -like "*$Marker*") { $MarkerIndex = $j; break }
+}
+$NewStartupLines = @()
+if ($MarkerIndex -ge 0 -and $MarkerIndex + 1 -lt $StartupLines.Count) {
+    $NewStartupLines = @($StartupLines[($MarkerIndex + 1)..($StartupLines.Count - 1)])
+}
+
+$LlmRuntime = $NewStartupLines | Select-String "Service config: llm_api_key=present" | Select-Object -Last 1
+$SmtpRuntime = $NewStartupLines | Select-String "verification emails go out through" | Select-Object -Last 1
+$FirebaseRuntime = $NewStartupLines | Select-String "Service config: firebase_service_account=present" | Select-Object -Last 1
+if ($LlmRuntime) { Write-Host "LLM environment: loaded by backend task" -ForegroundColor Green }
+else { Write-Host "LLM environment: NOT CONFIRMED in backend task log" -ForegroundColor Yellow }
+if ($SmtpRuntime) { Write-Host "SMTP runtime: configured ($($SmtpRuntime.Line.Trim()))" -ForegroundColor Green }
+else { Write-Host "SMTP runtime: NOT CONFIGURED in backend task; check User/Machine env scope" -ForegroundColor Yellow }
+if ($FirebaseRuntime) { Write-Host "Firebase credential file: detected by backend task" -ForegroundColor Green }
+else { Write-Host "Firebase credential file: NOT CONFIRMED in backend task log" -ForegroundColor Yellow }
+
 Write-Host "`n=== 6. Wait for first research-ingest cycle ===" -ForegroundColor Cyan
 $Log = "$Live\logs\backend.log"
 $ResearchLine = $null
