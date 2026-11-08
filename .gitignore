@@ -58,3 +58,9 @@ Thumbs.db
 .claude/settings.local.json
 /backend/target-*/
 *.before-final-fix
+/backups/
+/deploy-backups/
+/source-backups/
+/logs/
+/tools/fcm-venv/
+/backend/target-reminder-release/
