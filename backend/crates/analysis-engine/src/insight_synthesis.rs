@@ -37,7 +37,11 @@ pub async fn synthesize_insights(
         ];
 
         let response = match llm
-            .chat(ChatRequest { messages, tools: vec![], temperature: None })
+            .chat(ChatRequest {
+                messages,
+                tools: vec![],
+                temperature: None,
+            })
             .await
         {
             Ok(r) => r,
@@ -70,7 +74,12 @@ fn parse_insight_json(raw: &str) -> Option<(String, String, Vec<String>, Option<
     // Models occasionally wrap JSON in a markdown fence despite the
     // instruction not to; strip it defensively rather than failing the
     // whole insight.
-    let cleaned = raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+    let cleaned = raw
+        .trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
 
     let value: serde_json::Value = serde_json::from_str(cleaned).ok()?;
     let title = value.get("title")?.as_str()?.to_string();
@@ -78,7 +87,11 @@ fn parse_insight_json(raw: &str) -> Option<(String, String, Vec<String>, Option<
     let tags = value
         .get("tags")
         .and_then(|t| t.as_array())
-        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect()
+        })
         .unwrap_or_default();
 
     // Validated against the catalog rather than trusted: an invented slug

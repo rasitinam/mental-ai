@@ -2,8 +2,8 @@ use chrono::Utc;
 use mental_domain::catalog;
 use mental_domain::repository::ResearchRepository;
 use mental_domain::DisorderExplainer;
-use mental_llm_connector::{prompts, ChatMessage, ChatRequest, LlmProvider, Role};
 use mental_knowledge_base::{Embedder, VectorStore};
+use mental_llm_connector::{prompts, ChatMessage, ChatRequest, LlmProvider, Role};
 
 use crate::retrieval::{format_context, retrieve_context};
 
@@ -24,13 +24,16 @@ pub async fn generate_disorder_explainer(
     vector_store: &dyn VectorStore,
     embedder: &Embedder,
 ) -> anyhow::Result<DisorderExplainer> {
-    let (category, disorder) = catalog::disorder(slug)
-        .ok_or_else(|| anyhow::anyhow!("unknown disorder slug: {slug}"))?;
+    let (category, disorder) =
+        catalog::disorder(slug).ok_or_else(|| anyhow::anyhow!("unknown disorder slug: {slug}"))?;
 
     // The retrieval query stays Turkish whatever the output language: the
     // ingested corpus is indexed on Turkish-language embeddings, so asking
     // in English would retrieve worse context for the same condition.
-    let query = format!("{} {} nedir, nedenleri ve tedavisi", disorder.name, category.name);
+    let query = format!(
+        "{} {} nedir, nedenleri ve tedavisi",
+        disorder.name, category.name
+    );
     let articles = retrieve_context(&query, 5, research, vector_store, embedder).await;
 
     let user_content = format!(
@@ -79,7 +82,12 @@ pub async fn generate_disorder_explainer(
 }
 
 fn parse_explainer_json(raw: &str) -> Option<(String, String, Vec<String>, Vec<String>)> {
-    let cleaned = raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+    let cleaned = raw
+        .trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
 
     let value: serde_json::Value = serde_json::from_str(cleaned).ok()?;
     let what_it_is = value.get("what_it_is")?.as_str()?.to_string();
@@ -97,6 +105,10 @@ fn string_list(value: &serde_json::Value, key: &str) -> Vec<String> {
     value
         .get(key)
         .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect()
+        })
         .unwrap_or_default()
 }

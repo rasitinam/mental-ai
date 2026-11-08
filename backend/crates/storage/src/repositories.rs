@@ -1,24 +1,22 @@
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
+use mental_domain::life_story::REACTIONS;
+use mental_domain::report::LifeAnalysis;
 use mental_domain::repository::{
-    ActivityRepository, AssessmentRepository, AuthRepository, BlockRepository, ChatRepository, ChatUsageRepository,
-    EmailCodeRepository, PersonMemoryRepository,
-    ContentTranslationRepository, DiscoveryRepository, DmRepository, ExplainerRepository,
-    InsightRepository,
-    JournalRepository, LifeAnalysisRepository, LifeStoryRepository, MoodRepository,
+    ActivityRepository, AssessmentRepository, AuthRepository, BlockRepository, ChatRepository,
+    ChatUsageRepository, ContentTranslationRepository, DiscoveryRepository, DmRepository,
+    EmailCodeRepository, ExplainerRepository, InsightRepository, JournalRepository,
+    LifeAnalysisRepository, LifeStoryRepository, MoodRepository, PersonMemoryRepository,
     PushTokenRepository, ReportRepository, ResearchRepository, SocialRepository,
     SubscriptionRepository, UserRepository, UserStateRepository,
 };
-use mental_domain::life_story::REACTIONS;
-use mental_domain::report::LifeAnalysis;
 use mental_domain::{CachedDiscoveries, Discovery};
 
 use mental_domain::{
-    BlockRecord, ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer, DmMessage,
-    EmailCodeRecord, PersonMemory,
-    DmPolicy, DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry,
-    PushToken, ResearchArticle, Session, StoryFeedItem, StoryStatus, Subscription, User, UserState,
-    WellbeingAssessment,
+    BlockRecord, ChatMessageRecord, ChatRole, Credentials, DailyMentalReport, DisorderExplainer,
+    DmMessage, DmPolicy, DmStatus, DmThread, EmailCodeRecord, Insight, JournalEntry, LifeStory,
+    LifeStoryReport, MoodEntry, PersonMemory, PushToken, ResearchArticle, Session, StoryFeedItem,
+    StoryStatus, Subscription, User, UserState, WellbeingAssessment,
 };
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -38,10 +36,14 @@ fn tags_from_json(raw: &str) -> Vec<String> {
 /// feed row over one bad count.
 fn parse_reaction_counts(summary: Option<String>) -> [u32; 3] {
     let mut counts = [0u32; REACTIONS.len()];
-    let Some(summary) = summary else { return counts };
+    let Some(summary) = summary else {
+        return counts;
+    };
 
     for part in summary.split(',') {
-        let Some((name, count)) = part.split_once(':') else { continue };
+        let Some((name, count)) = part.split_once(':') else {
+            continue;
+        };
         if let Some(idx) = REACTIONS.iter().position(|r| *r == name) {
             counts[idx] = count.parse().unwrap_or(0);
         }
@@ -73,7 +75,23 @@ impl UserRepository for SqliteUserRepository {
         .await?;
 
         Ok(row.map(
-            |(id, display_name, timezone, diagnoses, language, birth_year, is_admin, avatar_content_type, dm_policy, chat_boundaries, chat_boundary_note, reminder_enabled, reminder_hour, utc_offset, created_at)| User {
+            |(
+                id,
+                display_name,
+                timezone,
+                diagnoses,
+                language,
+                birth_year,
+                is_admin,
+                avatar_content_type,
+                dm_policy,
+                chat_boundaries,
+                chat_boundary_note,
+                reminder_enabled,
+                reminder_hour,
+                utc_offset,
+                created_at,
+            )| User {
                 id: Uuid::parse_str(&id).unwrap_or_default(),
                 display_name,
                 timezone,
@@ -122,7 +140,12 @@ impl UserRepository for SqliteUserRepository {
         Ok(())
     }
 
-    async fn set_checkin_reminder(&self, user_id: Uuid, enabled: bool, hour: u8) -> anyhow::Result<()> {
+    async fn set_checkin_reminder(
+        &self,
+        user_id: Uuid,
+        enabled: bool,
+        hour: u8,
+    ) -> anyhow::Result<()> {
         sqlx::query("UPDATE users SET checkin_reminder_enabled = ?1, checkin_reminder_hour = ?2 WHERE id = ?3")
             .bind(enabled)
             .bind(i64::from(hour))
@@ -143,15 +166,20 @@ impl UserRepository for SqliteUserRepository {
         Ok(())
     }
 
-    async fn claim_checkin_reminder(&self, user_id: Uuid, local_date: NaiveDate) -> anyhow::Result<bool> {
-        // One conditional UPDATE, so "was today already sent" and "mark it
-        // sent" can't be split by a second caller in between.
+    async fn claim_checkin_reminder(
+        &self,
+        user_id: Uuid,
+        local_date: NaiveDate,
+        slot: &str,
+    ) -> anyhow::Result<bool> {
         let result = sqlx::query(
-            "UPDATE users SET checkin_reminder_last_sent = ?1
-             WHERE id = ?2 AND (checkin_reminder_last_sent IS NULL OR checkin_reminder_last_sent <> ?1)",
+            "INSERT OR IGNORE INTO checkin_reminder_claims
+             (user_id, local_date, slot)
+             VALUES (?1, ?2, ?3)",
         )
-        .bind(local_date.to_string())
         .bind(user_id.to_string())
+        .bind(local_date.to_string())
+        .bind(slot)
         .execute(&self.pool)
         .await?;
 
@@ -249,13 +277,25 @@ impl UserRepository for SqliteUserRepository {
         .bind(&id)
         .execute(&mut *tx)
         .await?;
-        sqlx::query("DELETE FROM life_stories WHERE user_id = ?1").bind(&id).execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM life_stories WHERE user_id = ?1")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
 
         // This account's own activity elsewhere in the feed — a reaction or
         // report it made on someone else's story, not its own.
-        sqlx::query("DELETE FROM story_reactions WHERE user_id = ?1").bind(&id).execute(&mut *tx).await?;
-        sqlx::query("DELETE FROM story_upvotes WHERE user_id = ?1").bind(&id).execute(&mut *tx).await?;
-        sqlx::query("DELETE FROM story_metoo WHERE user_id = ?1").bind(&id).execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM story_reactions WHERE user_id = ?1")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM story_upvotes WHERE user_id = ?1")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM story_metoo WHERE user_id = ?1")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
 
         sqlx::query("DELETE FROM life_story_reports WHERE reporter_user_id = ?1")
             .bind(&id)
@@ -328,22 +368,30 @@ impl UserRepository for SqliteUserRepository {
             "person_memory",
             "ai_consent",
             "discoveries",
-
             "subscriptions",
             "device_push_tokens",
             "sessions",
             "apple_identities",
             "credentials",
         ] {
-            sqlx::query(&format!("DELETE FROM {table} WHERE user_id = ?1")).bind(&id).execute(&mut *tx).await?;
+            sqlx::query(&format!("DELETE FROM {table} WHERE user_id = ?1"))
+                .bind(&id)
+                .execute(&mut *tx)
+                .await?;
         }
 
-        sqlx::query("DELETE FROM user_blocks WHERE blocker_id = ?1 OR blocked_id = ?1").bind(&id).execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM user_blocks WHERE blocker_id = ?1 OR blocked_id = ?1")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("DELETE FROM user_reports WHERE reporter_id = ?1 OR reported_user_id = ?1")
             .bind(&id)
             .execute(&mut *tx)
             .await?;
-        sqlx::query("DELETE FROM users WHERE id = ?1").bind(&id).execute(&mut *tx).await?;
+        sqlx::query("DELETE FROM users WHERE id = ?1")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
         Ok(())
@@ -386,7 +434,18 @@ impl MoodRepository for SqliteMoodRepository {
         from: DateTime<Utc>,
         to: DateTime<Utc>,
     ) -> anyhow::Result<Vec<MoodEntry>> {
-        let rows = sqlx::query_as::<_, (String, String, f32, f32, String, Option<String>, DateTime<Utc>)>(
+        let rows = sqlx::query_as::<
+            _,
+            (
+                String,
+                String,
+                f32,
+                f32,
+                String,
+                Option<String>,
+                DateTime<Utc>,
+            ),
+        >(
             "SELECT id, user_id, valence, arousal, tags, note, recorded_at FROM mood_entries
              WHERE user_id = ?1 AND recorded_at BETWEEN ?2 AND ?3 ORDER BY recorded_at ASC",
         )
@@ -398,20 +457,33 @@ impl MoodRepository for SqliteMoodRepository {
 
         Ok(rows
             .into_iter()
-            .map(|(id, user_id, valence, arousal, tags, note, recorded_at)| MoodEntry {
-                id: Uuid::parse_str(&id).unwrap_or_default(),
-                user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
-                valence,
-                arousal,
-                tags: tags_from_json(&tags),
-                note,
-                recorded_at,
-            })
+            .map(
+                |(id, user_id, valence, arousal, tags, note, recorded_at)| MoodEntry {
+                    id: Uuid::parse_str(&id).unwrap_or_default(),
+                    user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+                    valence,
+                    arousal,
+                    tags: tags_from_json(&tags),
+                    note,
+                    recorded_at,
+                },
+            )
             .collect())
     }
 
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<MoodEntry>> {
-        let row = sqlx::query_as::<_, (String, String, f32, f32, String, Option<String>, DateTime<Utc>)>(
+        let row = sqlx::query_as::<
+            _,
+            (
+                String,
+                String,
+                f32,
+                f32,
+                String,
+                Option<String>,
+                DateTime<Utc>,
+            ),
+        >(
             "SELECT id, user_id, valence, arousal, tags, note, recorded_at FROM mood_entries
              WHERE user_id = ?1 ORDER BY recorded_at DESC LIMIT 1",
         )
@@ -419,19 +491,32 @@ impl MoodRepository for SqliteMoodRepository {
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(|(id, user_id, valence, arousal, tags, note, recorded_at)| MoodEntry {
-            id: Uuid::parse_str(&id).unwrap_or_default(),
-            user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
-            valence,
-            arousal,
-            tags: tags_from_json(&tags),
-            note,
-            recorded_at,
-        }))
+        Ok(row.map(
+            |(id, user_id, valence, arousal, tags, note, recorded_at)| MoodEntry {
+                id: Uuid::parse_str(&id).unwrap_or_default(),
+                user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+                valence,
+                arousal,
+                tags: tags_from_json(&tags),
+                note,
+                recorded_at,
+            },
+        ))
     }
 
     async fn list_all(&self, user_id: Uuid) -> anyhow::Result<Vec<MoodEntry>> {
-        let rows = sqlx::query_as::<_, (String, String, f32, f32, String, Option<String>, DateTime<Utc>)>(
+        let rows = sqlx::query_as::<
+            _,
+            (
+                String,
+                String,
+                f32,
+                f32,
+                String,
+                Option<String>,
+                DateTime<Utc>,
+            ),
+        >(
             "SELECT id, user_id, valence, arousal, tags, note, recorded_at FROM mood_entries
              WHERE user_id = ?1 ORDER BY recorded_at ASC",
         )
@@ -441,15 +526,17 @@ impl MoodRepository for SqliteMoodRepository {
 
         Ok(rows
             .into_iter()
-            .map(|(id, user_id, valence, arousal, tags, note, recorded_at)| MoodEntry {
-                id: Uuid::parse_str(&id).unwrap_or_default(),
-                user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
-                valence,
-                arousal,
-                tags: tags_from_json(&tags),
-                note,
-                recorded_at,
-            })
+            .map(
+                |(id, user_id, valence, arousal, tags, note, recorded_at)| MoodEntry {
+                    id: Uuid::parse_str(&id).unwrap_or_default(),
+                    user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+                    valence,
+                    arousal,
+                    tags: tags_from_json(&tags),
+                    note,
+                    recorded_at,
+                },
+            )
             .collect())
     }
 }
@@ -529,13 +616,15 @@ impl JournalRepository for SqliteJournalRepository {
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(|(id, user_id, body, themes, created_at)| JournalEntry {
-            id: Uuid::parse_str(&id).unwrap_or_default(),
-            user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
-            body,
-            detected_themes: themes.map(|t| tags_from_json(&t)),
-            created_at,
-        }))
+        Ok(
+            row.map(|(id, user_id, body, themes, created_at)| JournalEntry {
+                id: Uuid::parse_str(&id).unwrap_or_default(),
+                user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+                body,
+                detected_themes: themes.map(|t| tags_from_json(&t)),
+                created_at,
+            }),
+        )
     }
 
     async fn list_all(&self, user_id: Uuid) -> anyhow::Result<Vec<JournalEntry>> {
@@ -604,7 +693,18 @@ impl ReportRepository for SqliteReportRepository {
         .await?;
 
         Ok(row.map(
-            |(id, user_id, report_date, summary, mood_trend_note, recommendations, cited, crisis_flag, generated_at, language)| {
+            |(
+                id,
+                user_id,
+                report_date,
+                summary,
+                mood_trend_note,
+                recommendations,
+                cited,
+                crisis_flag,
+                generated_at,
+                language,
+            )| {
                 DailyMentalReport {
                     id: Uuid::parse_str(&id).unwrap_or_default(),
                     user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
@@ -621,7 +721,11 @@ impl ReportRepository for SqliteReportRepository {
         ))
     }
 
-    async fn list_recent(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<DailyMentalReport>> {
+    async fn list_recent(
+        &self,
+        user_id: Uuid,
+        limit: u32,
+    ) -> anyhow::Result<Vec<DailyMentalReport>> {
         let rows = sqlx::query_as::<_, (String, String, DateTime<Utc>, String, String, String, String, bool, DateTime<Utc>, String)>(
             "SELECT id, user_id, report_date, summary, mood_trend_note, recommendations, cited_insight_ids, crisis_flag, generated_at, language
              FROM daily_reports WHERE user_id = ?1 ORDER BY report_date DESC LIMIT ?2",
@@ -634,7 +738,18 @@ impl ReportRepository for SqliteReportRepository {
         Ok(rows
             .into_iter()
             .map(
-                |(id, user_id, report_date, summary, mood_trend_note, recommendations, cited, crisis_flag, generated_at, language)| {
+                |(
+                    id,
+                    user_id,
+                    report_date,
+                    summary,
+                    mood_trend_note,
+                    recommendations,
+                    cited,
+                    crisis_flag,
+                    generated_at,
+                    language,
+                )| {
                     DailyMentalReport {
                         id: Uuid::parse_str(&id).unwrap_or_default(),
                         user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
@@ -724,7 +839,10 @@ impl ResearchRepository for SqliteResearchRepository {
         // SQLite has no array binding, so the placeholder list is built to
         // match the id count; the ids themselves are still bound as
         // parameters rather than interpolated.
-        let placeholders = std::iter::repeat("?").take(ids.len()).collect::<Vec<_>>().join(",");
+        let placeholders = std::iter::repeat("?")
+            .take(ids.len())
+            .collect::<Vec<_>>()
+            .join(",");
         let sql = format!(
             "SELECT id, source, external_id, title, abstract_text, url, published_at, tags, ingested_at
              FROM research_articles WHERE id IN ({placeholders})"
@@ -735,7 +853,12 @@ impl ResearchRepository for SqliteResearchRepository {
             query = query.bind(id.to_string());
         }
 
-        Ok(query.fetch_all(&self.pool).await?.into_iter().map(article_from_row).collect())
+        Ok(query
+            .fetch_all(&self.pool)
+            .await?
+            .into_iter()
+            .map(article_from_row)
+            .collect())
     }
 }
 
@@ -878,7 +1001,15 @@ impl InsightRepository for SqliteInsightRepository {
     }
 }
 
-type InsightRow = (String, String, String, String, String, Option<String>, DateTime<Utc>);
+type InsightRow = (
+    String,
+    String,
+    String,
+    String,
+    String,
+    Option<String>,
+    DateTime<Utc>,
+);
 
 fn insight_from_row(
     (id, title, body, source_ids, tags, category, created_at): InsightRow,
@@ -937,7 +1068,18 @@ impl LifeAnalysisRepository for SqliteLifeAnalysisRepository {
         .await?;
 
         Ok(row.map(
-            |(id, user_id, period_start, period_end, narrative, key_patterns, do_list, dont_list, generated_at, language)| {
+            |(
+                id,
+                user_id,
+                period_start,
+                period_end,
+                narrative,
+                key_patterns,
+                do_list,
+                dont_list,
+                generated_at,
+                language,
+            )| {
                 LifeAnalysis {
                     id: Uuid::parse_str(&id).unwrap_or_default(),
                     user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
@@ -978,7 +1120,17 @@ impl ExplainerRepository for SqliteExplainerRepository {
         .await?;
 
         Ok(row.map(
-            |(slug, language, category, name, what_it_is, how_it_develops, coping, treatment, generated_at)| {
+            |(
+                slug,
+                language,
+                category,
+                name,
+                what_it_is,
+                how_it_develops,
+                coping,
+                treatment,
+                generated_at,
+            )| {
                 DisorderExplainer {
                     slug,
                     language,
@@ -1022,11 +1174,12 @@ impl ExplainerRepository for SqliteExplainerRepository {
     }
 
     async fn cached_slugs(&self, language: &str) -> anyhow::Result<Vec<String>> {
-        let rows =
-            sqlx::query_as::<_, (String,)>("SELECT slug FROM disorder_explainers WHERE language = ?1")
-                .bind(language)
-                .fetch_all(&self.pool)
-                .await?;
+        let rows = sqlx::query_as::<_, (String,)>(
+            "SELECT slug FROM disorder_explainers WHERE language = ?1",
+        )
+        .bind(language)
+        .fetch_all(&self.pool)
+        .await?;
 
         Ok(rows.into_iter().map(|(slug,)| slug).collect())
     }
@@ -1066,7 +1219,19 @@ impl SqliteUserStateRepository {
 #[async_trait]
 impl UserStateRepository for SqliteUserStateRepository {
     async fn get(&self, user_id: Uuid) -> anyhow::Result<Option<UserState>> {
-        let row = sqlx::query_as::<_, (String, f32, f32, String, String, String, DateTime<Utc>, String)>(
+        let row = sqlx::query_as::<
+            _,
+            (
+                String,
+                f32,
+                f32,
+                String,
+                String,
+                String,
+                DateTime<Utc>,
+                String,
+            ),
+        >(
             "SELECT user_id, valence, energy, headline, note, basis, generated_at, language
              FROM user_states WHERE user_id = ?1",
         )
@@ -1155,7 +1320,10 @@ impl ActivityRepository for SqliteActivityRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(rows.into_iter().map(|(day, total)| (day, total.max(0) as u32)).collect())
+        Ok(rows
+            .into_iter()
+            .map(|(day, total)| (day, total.max(0) as u32))
+            .collect())
     }
 }
 
@@ -1215,7 +1383,11 @@ impl AssessmentRepository for SqliteAssessmentRepository {
         Ok(row.map(AssessmentRow::into_assessment))
     }
 
-    async fn list_for_user(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<WellbeingAssessment>> {
+    async fn list_for_user(
+        &self,
+        user_id: Uuid,
+        limit: u32,
+    ) -> anyhow::Result<Vec<WellbeingAssessment>> {
         // Newest `limit`, then put back in reading order.
         let mut rows = sqlx::query_as::<_, AssessmentRow>(&format!(
             "{ASSESSMENT_SELECT} WHERE user_id = ?1 ORDER BY created_at DESC LIMIT ?2"
@@ -1226,11 +1398,15 @@ impl AssessmentRepository for SqliteAssessmentRepository {
         .await?;
         rows.reverse();
 
-        Ok(rows.into_iter().map(AssessmentRow::into_assessment).collect())
+        Ok(rows
+            .into_iter()
+            .map(AssessmentRow::into_assessment)
+            .collect())
     }
 }
 
-const ASSESSMENT_SELECT: &str = "SELECT id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score,
+const ASSESSMENT_SELECT: &str =
+    "SELECT id, user_id, phq9_answers, phq9_score, gad7_answers, gad7_score,
         who5_answers, who5_score, phq15_answers, phq15_score,
         ptsd5_answers, ptsd5_score, auditc_answers, auditc_score,
         cageaid_answers, cageaid_score, crisis_flag, created_at
@@ -1296,10 +1472,34 @@ impl SqliteLifeStoryRepository {
     }
 }
 
-type StoryRow = (String, String, String, String, String, bool, DateTime<Utc>, bool, Option<DateTime<Utc>>, DateTime<Utc>, String);
+type StoryRow = (
+    String,
+    String,
+    String,
+    String,
+    String,
+    bool,
+    DateTime<Utc>,
+    bool,
+    Option<DateTime<Utc>>,
+    DateTime<Utc>,
+    String,
+);
 
 fn story_from_row(
-    (id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at, anonymous, reviewed_at, created_at, language): StoryRow,
+    (
+        id,
+        user_id,
+        body,
+        diagnosis_slug,
+        status,
+        crisis_flag,
+        consented_at,
+        anonymous,
+        reviewed_at,
+        created_at,
+        language,
+    ): StoryRow,
 ) -> LifeStory {
     LifeStory {
         id: Uuid::parse_str(&id).unwrap_or_default(),
@@ -1495,13 +1695,15 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
 
         Ok(rows
             .into_iter()
-            .map(|(id, story_id, reporter_user_id, note, created_at)| LifeStoryReport {
-                id: Uuid::parse_str(&id).unwrap_or_default(),
-                story_id: Uuid::parse_str(&story_id).unwrap_or_default(),
-                reporter_user_id: Uuid::parse_str(&reporter_user_id).unwrap_or_default(),
-                note,
-                created_at,
-            })
+            .map(
+                |(id, story_id, reporter_user_id, note, created_at)| LifeStoryReport {
+                    id: Uuid::parse_str(&id).unwrap_or_default(),
+                    story_id: Uuid::parse_str(&story_id).unwrap_or_default(),
+                    reporter_user_id: Uuid::parse_str(&reporter_user_id).unwrap_or_default(),
+                    note,
+                    created_at,
+                },
+            )
             .collect())
     }
 
@@ -1542,23 +1744,48 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
 
         let mut items: Vec<StoryFeedItem> = rows
             .into_iter()
-            .map(|(id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at,
-                   anonymous, reviewed_at, created_at, language, reaction_summary, mine,
-                   display_name, avatar)| {
-                StoryFeedItem {
-                    story: story_from_row((
-                        id, user_id, body, diagnosis_slug, status, crisis_flag, consented_at,
-                        anonymous, reviewed_at, created_at, language,
-                    )),
-                    reaction_counts: parse_reaction_counts(reaction_summary),
-                    viewer_reaction: mine,
-                    metoo_count: 0,
-                    viewer_metoo: false,
+            .map(
+                |(
+                    id,
+                    user_id,
+                    body,
+                    diagnosis_slug,
+                    status,
+                    crisis_flag,
+                    consented_at,
+                    anonymous,
+                    reviewed_at,
+                    created_at,
+                    language,
+                    reaction_summary,
+                    mine,
+                    display_name,
+                    avatar,
+                )| {
+                    StoryFeedItem {
+                        story: story_from_row((
+                            id,
+                            user_id,
+                            body,
+                            diagnosis_slug,
+                            status,
+                            crisis_flag,
+                            consented_at,
+                            anonymous,
+                            reviewed_at,
+                            created_at,
+                            language,
+                        )),
+                        reaction_counts: parse_reaction_counts(reaction_summary),
+                        viewer_reaction: mine,
+                        metoo_count: 0,
+                        viewer_metoo: false,
 
-                    author_display_name: display_name,
-                    author_has_avatar: avatar.is_some(),
-                }
-            })
+                        author_display_name: display_name,
+                        author_has_avatar: avatar.is_some(),
+                    }
+                },
+            )
             .collect();
 
         // "Bende de oldu" tallies come from a second query rather than two
@@ -1573,8 +1800,10 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
         .bind(viewer.to_string())
         .fetch_all(&self.pool)
         .await?;
-        let metoo: std::collections::HashMap<String, (i64, i64)> =
-            metoo.into_iter().map(|(story_id, count, mine)| (story_id, (count, mine))).collect();
+        let metoo: std::collections::HashMap<String, (i64, i64)> = metoo
+            .into_iter()
+            .map(|(story_id, count, mine)| (story_id, (count, mine)))
+            .collect();
 
         for item in &mut items {
             if let Some((count, mine)) = metoo.get(&item.story.id.to_string()) {
@@ -1597,7 +1826,10 @@ impl LifeStoryRepository for SqliteLifeStoryRepository {
         Ok(count.max(0) as u32)
     }
 
-    async fn metoo_for_author(&self, author_id: Uuid) -> anyhow::Result<Vec<(Uuid, Option<String>)>> {
+    async fn metoo_for_author(
+        &self,
+        author_id: Uuid,
+    ) -> anyhow::Result<Vec<(Uuid, Option<String>)>> {
         let rows = sqlx::query_as::<_, (String, Option<String>)>(
             "SELECT m.story_id, m.note FROM story_metoo m
              JOIN life_stories s ON s.id = m.story_id
@@ -1727,7 +1959,10 @@ impl SocialRepository for SqliteSocialRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(rows.into_iter().map(|(id,)| Uuid::parse_str(&id).unwrap_or_default()).collect())
+        Ok(rows
+            .into_iter()
+            .map(|(id,)| Uuid::parse_str(&id).unwrap_or_default())
+            .collect())
     }
 
     async fn following(&self, user_id: Uuid) -> anyhow::Result<Vec<Uuid>> {
@@ -1738,7 +1973,10 @@ impl SocialRepository for SqliteSocialRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(rows.into_iter().map(|(id,)| Uuid::parse_str(&id).unwrap_or_default()).collect())
+        Ok(rows
+            .into_iter()
+            .map(|(id,)| Uuid::parse_str(&id).unwrap_or_default())
+            .collect())
     }
 
     async fn react(&self, story_id: Uuid, user_id: Uuid, reaction: &str) -> anyhow::Result<()> {
@@ -1767,7 +2005,12 @@ impl SocialRepository for SqliteSocialRepository {
         Ok(())
     }
 
-    async fn set_metoo(&self, story_id: Uuid, user_id: Uuid, note: Option<&str>) -> anyhow::Result<bool> {
+    async fn set_metoo(
+        &self,
+        story_id: Uuid,
+        user_id: Uuid,
+        note: Option<&str>,
+    ) -> anyhow::Result<bool> {
         let existed: Option<i64> =
             sqlx::query_scalar("SELECT 1 FROM story_metoo WHERE story_id = ?1 AND user_id = ?2")
                 .bind(story_id.to_string())
@@ -1798,7 +2041,6 @@ impl SocialRepository for SqliteSocialRepository {
 
         Ok(())
     }
-
 }
 
 pub struct SqliteDmRepository {
@@ -1811,7 +2053,15 @@ impl SqliteDmRepository {
     }
 }
 
-type DmThreadRow = (String, String, String, String, String, DateTime<Utc>, DateTime<Utc>);
+type DmThreadRow = (
+    String,
+    String,
+    String,
+    String,
+    String,
+    DateTime<Utc>,
+    DateTime<Utc>,
+);
 
 fn thread_from_row(
     (id, user_low, user_high, started_by, status, created_at, last_message_at): DmThreadRow,
@@ -2017,48 +2267,57 @@ impl AuthRepository for SqliteAuthRepository {
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(|(user_id, email, password_hash, created_at)| Credentials {
-            user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
-            email,
-            password_hash,
-            created_at,
-        }))
+        Ok(
+            row.map(|(user_id, email, password_hash, created_at)| Credentials {
+                user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+                email,
+                password_hash,
+                created_at,
+            }),
+        )
     }
 
     async fn find_email_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<String>> {
-        let row = sqlx::query_as::<_, (String,)>("SELECT email FROM credentials WHERE user_id = ?1")
-            .bind(user_id.to_string())
-            .fetch_optional(&self.pool)
-            .await?;
+        let row =
+            sqlx::query_as::<_, (String,)>("SELECT email FROM credentials WHERE user_id = ?1")
+                .bind(user_id.to_string())
+                .fetch_optional(&self.pool)
+                .await?;
 
         Ok(row.map(|(email,)| email))
     }
 
     async fn find_user_by_apple_sub(&self, apple_sub: &str) -> anyhow::Result<Option<Uuid>> {
-        let row = sqlx::query_as::<_, (String,)>("SELECT user_id FROM apple_identities WHERE apple_sub = ?1")
-            .bind(apple_sub)
-            .fetch_optional(&self.pool)
-            .await?;
+        let row = sqlx::query_as::<_, (String,)>(
+            "SELECT user_id FROM apple_identities WHERE apple_sub = ?1",
+        )
+        .bind(apple_sub)
+        .fetch_optional(&self.pool)
+        .await?;
 
         Ok(row.and_then(|(user_id,)| Uuid::parse_str(&user_id).ok()))
     }
 
     async fn link_apple_identity(&self, apple_sub: &str, user_id: Uuid) -> anyhow::Result<()> {
-        sqlx::query("INSERT INTO apple_identities (apple_sub, user_id, created_at) VALUES (?1, ?2, ?3)")
-            .bind(apple_sub)
-            .bind(user_id.to_string())
-            .bind(Utc::now())
-            .execute(&self.pool)
-            .await?;
+        sqlx::query(
+            "INSERT INTO apple_identities (apple_sub, user_id, created_at) VALUES (?1, ?2, ?3)",
+        )
+        .bind(apple_sub)
+        .bind(user_id.to_string())
+        .bind(Utc::now())
+        .execute(&self.pool)
+        .await?;
 
         Ok(())
     }
 
     async fn apple_sub_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<String>> {
-        let row = sqlx::query_as::<_, (String,)>("SELECT apple_sub FROM apple_identities WHERE user_id = ?1")
-            .bind(user_id.to_string())
-            .fetch_optional(&self.pool)
-            .await?;
+        let row = sqlx::query_as::<_, (String,)>(
+            "SELECT apple_sub FROM apple_identities WHERE user_id = ?1",
+        )
+        .bind(user_id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
 
         Ok(row.map(|(sub,)| sub))
     }
@@ -2132,7 +2391,11 @@ impl ChatRepository for SqliteChatRepository {
         Ok(())
     }
 
-    async fn history_for_user(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<ChatMessageRecord>> {
+    async fn history_for_user(
+        &self,
+        user_id: Uuid,
+        limit: u32,
+    ) -> anyhow::Result<Vec<ChatMessageRecord>> {
         // The *newest* `limit` messages, handed back oldest first. Taking the
         // oldest `limit` (as this once did) made every reader — the daily
         // report, the state reading, the life analysis, the chat screen —
@@ -2151,14 +2414,20 @@ impl ChatRepository for SqliteChatRepository {
 
         Ok(rows
             .into_iter()
-            .map(|(id, user_id, role, content, crisis_flag, created_at)| ChatMessageRecord {
-                id: Uuid::parse_str(&id).unwrap_or_default(),
-                user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
-                role: if role == "assistant" { ChatRole::Assistant } else { ChatRole::User },
-                content,
-                crisis_flag,
-                created_at,
-            })
+            .map(
+                |(id, user_id, role, content, crisis_flag, created_at)| ChatMessageRecord {
+                    id: Uuid::parse_str(&id).unwrap_or_default(),
+                    user_id: Uuid::parse_str(&user_id).unwrap_or_default(),
+                    role: if role == "assistant" {
+                        ChatRole::Assistant
+                    } else {
+                        ChatRole::User
+                    },
+                    content,
+                    crisis_flag,
+                    created_at,
+                },
+            )
             .collect())
     }
 }
@@ -2220,7 +2489,10 @@ impl PushTokenRepository for SqlitePushTokenRepository {
                 .fetch_all(&self.pool)
                 .await?;
 
-        Ok(rows.into_iter().filter_map(|(id,)| Uuid::parse_str(&id).ok()).collect())
+        Ok(rows
+            .into_iter()
+            .filter_map(|(id,)| Uuid::parse_str(&id).ok())
+            .collect())
     }
 }
 
@@ -2326,9 +2598,18 @@ impl SubscriptionRepository for SqliteSubscriptionRepository {
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(|(platform, product_id, original_transaction_id, expires_at, updated_at)| {
-            Subscription { user_id, platform, product_id, original_transaction_id, expires_at, updated_at }
-        }))
+        Ok(row.map(
+            |(platform, product_id, original_transaction_id, expires_at, updated_at)| {
+                Subscription {
+                    user_id,
+                    platform,
+                    product_id,
+                    original_transaction_id,
+                    expires_at,
+                    updated_at,
+                }
+            },
+        ))
     }
 }
 
@@ -2393,11 +2674,13 @@ impl DiscoveryRepository for SqliteDiscoveryRepository {
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(|(language, cards, generated_at)| CachedDiscoveries {
-            language,
-            cards: serde_json::from_str::<Vec<Discovery>>(&cards).unwrap_or_default(),
-            generated_at,
-        }))
+        Ok(
+            row.map(|(language, cards, generated_at)| CachedDiscoveries {
+                language,
+                cards: serde_json::from_str::<Vec<Discovery>>(&cards).unwrap_or_default(),
+                generated_at,
+            }),
+        )
     }
 
     async fn save(&self, user_id: Uuid, cached: &CachedDiscoveries) -> anyhow::Result<()> {
@@ -2503,7 +2786,10 @@ impl BlockRepository for SqliteBlockRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(rows.into_iter().filter_map(|(id,)| Uuid::parse_str(&id).ok()).collect())
+        Ok(rows
+            .into_iter()
+            .filter_map(|(id,)| Uuid::parse_str(&id).ok())
+            .collect())
     }
 
     async fn blocked_between(&self, a: Uuid, b: Uuid) -> anyhow::Result<bool> {
@@ -2542,7 +2828,15 @@ impl EmailCodeRepository for SqliteEmailCodeRepository {
         .await?;
 
         Ok(row.map(
-            |(email, code_hash, expires_at, attempts, last_sent_at, window_started_at, sends_in_window)| {
+            |(
+                email,
+                code_hash,
+                expires_at,
+                attempts,
+                last_sent_at,
+                window_started_at,
+                sends_in_window,
+            )| {
                 EmailCodeRecord {
                     email,
                     code_hash,
@@ -2621,13 +2915,15 @@ impl PersonMemoryRepository for SqlitePersonMemoryRepository {
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(|(enabled, items, language, generated_at)| PersonMemory {
-            user_id,
-            enabled,
-            items: serde_json::from_str(&items).unwrap_or_default(),
-            language,
-            generated_at,
-        }))
+        Ok(
+            row.map(|(enabled, items, language, generated_at)| PersonMemory {
+                user_id,
+                enabled,
+                items: serde_json::from_str(&items).unwrap_or_default(),
+                language,
+                generated_at,
+            }),
+        )
     }
 
     async fn save(&self, memory: &PersonMemory) -> anyhow::Result<()> {
@@ -2664,10 +2960,12 @@ impl SqliteAiConsentRepository {
     }
 
     pub async fn granted_at(&self, user_id: Uuid) -> anyhow::Result<Option<DateTime<Utc>>> {
-        let row = sqlx::query_as::<_, (DateTime<Utc>,)>("SELECT granted_at FROM ai_consent WHERE user_id = ?1")
-            .bind(user_id.to_string())
-            .fetch_optional(&self.pool)
-            .await?;
+        let row = sqlx::query_as::<_, (DateTime<Utc>,)>(
+            "SELECT granted_at FROM ai_consent WHERE user_id = ?1",
+        )
+        .bind(user_id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
         Ok(row.map(|(at,)| at))
     }
 
@@ -2731,7 +3029,18 @@ impl SqliteUserReportRepository {
 
     /// Unresolved reports, oldest first — the order they should be handled in.
     pub async fn list_open(&self) -> anyhow::Result<Vec<UserReport>> {
-        let rows = sqlx::query_as::<_, (String, String, String, String, String, Option<String>, DateTime<Utc>)>(
+        let rows = sqlx::query_as::<
+            _,
+            (
+                String,
+                String,
+                String,
+                String,
+                String,
+                Option<String>,
+                DateTime<Utc>,
+            ),
+        >(
             "SELECT id, reporter_id, reported_user_id, kind, content, note, created_at
              FROM user_reports WHERE resolved_at IS NULL ORDER BY created_at",
         )
@@ -2740,27 +3049,31 @@ impl SqliteUserReportRepository {
 
         Ok(rows
             .into_iter()
-            .filter_map(|(id, reporter, reported, kind, content, note, created_at)| {
-                Some(UserReport {
-                    id: Uuid::parse_str(&id).ok()?,
-                    reporter_id: Uuid::parse_str(&reporter).ok()?,
-                    reported_user_id: Uuid::parse_str(&reported).ok()?,
-                    kind,
-                    content,
-                    note,
-                    created_at,
-                })
-            })
+            .filter_map(
+                |(id, reporter, reported, kind, content, note, created_at)| {
+                    Some(UserReport {
+                        id: Uuid::parse_str(&id).ok()?,
+                        reporter_id: Uuid::parse_str(&reporter).ok()?,
+                        reported_user_id: Uuid::parse_str(&reported).ok()?,
+                        kind,
+                        content,
+                        note,
+                        created_at,
+                    })
+                },
+            )
             .collect())
     }
 
     /// Returns whether an open report with this id existed.
     pub async fn resolve(&self, id: Uuid) -> anyhow::Result<bool> {
-        let done = sqlx::query("UPDATE user_reports SET resolved_at = ?2 WHERE id = ?1 AND resolved_at IS NULL")
-            .bind(id.to_string())
-            .bind(Utc::now())
-            .execute(&self.pool)
-            .await?;
+        let done = sqlx::query(
+            "UPDATE user_reports SET resolved_at = ?2 WHERE id = ?1 AND resolved_at IS NULL",
+        )
+        .bind(id.to_string())
+        .bind(Utc::now())
+        .execute(&self.pool)
+        .await?;
         Ok(done.rows_affected() > 0)
     }
 }

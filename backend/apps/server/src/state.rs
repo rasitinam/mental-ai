@@ -6,14 +6,15 @@ use mental_push::PushProvider;
 
 use crate::rate_limit::LoginRateLimiter;
 use mental_storage::{
-    SqliteActivityRepository, SqliteAiConsentRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
-    SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
-    SqliteDiscoveryRepository,
-    SqliteDmRepository, SqliteEmailCodeRepository, SqlitePersonMemoryRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
-    SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
-    SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
-    SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
-    SqliteUserReportRepository, SqliteUserStateRepository,
+    SqliteActivityRepository, SqliteAiConsentRepository, SqliteAssessmentRepository,
+    SqliteAuthRepository, SqliteBlockRepository, SqliteChatRepository, SqliteChatUsageRepository,
+    SqliteContentTranslationRepository, SqliteDiscoveryRepository, SqliteDmRepository,
+    SqliteEmailCodeRepository, SqliteExplainerRepository, SqliteInsightRepository,
+    SqliteJournalRepository, SqliteLifeAnalysisRepository, SqliteLifeStoryRepository,
+    SqliteMoodRepository, SqlitePersonMemoryRepository, SqlitePushTokenRepository,
+    SqliteReportRepository, SqliteResearchRepository, SqliteSocialRepository,
+    SqliteSubscriptionRepository, SqliteUserReportRepository, SqliteUserRepository,
+    SqliteUserStateRepository,
 };
 
 /// Composition root: the one place that knows every concrete

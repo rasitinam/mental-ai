@@ -82,7 +82,9 @@ async fn views_for(state: &AppState, viewer: Uuid, threads: Vec<DmThread>) -> Ve
         if hidden.contains(&other) {
             continue;
         }
-        let Some(user) = user_for(state, other).await else { continue };
+        let Some(user) = user_for(state, other).await else {
+            continue;
+        };
         views.push(ThreadView {
             id: thread.id.to_string(),
             other_user_id: other.to_string(),
@@ -141,18 +143,29 @@ async fn open(
     Json(req): Json<SendRequest>,
 ) -> Result<Json<OpenedThread>, (StatusCode, String)> {
     if user_id == auth.user_id {
-        return Err((StatusCode::BAD_REQUEST, "cannot message yourself".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "cannot message yourself".to_string(),
+        ));
     }
     crate::routes::social::ensure_not_blocked(&state, auth.user_id, user_id).await?;
 
     let body = req.body.trim().to_string();
     if body.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "message cannot be empty".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "message cannot be empty".to_string(),
+        ));
     }
 
     // An existing thread short-circuits the policy check: once a
     // conversation exists, `send` owns the rules for it.
-    if let Some(existing) = state.dms.thread_between(auth.user_id, user_id).await.map_err(internal)? {
+    if let Some(existing) = state
+        .dms
+        .thread_between(auth.user_id, user_id)
+        .await
+        .map_err(internal)?
+    {
         return send_into(&state, auth.user_id, existing, body).await;
     }
 
@@ -218,7 +231,11 @@ async fn send_into(
         body,
         created_at: now,
     };
-    state.dms.add_message(&message, now).await.map_err(internal)?;
+    state
+        .dms
+        .add_message(&message, now)
+        .await
+        .map_err(internal)?;
 
     // A message that leaves the thread `Pending` can only be the opener's
     // first one — the guard above already refuses a second one from them
@@ -229,7 +246,10 @@ async fn send_into(
     let is_new_request = status == DmStatus::Pending;
     notify_new_message(state, sender, &thread, is_new_request, &message.body).await;
 
-    Ok(Json(OpenedThread { thread_id: thread.id.to_string(), status }))
+    Ok(Json(OpenedThread {
+        thread_id: thread.id.to_string(),
+        status,
+    }))
 }
 
 /// Best-effort push notification to the other side of the thread. Silent
@@ -244,27 +264,51 @@ async fn notify_new_message(
     body: &str,
 ) {
     let recipient = thread.other(sender);
-    let tokens = state.push_tokens.tokens_for_user(recipient).await.unwrap_or_default();
+    let tokens = state
+        .push_tokens
+        .tokens_for_user(recipient)
+        .await
+        .unwrap_or_default();
     if tokens.is_empty() {
         return;
     }
 
-    let Some(sender_user) = user_for(state, sender).await else { return };
-    let Some(recipient_user) = user_for(state, recipient).await else { return };
+    let Some(sender_user) = user_for(state, sender).await else {
+        return;
+    };
+    let Some(recipient_user) = user_for(state, recipient).await else {
+        return;
+    };
 
     let preview = truncate_for_notification(body);
     let (title, push_body) = if is_new_request {
-        (dm_request_title(&recipient_user.language), format!("{}: {preview}", sender_user.display_name))
+        (
+            dm_request_title(&recipient_user.language),
+            format!("{}: {preview}", sender_user.display_name),
+        )
     } else {
         (sender_user.display_name.clone(), preview)
     };
 
     let mut data = HashMap::new();
-    data.insert("type".to_string(), if is_new_request { "dm_request" } else { "dm_message" }.to_string());
+    data.insert(
+        "type".to_string(),
+        if is_new_request {
+            "dm_request"
+        } else {
+            "dm_message"
+        }
+        .to_string(),
+    );
     data.insert("thread_id".to_string(), thread.id.to_string());
 
     for token in tokens {
-        let request = PushRequest { token, title: title.clone(), body: push_body.clone(), data: data.clone() };
+        let request = PushRequest {
+            token,
+            title: title.clone(),
+            body: push_body.clone(),
+            data: data.clone(),
+        };
         if let Err(err) = state.push.send(request).await {
             tracing::warn!(error = %err, "failed to send DM push notification");
         }
@@ -298,11 +342,15 @@ async fn send(
 ) -> Result<Json<OpenedThread>, (StatusCode, String)> {
     let body = req.body.trim().to_string();
     if body.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "message cannot be empty".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "message cannot be empty".to_string(),
+        ));
     }
 
     let thread = load_thread(&state, auth.user_id, id).await?;
-    crate::routes::social::ensure_not_blocked(&state, auth.user_id, thread.other(auth.user_id)).await?;
+    crate::routes::social::ensure_not_blocked(&state, auth.user_id, thread.other(auth.user_id))
+        .await?;
     send_into(&state, auth.user_id, thread, body).await
 }
 
@@ -312,9 +360,14 @@ async fn messages(
     Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<MessageView>>, (StatusCode, String)> {
     let thread = load_thread(&state, auth.user_id, id).await?;
-    crate::routes::social::ensure_not_blocked(&state, auth.user_id, thread.other(auth.user_id)).await?;
+    crate::routes::social::ensure_not_blocked(&state, auth.user_id, thread.other(auth.user_id))
+        .await?;
 
-    let messages = state.dms.messages(id, MESSAGE_LIMIT).await.map_err(internal)?;
+    let messages = state
+        .dms
+        .messages(id, MESSAGE_LIMIT)
+        .await
+        .map_err(internal)?;
 
     Ok(Json(
         messages
@@ -336,7 +389,8 @@ async fn accept(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     let thread = load_thread(&state, auth.user_id, id).await?;
-    crate::routes::social::ensure_not_blocked(&state, auth.user_id, thread.other(auth.user_id)).await?;
+    crate::routes::social::ensure_not_blocked(&state, auth.user_id, thread.other(auth.user_id))
+        .await?;
     if thread.started_by == auth.user_id {
         return Err((StatusCode::FORBIDDEN, "you opened this request".to_string()));
     }

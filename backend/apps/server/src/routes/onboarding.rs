@@ -64,12 +64,23 @@ async fn intro(
 
     state
         .users
-        .set_chat_boundaries(auth.user_id, &understanding.boundaries, understanding.note.as_deref())
+        .set_chat_boundaries(
+            auth.user_id,
+            &understanding.boundaries,
+            understanding.note.as_deref(),
+        )
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     crate::routes::chat::persist_turn(&state, auth.user_id, ChatRole::User, answer, false).await;
-    crate::routes::chat::persist_turn(&state, auth.user_id, ChatRole::Assistant, &understanding.reply, false).await;
+    crate::routes::chat::persist_turn(
+        &state,
+        auth.user_id,
+        ChatRole::Assistant,
+        &understanding.reply,
+        false,
+    )
+    .await;
 
     if let Some(tokens) = understanding.usage_tokens {
         if let Err(err) = state

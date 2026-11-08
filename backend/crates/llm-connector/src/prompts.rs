@@ -225,7 +225,11 @@ pub fn chat_instruction(language: &str) -> String {
 /// what they wrote into a standing instruction plus any of the known
 /// boundary slugs it matches. The distilled pair is what every later
 /// prompt carries — see `mental_domain::chat_boundary`.
-pub fn onboarding_intro_instruction(language: &str, slug_menu: &str, max_note_chars: usize) -> String {
+pub fn onboarding_intro_instruction(
+    language: &str,
+    slug_menu: &str,
+    max_note_chars: usize,
+) -> String {
     format!(
         "You are meeting someone for the first time. They were just asked how they want you to \
          be with them in these conversations, and what they do NOT want. What follows is their \

@@ -74,7 +74,10 @@ fn is_true(value: &Option<serde_json::Value>) -> bool {
 /// Lowercase hex SHA-256 — the encoding `sign_in_with_apple` documents for
 /// the nonce it forwards to Apple.
 pub fn sha256_hex(input: &str) -> String {
-    Sha256::digest(input.as_bytes()).iter().map(|b| format!("{b:02x}")).collect()
+    Sha256::digest(input.as_bytes())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
 }
 
 /// Verifies `token` against an already-loaded key set. Split out from the
@@ -86,11 +89,14 @@ pub fn verify_with_keys(
     raw_nonce: &str,
 ) -> Result<AppleIdentity, AppleAuthError> {
     let header = decode_header(token).map_err(|e| AppleAuthError::InvalidToken(e.to_string()))?;
-    let kid = header.kid.ok_or_else(|| AppleAuthError::InvalidToken("token has no key id".to_string()))?;
-    let jwk = keys
-        .find(&kid)
-        .ok_or_else(|| AppleAuthError::InvalidToken("token was signed with an unknown key".to_string()))?;
-    let key = DecodingKey::from_jwk(jwk).map_err(|e| AppleAuthError::InvalidToken(e.to_string()))?;
+    let kid = header
+        .kid
+        .ok_or_else(|| AppleAuthError::InvalidToken("token has no key id".to_string()))?;
+    let jwk = keys.find(&kid).ok_or_else(|| {
+        AppleAuthError::InvalidToken("token was signed with an unknown key".to_string())
+    })?;
+    let key =
+        DecodingKey::from_jwk(jwk).map_err(|e| AppleAuthError::InvalidToken(e.to_string()))?;
 
     let mut validation = Validation::new(Algorithm::RS256);
     validation.set_audience(&[audience]);
@@ -101,7 +107,9 @@ pub fn verify_with_keys(
         .claims;
 
     if claims.nonce.as_deref() != Some(sha256_hex(raw_nonce).as_str()) {
-        return Err(AppleAuthError::InvalidToken("nonce does not match".to_string()));
+        return Err(AppleAuthError::InvalidToken(
+            "nonce does not match".to_string(),
+        ));
     }
 
     Ok(AppleIdentity {
@@ -119,7 +127,10 @@ pub struct AppleKeys {
 
 impl AppleKeys {
     pub fn new() -> Self {
-        Self { client: reqwest::Client::new(), cached: RwLock::new(None) }
+        Self {
+            client: reqwest::Client::new(),
+            cached: RwLock::new(None),
+        }
     }
 
     pub async fn verify(
@@ -154,7 +165,10 @@ impl AppleKeys {
             .await
             .and_then(|r| r.error_for_status())
             .map_err(|e| AppleAuthError::KeysUnavailable(e.to_string()))?;
-        response.json::<JwkSet>().await.map_err(|e| AppleAuthError::KeysUnavailable(e.to_string()))
+        response
+            .json::<JwkSet>()
+            .await
+            .map_err(|e| AppleAuthError::KeysUnavailable(e.to_string()))
     }
 }
 

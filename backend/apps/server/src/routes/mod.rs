@@ -25,7 +25,9 @@ mod user_reports;
 use axum::http::StatusCode;
 use axum::Router;
 use mental_analysis_engine::{AssessmentSummary, PersonContext};
-use mental_domain::repository::{AssessmentRepository, PersonMemoryRepository, SubscriptionRepository, UserRepository};
+use mental_domain::repository::{
+    AssessmentRepository, PersonMemoryRepository, SubscriptionRepository, UserRepository,
+};
 use mental_domain::{MemoryItem, User};
 use uuid::Uuid;
 
@@ -73,7 +75,10 @@ pub(crate) async fn has_ai_consent(state: &AppState, user_id: Uuid) -> bool {
 }
 
 /// Guard for every handler that sends the person's own data to the model.
-pub(crate) async fn require_ai_consent(state: &AppState, user_id: Uuid) -> Result<(), (StatusCode, String)> {
+pub(crate) async fn require_ai_consent(
+    state: &AppState,
+    user_id: Uuid,
+) -> Result<(), (StatusCode, String)> {
     if has_ai_consent(state, user_id).await {
         Ok(())
     } else {
@@ -156,7 +161,11 @@ impl PersonData {
     /// state reading leaves the memory out (it is a reading of *now*), and
     /// the daily discoveries leave the screening out.
     pub(crate) fn context(&self, screening: bool, memory: bool) -> PersonContext<'_> {
-        let mut person = self.user.as_ref().map(PersonContext::from_user).unwrap_or_else(PersonContext::unknown);
+        let mut person = self
+            .user
+            .as_ref()
+            .map(PersonContext::from_user)
+            .unwrap_or_else(PersonContext::unknown);
         if screening {
             person = person.with_assessment(self.assessment);
         }
@@ -171,7 +180,10 @@ impl PersonData {
 /// hand against the database (see `migrations/0007_life_stories.sql`) —
 /// there is no endpoint that can set it, so this check can't be defeated
 /// by anything a request supplies.
-pub(crate) async fn require_admin(state: &AppState, user_id: Uuid) -> Result<(), (StatusCode, String)> {
+pub(crate) async fn require_admin(
+    state: &AppState,
+    user_id: Uuid,
+) -> Result<(), (StatusCode, String)> {
     match user_for(state, user_id).await {
         Some(user) if user.is_admin => Ok(()),
         _ => Err((StatusCode::FORBIDDEN, "admin only".to_string())),

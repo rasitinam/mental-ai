@@ -8,8 +8,8 @@ use axum::{
 use chrono::{Duration, FixedOffset, Utc};
 use mental_analysis_engine::{generate_chat_reply, translate::translate_batch, ChatBackground};
 use mental_domain::repository::{
-    ChatRepository, ChatUsageRepository, ContentTranslationRepository, JournalRepository, LifeAnalysisRepository,
-    MoodRepository, ReportRepository, UserStateRepository,
+    ChatRepository, ChatUsageRepository, ContentTranslationRepository, JournalRepository,
+    LifeAnalysisRepository, MoodRepository, ReportRepository, UserStateRepository,
 };
 use mental_domain::{ChatMessageRecord, ChatRole};
 use mental_llm_connector::ChatMessage;
@@ -120,9 +120,16 @@ async fn send_message(
     let is_premium = crate::routes::is_premium(&state, auth.user_id).await;
 
     if !is_premium {
-        let used_today = state.chat_usage.tokens_used(auth.user_id, today).await.unwrap_or(0);
+        let used_today = state
+            .chat_usage
+            .tokens_used(auth.user_id, today)
+            .await
+            .unwrap_or(0);
         if used_today >= FREE_DAILY_CHAT_TOKEN_BUDGET {
-            return Err((QUOTA_EXCEEDED_STATUS, "daily chat limit reached".to_string()));
+            return Err((
+                QUOTA_EXCEEDED_STATUS,
+                "daily chat limit reached".to_string(),
+            ));
         }
     }
 
@@ -154,8 +161,18 @@ async fn send_message(
         .and_then(|u| FixedOffset::east_opt(u.utc_offset_minutes * 60))
         .map(|offset| now.with_timezone(&offset).format("%A %H:%M").to_string());
     let user_state = state.user_states.get(auth.user_id).await.ok().flatten();
-    let latest_report = state.reports.latest_for_user(auth.user_id).await.ok().flatten();
-    let latest_life_analysis = state.life_analyses.latest_for_user(auth.user_id).await.ok().flatten();
+    let latest_report = state
+        .reports
+        .latest_for_user(auth.user_id)
+        .await
+        .ok()
+        .flatten();
+    let latest_life_analysis = state
+        .life_analyses
+        .latest_for_user(auth.user_id)
+        .await
+        .ok()
+        .flatten();
     let background = ChatBackground {
         local_time,
         state: user_state.as_ref(),
@@ -179,13 +196,24 @@ async fn send_message(
     .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()))?;
 
     persist_turn(&state, auth.user_id, ChatRole::User, &req.message, false).await;
-    persist_turn(&state, auth.user_id, ChatRole::Assistant, &result.reply, result.crisis_flag).await;
+    persist_turn(
+        &state,
+        auth.user_id,
+        ChatRole::Assistant,
+        &result.reply,
+        result.crisis_flag,
+    )
+    .await;
 
     // Recorded regardless of `is_premium`, so the counter is already
     // accurate if a subscription lapses mid-day instead of undercounting
     // the day it expires.
     if let Some(tokens) = result.usage_tokens {
-        if let Err(err) = state.chat_usage.add_tokens(auth.user_id, today, tokens as i64).await {
+        if let Err(err) = state
+            .chat_usage
+            .add_tokens(auth.user_id, today, tokens as i64)
+            .await
+        {
             tracing::warn!(error = %err, "failed to record chat token usage");
         }
     }
@@ -195,7 +223,10 @@ async fn send_message(
     // `crate::refresh`. Fire-and-forget: the reply above doesn't wait on it.
     trigger_background_refresh(state.clone(), auth.user_id);
 
-    Ok(Json(ChatTurnResponse { reply: result.reply, crisis_flag: result.crisis_flag }))
+    Ok(Json(ChatTurnResponse {
+        reply: result.reply,
+        crisis_flag: result.crisis_flag,
+    }))
 }
 
 /// Full persisted transcript for the signed-in user, oldest first — the
@@ -230,13 +261,25 @@ async fn chat_history(
 /// already in that language comes back from the model unchanged and is
 /// cached the same way, so it is never sent again. A batch that fails keeps
 /// its original text rather than failing the whole history.
-async fn translate_assistant_turns(state: &AppState, history: &mut [ChatMessageRecord], language: &str) {
+async fn translate_assistant_turns(
+    state: &AppState,
+    history: &mut [ChatMessageRecord],
+    language: &str,
+) {
     let mut missing = Vec::new();
     for (index, record) in history.iter_mut().enumerate() {
         if record.role != ChatRole::Assistant {
             continue;
         }
-        match state.content_translations.get(CHAT_TRANSLATION_CONTENT_TYPE, &record.id.to_string(), language).await {
+        match state
+            .content_translations
+            .get(
+                CHAT_TRANSLATION_CONTENT_TYPE,
+                &record.id.to_string(),
+                language,
+            )
+            .await
+        {
             Ok(Some(cached)) => record.content = cached,
             Ok(None) => missing.push(index),
             Err(err) => tracing::warn!(error = %err, "failed to read a cached chat translation"),
@@ -249,7 +292,10 @@ async fn translate_assistant_turns(state: &AppState, history: &mut [ChatMessageR
     let mut batches = tokio::task::JoinSet::new();
     for chunk in missing.chunks(TRANSLATION_BATCH_SIZE) {
         let indices = chunk.to_vec();
-        let texts: Vec<String> = indices.iter().map(|&index| history[index].content.clone()).collect();
+        let texts: Vec<String> = indices
+            .iter()
+            .map(|&index| history[index].content.clone())
+            .collect();
         let llm = state.llm.clone();
         let language = language.to_string();
         batches.spawn(async move {
@@ -259,14 +305,21 @@ async fn translate_assistant_turns(state: &AppState, history: &mut [ChatMessageR
     }
 
     while let Some(joined) = batches.join_next().await {
-        let Ok((indices, translated)) = joined else { continue };
+        let Ok((indices, translated)) = joined else {
+            continue;
+        };
         match translated {
             Ok(texts) => {
                 for (index, text) in indices.into_iter().zip(texts) {
                     let record = &mut history[index];
                     if let Err(err) = state
                         .content_translations
-                        .save(CHAT_TRANSLATION_CONTENT_TYPE, &record.id.to_string(), language, &text)
+                        .save(
+                            CHAT_TRANSLATION_CONTENT_TYPE,
+                            &record.id.to_string(),
+                            language,
+                            &text,
+                        )
                         .await
                     {
                         tracing::warn!(error = %err, "failed to cache a chat translation");
@@ -290,10 +343,16 @@ async fn synthesize_speech(
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     crate::routes::require_ai_consent(&state, auth.user_id).await?;
     if req.text.trim().is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "text must not be empty".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "text must not be empty".to_string(),
+        ));
     }
     if req.text.len() > MAX_SPEECH_CHARS {
-        return Err((StatusCode::BAD_REQUEST, format!("text must be at most {MAX_SPEECH_CHARS} characters")));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("text must be at most {MAX_SPEECH_CHARS} characters"),
+        ));
     }
 
     let audio = state
@@ -305,7 +364,13 @@ async fn synthesize_speech(
     Ok(([(header::CONTENT_TYPE, "audio/mpeg")], audio))
 }
 
-pub(crate) async fn persist_turn(state: &AppState, user_id: Uuid, role: ChatRole, content: &str, crisis_flag: bool) {
+pub(crate) async fn persist_turn(
+    state: &AppState,
+    user_id: Uuid,
+    role: ChatRole,
+    content: &str,
+    crisis_flag: bool,
+) {
     let record = ChatMessageRecord {
         id: Uuid::new_v4(),
         user_id,
@@ -327,7 +392,12 @@ pub(crate) async fn persist_turn(state: &AppState, user_id: Uuid, role: ChatRole
         if let Some(user) = user_for(state, user_id).await {
             if let Err(err) = state
                 .content_translations
-                .save(CHAT_TRANSLATION_CONTENT_TYPE, &record.id.to_string(), &user.language, content)
+                .save(
+                    CHAT_TRANSLATION_CONTENT_TYPE,
+                    &record.id.to_string(),
+                    &user.language,
+                    content,
+                )
                 .await
             {
                 tracing::warn!(error = %err, "failed to cache a chat reply in its own language");

@@ -21,7 +21,9 @@ const WINDOW: Duration = Duration::from_secs(15 * 60);
 
 impl LoginRateLimiter {
     pub fn new() -> Self {
-        Self { attempts: Mutex::new(HashMap::new()) }
+        Self {
+            attempts: Mutex::new(HashMap::new()),
+        }
     }
 
     /// Whether `key` (a normalized email) has room for another attempt
@@ -37,7 +39,10 @@ impl LoginRateLimiter {
 
     pub fn record_failure(&self, key: &str) {
         let mut attempts = self.attempts.lock().unwrap_or_else(|e| e.into_inner());
-        attempts.entry(key.to_string()).or_default().push(Instant::now());
+        attempts
+            .entry(key.to_string())
+            .or_default()
+            .push(Instant::now());
     }
 
     /// Clears `key`'s record on a correct password — a person who

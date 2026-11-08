@@ -125,12 +125,22 @@ async fn request_register_code(
 
     let email = normalize_email(&req.email);
     if !email_verify::is_deliverable(&email) {
-        return Err((StatusCode::BAD_REQUEST, "enter a valid email address".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "enter a valid email address".to_string(),
+        ));
     }
 
-    let existing = state.auth.find_credentials_by_email(&email).await.map_err(internal)?;
+    let existing = state
+        .auth
+        .find_credentials_by_email(&email)
+        .await
+        .map_err(internal)?;
     if existing.is_some() {
-        return Err((StatusCode::CONFLICT, "an account with this email already exists".to_string()));
+        return Err((
+            StatusCode::CONFLICT,
+            "an account with this email already exists".to_string(),
+        ));
     }
 
     let now = Utc::now();
@@ -152,7 +162,10 @@ async fn request_register_code(
         }
     };
     if !state.send_budget.try_take(now.date_naive()) {
-        return Err((StatusCode::SERVICE_UNAVAILABLE, "email sending is busy, try again later".to_string()));
+        return Err((
+            StatusCode::SERVICE_UNAVAILABLE,
+            "email sending is busy, try again later".to_string(),
+        ));
     }
 
     state.email_codes.put(&record).await.map_err(internal)?;
@@ -170,11 +183,18 @@ async fn request_register_code(
         if let Err(e) = restored {
             tracing::warn!("could not restore the previous verification code: {e}");
         }
-        return Err((StatusCode::SERVICE_UNAVAILABLE, "could not send the email, try again".to_string()));
+        return Err((
+            StatusCode::SERVICE_UNAVAILABLE,
+            "could not send the email, try again".to_string(),
+        ));
     }
 
     // Housekeeping: addresses that asked for a code and never finished.
-    if let Err(e) = state.email_codes.prune_expired(now - chrono::Duration::days(1)).await {
+    if let Err(e) = state
+        .email_codes
+        .prune_expired(now - chrono::Duration::days(1))
+        .await
+    {
         tracing::warn!("could not prune expired verification codes: {e}");
     }
 
@@ -193,7 +213,10 @@ async fn register(
 ) -> Result<Json<SessionResponse>, (axum::http::StatusCode, String)> {
     let email = normalize_email(&req.email);
     if !email.contains('@') || email.len() < 3 {
-        return Err((axum::http::StatusCode::BAD_REQUEST, "enter a valid email address".to_string()));
+        return Err((
+            axum::http::StatusCode::BAD_REQUEST,
+            "enter a valid email address".to_string(),
+        ));
     }
     if req.password.len() < 8 {
         return Err((
@@ -208,7 +231,10 @@ async fn register(
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     if existing.is_some() {
-        return Err((axum::http::StatusCode::CONFLICT, "an account with this email already exists".to_string()));
+        return Err((
+            axum::http::StatusCode::CONFLICT,
+            "an account with this email already exists".to_string(),
+        ));
     }
 
     let now = Utc::now();
@@ -217,7 +243,12 @@ async fn register(
         .get(&email)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    match email_verify::check_code(pending.as_ref(), &email, req.code.as_deref().unwrap_or(""), now) {
+    match email_verify::check_code(
+        pending.as_ref(),
+        &email,
+        req.code.as_deref().unwrap_or(""),
+        now,
+    ) {
         CodeCheck::Accepted => {}
         CodeCheck::Wrong => {
             // Counted against this code; `check_code` refuses everything
@@ -228,7 +259,10 @@ async fn register(
                     tracing::warn!("could not record a wrong verification code: {e}");
                 }
             }
-            return Err((axum::http::StatusCode::UNPROCESSABLE_ENTITY, "incorrect verification code".to_string()));
+            return Err((
+                axum::http::StatusCode::UNPROCESSABLE_ENTITY,
+                "incorrect verification code".to_string(),
+            ));
         }
         CodeCheck::NoValidCode => {
             return Err((
@@ -261,7 +295,12 @@ async fn register(
 
     state
         .auth
-        .create_credentials(&Credentials { user_id, email: email.clone(), password_hash, created_at: now })
+        .create_credentials(&Credentials {
+            user_id,
+            email: email.clone(),
+            password_hash,
+            created_at: now,
+        })
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
@@ -304,14 +343,20 @@ async fn login(
         Ok(Some(c)) => c,
         Ok(None) => {
             state.login_rate_limiter.record_failure(&email);
-            return Err((axum::http::StatusCode::UNAUTHORIZED, "incorrect email or password".to_string()));
+            return Err((
+                axum::http::StatusCode::UNAUTHORIZED,
+                "incorrect email or password".to_string(),
+            ));
         }
         Err(e) => return Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
     };
 
     if !verify_password(&req.password, &credentials.password_hash) {
         state.login_rate_limiter.record_failure(&email);
-        return Err((axum::http::StatusCode::UNAUTHORIZED, "incorrect email or password".to_string()));
+        return Err((
+            axum::http::StatusCode::UNAUTHORIZED,
+            "incorrect email or password".to_string(),
+        ));
     }
 
     state.login_rate_limiter.record_success(&email);
@@ -372,11 +417,20 @@ async fn login_with_apple(
         .verify(&req.identity_token, &state.apple_iap.bundle_id, &req.nonce)
         .await
         .map_err(|e| match e {
-            crate::apple_signin::AppleAuthError::InvalidToken(_) => (StatusCode::UNAUTHORIZED, e.to_string()),
-            crate::apple_signin::AppleAuthError::KeysUnavailable(_) => (StatusCode::BAD_GATEWAY, e.to_string()),
+            crate::apple_signin::AppleAuthError::InvalidToken(_) => {
+                (StatusCode::UNAUTHORIZED, e.to_string())
+            }
+            crate::apple_signin::AppleAuthError::KeysUnavailable(_) => {
+                (StatusCode::BAD_GATEWAY, e.to_string())
+            }
         })?;
 
-    if let Some(user_id) = state.auth.find_user_by_apple_sub(&identity.subject).await.map_err(internal)? {
+    if let Some(user_id) = state
+        .auth
+        .find_user_by_apple_sub(&identity.subject)
+        .await
+        .map_err(internal)?
+    {
         let session = issue_session(&state, user_id).await.map_err(internal)?;
         return Ok(Json(AppleSessionResponse {
             user_id,
@@ -394,10 +448,24 @@ async fn login_with_apple(
         .as_deref()
         .map(normalize_email)
         .filter(|e| e.contains('@'))
-        .unwrap_or_else(|| format!("apple-{}@apple.hearth.invalid", &crate::apple_signin::sha256_hex(&identity.subject)[..24]));
+        .unwrap_or_else(|| {
+            format!(
+                "apple-{}@apple.hearth.invalid",
+                &crate::apple_signin::sha256_hex(&identity.subject)[..24]
+            )
+        });
 
-    if state.auth.find_credentials_by_email(&email).await.map_err(internal)?.is_some() {
-        return Err((StatusCode::CONFLICT, "an account with this email already exists".to_string()));
+    if state
+        .auth
+        .find_credentials_by_email(&email)
+        .await
+        .map_err(internal)?
+        .is_some()
+    {
+        return Err((
+            StatusCode::CONFLICT,
+            "an account with this email already exists".to_string(),
+        ));
     }
 
     let user_id = Uuid::new_v4();
@@ -428,7 +496,11 @@ async fn login_with_apple(
         })
         .await
         .map_err(internal)?;
-    state.auth.link_apple_identity(&identity.subject, user_id).await.map_err(internal)?;
+    state
+        .auth
+        .link_apple_identity(&identity.subject, user_id)
+        .await
+        .map_err(internal)?;
 
     let session = issue_session(&state, user_id).await.map_err(internal)?;
     Ok(Json(AppleSessionResponse {

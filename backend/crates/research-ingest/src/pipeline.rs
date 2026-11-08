@@ -69,7 +69,9 @@ pub async fn run_ingest_cycle(
         }
 
         if let Err(err) = repository.upsert_many(&fresh).await {
-            summary.errors.push(format!("{}: storage error: {err}", source.name()));
+            summary
+                .errors
+                .push(format!("{}: storage error: {err}", source.name()));
             continue;
         }
 

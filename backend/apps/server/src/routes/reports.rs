@@ -92,22 +92,33 @@ async fn translated_report(
         }
     }
 
-
     // Translating sends the text to the AI service — only with permission.
     // The caller falls back to the original on an error.
     if !crate::routes::has_ai_consent(state, report.user_id).await {
         anyhow::bail!("no AI consent");
     }
 
-    let (summary, recommendations) =
-        translate_daily_report(&report.summary, &report.recommendations, target_language, state.llm.as_ref())
-            .await?;
-    let payload = ReportTranslationPayload { summary, recommendations };
+    let (summary, recommendations) = translate_daily_report(
+        &report.summary,
+        &report.recommendations,
+        target_language,
+        state.llm.as_ref(),
+    )
+    .await?;
+    let payload = ReportTranslationPayload {
+        summary,
+        recommendations,
+    };
 
     if let Ok(serialized) = serde_json::to_string(&payload) {
         if let Err(err) = state
             .content_translations
-            .save(REPORT_CONTENT_TYPE, &content_id, target_language, &serialized)
+            .save(
+                REPORT_CONTENT_TYPE,
+                &content_id,
+                target_language,
+                &serialized,
+            )
             .await
         {
             tracing::warn!(error = %err, report_id = %report.id, "failed to cache daily report translation");

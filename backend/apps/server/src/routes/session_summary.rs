@@ -68,11 +68,17 @@ async fn session_summary(
 ) -> Result<Json<SessionSummaryResponse>, (StatusCode, String)> {
     crate::routes::require_ai_consent(&state, auth.user_id).await?;
     if !ALLOWED_DAYS.contains(&req.days) {
-        return Err((StatusCode::BAD_REQUEST, format!("unsupported period: {} days", req.days)));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("unsupported period: {} days", req.days),
+        ));
     }
     let note = req.note.as_deref().map(str::trim).filter(|n| !n.is_empty());
     if note.is_some_and(|n| n.chars().count() > MAX_NOTE_CHARS) {
-        return Err((StatusCode::BAD_REQUEST, format!("note is longer than {MAX_NOTE_CHARS} characters")));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("note is longer than {MAX_NOTE_CHARS} characters"),
+        ));
     }
 
     let period_end = Utc::now();
@@ -92,7 +98,10 @@ async fn session_summary(
     // Nothing to summarize: say so plainly rather than let the model write
     // a confident page about an empty fortnight.
     if moods.is_empty() && journals.is_empty() {
-        return Err((StatusCode::UNPROCESSABLE_ENTITY, "not enough records in this period".to_string()));
+        return Err((
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "not enough records in this period".to_string(),
+        ));
     }
 
     let own_messages = state
@@ -109,7 +118,10 @@ async fn session_summary(
         .filter(|a| a.days_ago <= MAX_ASSESSMENT_AGE_DAYS);
 
     let user = user_for(&state, auth.user_id).await;
-    let person = user.as_ref().map(PersonContext::from_user).unwrap_or_else(PersonContext::unknown);
+    let person = user
+        .as_ref()
+        .map(PersonContext::from_user)
+        .unwrap_or_else(PersonContext::unknown);
 
     let summary = generate_session_summary(
         period_start,

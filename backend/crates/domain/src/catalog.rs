@@ -90,14 +90,21 @@ pub fn localized(language: &str) -> Vec<LocalizedCategory> {
             disorders: c
                 .disorders
                 .iter()
-                .map(|entry| LocalizedDisorder { slug: entry.slug, name: entry.name_in(language) })
+                .map(|entry| LocalizedDisorder {
+                    slug: entry.slug,
+                    name: entry.name_in(language),
+                })
                 .collect(),
         })
         .collect()
 }
 
 const fn d(slug: &'static str, name: &'static str, name_en: &'static str) -> Disorder {
-    Disorder { slug, name, name_en }
+    Disorder {
+        slug,
+        name,
+        name_en,
+    }
 }
 
 pub static CATEGORIES: &[DisorderCategory] = &[

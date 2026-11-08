@@ -46,7 +46,11 @@ struct EntitlementResponse {
 
 impl From<Subscription> for EntitlementResponse {
     fn from(sub: Subscription) -> Self {
-        Self { is_premium: sub.is_active(), expires_at: Some(sub.expires_at), product_id: Some(sub.product_id) }
+        Self {
+            is_premium: sub.is_active(),
+            expires_at: Some(sub.expires_at),
+            product_id: Some(sub.product_id),
+        }
     }
 }
 
@@ -80,8 +84,16 @@ struct AppleLatestReceiptInfo {
     expires_date_ms: String,
 }
 
-async fn call_apple(url: &str, receipt_data: &str, shared_secret: &str) -> anyhow::Result<AppleVerifyResponse> {
-    let body = AppleVerifyRequest { receipt_data, password: shared_secret, exclude_old_transactions: true };
+async fn call_apple(
+    url: &str,
+    receipt_data: &str,
+    shared_secret: &str,
+) -> anyhow::Result<AppleVerifyResponse> {
+    let body = AppleVerifyRequest {
+        receipt_data,
+        password: shared_secret,
+        exclude_old_transactions: true,
+    };
     let response = reqwest::Client::new().post(url).json(&body).send().await?;
     Ok(response.json::<AppleVerifyResponse>().await?)
 }
@@ -96,28 +108,56 @@ async fn verify_apple(
     Json(req): Json<VerifyReceiptRequest>,
 ) -> Result<Json<EntitlementResponse>, (StatusCode, String)> {
     if state.apple_iap.shared_secret.is_empty() {
-        return Err((StatusCode::SERVICE_UNAVAILABLE, "Apple IAP is not configured on this server".to_string()));
+        return Err((
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Apple IAP is not configured on this server".to_string(),
+        ));
     }
 
-    let mut apple = call_apple(PRODUCTION_VERIFY_URL, &req.receipt_data, &state.apple_iap.shared_secret)
-        .await
-        .map_err(|e| (StatusCode::BAD_GATEWAY, format!("could not reach Apple: {e}")))?;
+    let mut apple = call_apple(
+        PRODUCTION_VERIFY_URL,
+        &req.receipt_data,
+        &state.apple_iap.shared_secret,
+    )
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::BAD_GATEWAY,
+            format!("could not reach Apple: {e}"),
+        )
+    })?;
 
     if apple.status == SANDBOX_RECEIPT_ON_PRODUCTION {
-        apple = call_apple(SANDBOX_VERIFY_URL, &req.receipt_data, &state.apple_iap.shared_secret)
-            .await
-            .map_err(|e| (StatusCode::BAD_GATEWAY, format!("could not reach Apple sandbox: {e}")))?;
+        apple = call_apple(
+            SANDBOX_VERIFY_URL,
+            &req.receipt_data,
+            &state.apple_iap.shared_secret,
+        )
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::BAD_GATEWAY,
+                format!("could not reach Apple sandbox: {e}"),
+            )
+        })?;
     }
 
     if apple.status != 0 {
-        return Err((StatusCode::BAD_REQUEST, format!("Apple rejected the receipt (status {})", apple.status)));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("Apple rejected the receipt (status {})", apple.status),
+        ));
     }
 
-    let receipt = apple
-        .receipt
-        .ok_or((StatusCode::BAD_REQUEST, "receipt response had no bundle info".to_string()))?;
+    let receipt = apple.receipt.ok_or((
+        StatusCode::BAD_REQUEST,
+        "receipt response had no bundle info".to_string(),
+    ))?;
     if receipt.bundle_id != state.apple_iap.bundle_id {
-        return Err((StatusCode::BAD_REQUEST, "receipt belongs to a different app".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "receipt belongs to a different app".to_string(),
+        ));
     }
 
     // The most recent transaction by expiry — there's only one subscription
@@ -130,7 +170,11 @@ async fn verify_apple(
         .max_by_key(|info| info.expires_date_ms.parse::<i64>().unwrap_or(0));
 
     let Some(latest) = latest else {
-        return Ok(Json(EntitlementResponse { is_premium: false, expires_at: None, product_id: None }));
+        return Ok(Json(EntitlementResponse {
+            is_premium: false,
+            expires_at: None,
+            product_id: None,
+        }));
     };
 
     let expires_at = latest
@@ -138,7 +182,10 @@ async fn verify_apple(
         .parse::<i64>()
         .ok()
         .and_then(DateTime::<Utc>::from_timestamp_millis)
-        .ok_or((StatusCode::BAD_GATEWAY, "Apple returned an unparseable expiry".to_string()))?;
+        .ok_or((
+            StatusCode::BAD_GATEWAY,
+            "Apple returned an unparseable expiry".to_string(),
+        ))?;
 
     let subscription = Subscription {
         user_id: auth.user_id,
@@ -173,6 +220,10 @@ async fn subscription(
 
     Ok(Json(match subscription {
         Some(sub) => sub.into(),
-        None => EntitlementResponse { is_premium: false, expires_at: None, product_id: None },
+        None => EntitlementResponse {
+            is_premium: false,
+            expires_at: None,
+            product_id: None,
+        },
     }))
 }

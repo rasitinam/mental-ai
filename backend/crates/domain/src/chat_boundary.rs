@@ -91,8 +91,11 @@ pub fn boundary(slug: &str) -> Option<&'static ChatBoundary> {
 /// for nothing in particular, so the prompt doesn't carry a heading with
 /// nothing under it.
 pub fn directives_block(slugs: &[String], note: Option<&str>) -> String {
-    let directives: Vec<&str> =
-        slugs.iter().filter_map(|slug| boundary(slug)).map(|b| b.directive).collect();
+    let directives: Vec<&str> = slugs
+        .iter()
+        .filter_map(|slug| boundary(slug))
+        .map(|b| b.directive)
+        .collect();
     let note = note.map(str::trim).filter(|n| !n.is_empty());
 
     if directives.is_empty() && note.is_none() {

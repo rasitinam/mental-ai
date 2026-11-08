@@ -45,7 +45,9 @@ async fn add_journal_entry(
         .journals
         .latest_for_user(auth.user_id)
         .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response())?;
+        .map_err(|e| {
+            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+        })?;
 
     if let Some(previous) = previous {
         let retry_after = previous.created_at + COOLDOWN;
@@ -66,11 +68,9 @@ async fn add_journal_entry(
         created_at: Utc::now(),
     };
 
-    state
-        .journals
-        .add(&entry)
-        .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response())?;
+    state.journals.add(&entry).await.map_err(|e| {
+        (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+    })?;
 
     // A new entry is exactly the kind of thing that should move the home
     // screen's reading and, over time, the long-term memory — see

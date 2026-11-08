@@ -56,16 +56,22 @@ async fn profile(
     let accepts_dm = id != auth.user_id
         && match user.dm_policy {
             DmPolicy::Everyone => true,
-            DmPolicy::Following => {
-                state.social.is_following(id, auth.user_id).await.map_err(internal)?
-            }
+            DmPolicy::Following => state
+                .social
+                .is_following(id, auth.user_id)
+                .await
+                .map_err(internal)?,
         };
 
     Ok(Json(PublicProfile {
         user_id: id,
         display_name: user.display_name,
         has_avatar: user.avatar_content_type.is_some(),
-        story_count: state.life_stories.approved_count_for(id).await.map_err(internal)?,
+        story_count: state
+            .life_stories
+            .approved_count_for(id)
+            .await
+            .map_err(internal)?,
         follower_count: state.social.follower_count(id).await.map_err(internal)?,
         following_count: state.social.following_count(id).await.map_err(internal)?,
         viewer_follows,
@@ -101,14 +107,21 @@ async fn follow(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     if id == auth.user_id {
-        return Err((StatusCode::BAD_REQUEST, "cannot follow yourself".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "cannot follow yourself".to_string(),
+        ));
     }
     ensure_not_blocked(&state, auth.user_id, id).await?;
     user_for(&state, id)
         .await
         .ok_or((StatusCode::NOT_FOUND, "user not found".to_string()))?;
 
-    state.social.follow(auth.user_id, id).await.map_err(internal)?;
+    state
+        .social
+        .follow(auth.user_id, id)
+        .await
+        .map_err(internal)?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -117,7 +130,11 @@ async fn unfollow(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    state.social.unfollow(auth.user_id, id).await.map_err(internal)?;
+    state
+        .social
+        .unfollow(auth.user_id, id)
+        .await
+        .map_err(internal)?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -174,9 +191,11 @@ pub(crate) async fn may_open_dm(
     Ok(match user.dm_policy {
         DmPolicy::Everyone => true,
         // "Only people I follow": the recipient must follow the sender.
-        DmPolicy::Following => {
-            state.social.is_following(recipient, sender).await.map_err(internal)?
-        }
+        DmPolicy::Following => state
+            .social
+            .is_following(recipient, sender)
+            .await
+            .map_err(internal)?,
     })
 }
 
@@ -189,7 +208,13 @@ pub(crate) fn internal(e: impl std::fmt::Display) -> (StatusCode, String) {
 /// breaking the feed.
 pub(crate) async fn hidden_ids(state: &AppState, viewer: Uuid) -> std::collections::HashSet<Uuid> {
     use mental_domain::repository::BlockRepository;
-    state.blocks.hidden_from(viewer).await.unwrap_or_default().into_iter().collect()
+    state
+        .blocks
+        .hidden_from(viewer)
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .collect()
 }
 
 /// 403 when either person has blocked the other. Used before anything that
@@ -201,7 +226,10 @@ pub(crate) async fn ensure_not_blocked(
 ) -> Result<(), (StatusCode, String)> {
     use mental_domain::repository::BlockRepository;
     if state.blocks.blocked_between(a, b).await.map_err(internal)? {
-        return Err((StatusCode::FORBIDDEN, "you can't interact with this person".to_string()));
+        return Err((
+            StatusCode::FORBIDDEN,
+            "you can't interact with this person".to_string(),
+        ));
     }
     Ok(())
 }

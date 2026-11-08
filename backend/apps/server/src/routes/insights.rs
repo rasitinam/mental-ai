@@ -104,7 +104,10 @@ async fn translate(
         .get(id)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-        .ok_or((axum::http::StatusCode::NOT_FOUND, "insight not found".to_string()))?;
+        .ok_or((
+            axum::http::StatusCode::NOT_FOUND,
+            "insight not found".to_string(),
+        ))?;
 
     let reader_language = user_for(&state, auth.user_id)
         .await
@@ -132,16 +135,28 @@ async fn translate(
         }));
     }
 
-    let (title, body) =
-        translate_card(&insight.title, &insight.body, &reader_language, state.llm.as_ref())
-            .await
-            .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()))?;
+    let (title, body) = translate_card(
+        &insight.title,
+        &insight.body,
+        &reader_language,
+        state.llm.as_ref(),
+    )
+    .await
+    .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()))?;
 
-    if let Err(err) = state.insights.save_translation(id, &reader_language, &title, &body).await {
+    if let Err(err) = state
+        .insights
+        .save_translation(id, &reader_language, &title, &body)
+        .await
+    {
         tracing::warn!(error = %err, %id, "failed to cache insight translation");
     }
 
-    Ok(Json(InsightTranslation { title, body, source_language: INSIGHT_SOURCE_LANGUAGE }))
+    Ok(Json(InsightTranslation {
+        title,
+        body,
+        source_language: INSIGHT_SOURCE_LANGUAGE,
+    }))
 }
 
 /// Manually turns already-ingested-but-not-yet-summarized articles into
@@ -177,7 +192,8 @@ async fn synthesize_now(
         .filter(|article| article.source != "who" && !already_covered.contains(&article.id))
         .collect();
 
-    let insights = synthesize_insights(&candidates, MAX_INSIGHTS_PER_TRIGGER, state.llm.as_ref()).await;
+    let insights =
+        synthesize_insights(&candidates, MAX_INSIGHTS_PER_TRIGGER, state.llm.as_ref()).await;
 
     for insight in &insights {
         state

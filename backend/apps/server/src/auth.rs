@@ -31,7 +31,9 @@ pub fn verify_password(password: &str, hash: &str) -> bool {
     let Ok(parsed_hash) = PasswordHash::new(hash) else {
         return false;
     };
-    Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok()
+    Argon2::default()
+        .verify_password(password.as_bytes(), &parsed_hash)
+        .is_ok()
 }
 
 fn generate_token() -> String {
@@ -69,16 +71,25 @@ pub struct AuthUser {
 impl FromRequestParts<AppState> for AuthUser {
     type Rejection = (StatusCode, String);
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         let header = parts
             .headers
             .get(axum::http::header::AUTHORIZATION)
             .and_then(|v| v.to_str().ok())
-            .ok_or((StatusCode::UNAUTHORIZED, "missing Authorization header".to_string()))?;
+            .ok_or((
+                StatusCode::UNAUTHORIZED,
+                "missing Authorization header".to_string(),
+            ))?;
 
         let token = header
             .strip_prefix("Bearer ")
-            .ok_or((StatusCode::UNAUTHORIZED, "expected a Bearer token".to_string()))?
+            .ok_or((
+                StatusCode::UNAUTHORIZED,
+                "expected a Bearer token".to_string(),
+            ))?
             .to_string();
 
         let session = state
@@ -86,12 +97,18 @@ impl FromRequestParts<AppState> for AuthUser {
             .find_session(&token)
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-            .ok_or((StatusCode::UNAUTHORIZED, "invalid or expired session".to_string()))?;
+            .ok_or((
+                StatusCode::UNAUTHORIZED,
+                "invalid or expired session".to_string(),
+            ))?;
 
         if session.expires_at < Utc::now() {
             return Err((StatusCode::UNAUTHORIZED, "session expired".to_string()));
         }
 
-        Ok(AuthUser { user_id: session.user_id, token })
+        Ok(AuthUser {
+            user_id: session.user_id,
+            token,
+        })
     }
 }

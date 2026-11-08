@@ -55,7 +55,10 @@ pub async fn interpret_intro_answer(
                         chat_boundary::MAX_BOUNDARY_NOTE_LEN,
                     ),
                 },
-                ChatMessage { role: Role::User, content: answer.to_string() },
+                ChatMessage {
+                    role: Role::User,
+                    content: answer.to_string(),
+                },
             ],
             tools: vec![],
             temperature: None,
@@ -101,7 +104,11 @@ fn parse_intro_json(raw: &str) -> Option<ParsedIntro> {
         .and_then(|v| v.as_str())
         .map(str::trim)
         .filter(|n| !n.is_empty())
-        .map(|n| n.chars().take(chat_boundary::MAX_BOUNDARY_NOTE_LEN).collect::<String>());
+        .map(|n| {
+            n.chars()
+                .take(chat_boundary::MAX_BOUNDARY_NOTE_LEN)
+                .collect::<String>()
+        });
 
     let boundaries = value
         .get("boundaries")
@@ -115,5 +122,9 @@ fn parse_intro_json(raw: &str) -> Option<ParsedIntro> {
         })
         .unwrap_or_default();
 
-    Some(ParsedIntro { reply, note, boundaries })
+    Some(ParsedIntro {
+        reply,
+        note,
+        boundaries,
+    })
 }

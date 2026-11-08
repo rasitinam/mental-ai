@@ -1,6 +1,9 @@
 use chrono::{DateTime, Utc};
 use mental_domain::memory::sanitize_items;
-use mental_domain::{ChatMessageRecord, ChatRole, JournalEntry, LifeStory, MemoryItem, MoodEntry, WellbeingAssessment};
+use mental_domain::{
+    ChatMessageRecord, ChatRole, JournalEntry, LifeStory, MemoryItem, MoodEntry,
+    WellbeingAssessment,
+};
 use mental_llm_connector::{prompts, ChatMessage, ChatRequest, LlmProvider, Role};
 
 use crate::person::PersonContext;
@@ -41,7 +44,11 @@ fn has_tags_or_note(m: &MoodEntry) -> bool {
 impl MemoryInputs<'_> {
     /// Whether there is enough of the person's own words to write a memory.
     pub fn has_enough_material(&self) -> bool {
-        let own_chat = self.chat.iter().filter(|m| m.role == ChatRole::User).count();
+        let own_chat = self
+            .chat
+            .iter()
+            .filter(|m| m.role == ChatRole::User)
+            .count();
         let mood_notes = self.moods.iter().filter(|m| has_tags_or_note(m)).count();
         self.journal.len() + own_chat + mood_notes + self.stories.len() >= MIN_SIGNALS
     }
@@ -64,14 +71,30 @@ fn tail<T>(items: &[T], max: usize) -> &[T] {
 pub fn build_user_content(inputs: &MemoryInputs<'_>, person: &PersonContext<'_>) -> String {
     let journal = tail(inputs.journal, MAX_JOURNAL)
         .iter()
-        .map(|j| format!("{}: {}", j.created_at.format("%Y-%m-%d"), excerpt(&j.body, EXCERPT_CHARS)))
+        .map(|j| {
+            format!(
+                "{}: {}",
+                j.created_at.format("%Y-%m-%d"),
+                excerpt(&j.body, EXCERPT_CHARS)
+            )
+        })
         .collect::<Vec<_>>()
         .join("\n");
 
-    let own_chat: Vec<&ChatMessageRecord> = inputs.chat.iter().filter(|m| m.role == ChatRole::User).collect();
+    let own_chat: Vec<&ChatMessageRecord> = inputs
+        .chat
+        .iter()
+        .filter(|m| m.role == ChatRole::User)
+        .collect();
     let chat = tail(&own_chat, MAX_CHAT)
         .iter()
-        .map(|m| format!("{}: {}", m.created_at.format("%Y-%m-%d"), excerpt(&m.content, EXCERPT_CHARS)))
+        .map(|m| {
+            format!(
+                "{}: {}",
+                m.created_at.format("%Y-%m-%d"),
+                excerpt(&m.content, EXCERPT_CHARS)
+            )
+        })
         .collect::<Vec<_>>()
         .join("\n");
 
@@ -110,7 +133,13 @@ pub fn build_user_content(inputs: &MemoryInputs<'_>, person: &PersonContext<'_>)
 
     let stories = tail(inputs.stories, MAX_STORIES)
         .iter()
-        .map(|s| format!("{}: {}", s.created_at.format("%Y-%m-%d"), excerpt(&s.body, STORY_CHARS)))
+        .map(|s| {
+            format!(
+                "{}: {}",
+                s.created_at.format("%Y-%m-%d"),
+                excerpt(&s.body, STORY_CHARS)
+            )
+        })
         .collect::<Vec<_>>()
         .join("\n");
 
@@ -121,7 +150,13 @@ pub fn build_user_content(inputs: &MemoryInputs<'_>, person: &PersonContext<'_>)
         .collect::<Vec<_>>()
         .join("\n");
 
-    let or_none = |s: String| if s.is_empty() { "(none)".to_string() } else { s };
+    let or_none = |s: String| {
+        if s.is_empty() {
+            "(none)".to_string()
+        } else {
+            s
+        }
+    };
 
     format!(
         "{}JOURNAL ENTRIES:\n{}\n\nTHEIR OWN CHAT MESSAGES:\n{}\n\nMOOD CHECK-INS WITH TAGS OR NOTES:\n{}\n\n\
@@ -139,13 +174,21 @@ pub fn build_user_content(inputs: &MemoryInputs<'_>, person: &PersonContext<'_>)
 /// Reads the model's JSON into clean memory lines; anything that is not the
 /// expected shape yields `None` (the old memory is then left as it was).
 pub fn parse_items(raw: &str) -> Option<Vec<MemoryItem>> {
-    let cleaned = raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+    let cleaned = raw
+        .trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
     let value: serde_json::Value = serde_json::from_str(cleaned).ok()?;
     let items = value.get("items")?.as_array()?;
     let parsed = items
         .iter()
         .filter_map(|item| {
-            Some(MemoryItem { kind: item.get("kind")?.as_str()?.to_string(), text: item.get("text")?.as_str()?.to_string() })
+            Some(MemoryItem {
+                kind: item.get("kind")?.as_str()?.to_string(),
+                text: item.get("text")?.as_str()?.to_string(),
+            })
         })
         .collect();
     Some(sanitize_items(parsed))
@@ -164,11 +207,26 @@ pub async fn generate_person_memory(
     }
 
     let messages = vec![
-        ChatMessage { role: Role::System, content: prompts::SAFETY_SYSTEM_PROMPT.to_string() },
-        ChatMessage { role: Role::System, content: prompts::person_memory_instruction(person.language) },
-        ChatMessage { role: Role::User, content: build_user_content(inputs, person) },
+        ChatMessage {
+            role: Role::System,
+            content: prompts::SAFETY_SYSTEM_PROMPT.to_string(),
+        },
+        ChatMessage {
+            role: Role::System,
+            content: prompts::person_memory_instruction(person.language),
+        },
+        ChatMessage {
+            role: Role::User,
+            content: build_user_content(inputs, person),
+        },
     ];
-    let response = llm.chat(ChatRequest { messages, tools: vec![], temperature: None }).await?;
+    let response = llm
+        .chat(ChatRequest {
+            messages,
+            tools: vec![],
+            temperature: None,
+        })
+        .await?;
 
     Ok(parse_items(&response.message.content))
 }
@@ -191,7 +249,13 @@ mod tests {
     use uuid::Uuid;
 
     fn journal(body: &str) -> JournalEntry {
-        JournalEntry { id: Uuid::new_v4(), user_id: Uuid::nil(), body: body.into(), detected_themes: None, created_at: Utc::now() }
+        JournalEntry {
+            id: Uuid::new_v4(),
+            user_id: Uuid::nil(),
+            body: body.into(),
+            detected_themes: None,
+            created_at: Utc::now(),
+        }
     }
 
     fn chat(role: ChatRole, text: &str) -> ChatMessageRecord {
@@ -206,7 +270,14 @@ mod tests {
     }
 
     fn inputs<'a>(journal: &'a [JournalEntry], chat: &'a [ChatMessageRecord]) -> MemoryInputs<'a> {
-        MemoryInputs { journal, chat, moods: &[], assessments: &[], stories: &[], previous: &[] }
+        MemoryInputs {
+            journal,
+            chat,
+            moods: &[],
+            assessments: &[],
+            stories: &[],
+            previous: &[],
+        }
     }
 
     #[test]
@@ -229,12 +300,18 @@ mod tests {
         let content = build_user_content(&inputs, &PersonContext::unknown());
         assert!(content.contains("sınavlar yüzünden uyuyamıyorum"));
         assert!(content.contains("annemle konuştum"));
-        assert!(!content.contains("bunu duyduğuma üzüldüm"), "the app's own replies are not their words");
+        assert!(
+            !content.contains("bunu duyduğuma üzüldüm"),
+            "the app's own replies are not their words"
+        );
     }
 
     #[test]
     fn the_previous_lines_are_carried_so_they_are_updated_not_rewritten() {
-        let previous = vec![MemoryItem { kind: "helps".into(), text: "akşam yürüyüşü".into() }];
+        let previous = vec![MemoryItem {
+            kind: "helps".into(),
+            text: "akşam yürüyüşü".into(),
+        }];
         let mut i = inputs(&[], &[]);
         i.previous = &previous;
         let content = build_user_content(&i, &PersonContext::unknown());
@@ -245,7 +322,13 @@ mod tests {
     fn model_output_is_parsed_and_cleaned() {
         let raw = "```json\n{\"items\": [{\"kind\": \"theme\", \"text\": \" sınav kaygısı \"}, {\"kind\": \"diagnosis\", \"text\": \"x\"}]}\n```";
         let items = parse_items(raw).expect("valid");
-        assert_eq!(items, vec![MemoryItem { kind: "theme".into(), text: "sınav kaygısı".into() }]);
+        assert_eq!(
+            items,
+            vec![MemoryItem {
+                kind: "theme".into(),
+                text: "sınav kaygısı".into()
+            }]
+        );
         assert!(parse_items("not json").is_none());
         assert!(parse_items("{\"other\": []}").is_none());
     }

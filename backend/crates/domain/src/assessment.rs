@@ -75,13 +75,62 @@ impl WellbeingAssessment {
         auditc_answers: Vec<u8>,
         cageaid_answers: Vec<u8>,
     ) -> anyhow::Result<Self> {
-        check(&phq9_answers, InstrumentShape { name: "PHQ-9", len: 9, max: 3 })?;
-        check(&gad7_answers, InstrumentShape { name: "GAD-7", len: 7, max: 3 })?;
-        check(&who5_answers, InstrumentShape { name: "WHO-5", len: 5, max: 5 })?;
-        check(&phq15_answers, InstrumentShape { name: "PHQ-15", len: 15, max: 2 })?;
-        check(&ptsd5_answers, InstrumentShape { name: "PC-PTSD-5", len: 5, max: 1 })?;
-        check(&auditc_answers, InstrumentShape { name: "AUDIT-C", len: 3, max: 4 })?;
-        check(&cageaid_answers, InstrumentShape { name: "CAGE-AID", len: 4, max: 1 })?;
+        check(
+            &phq9_answers,
+            InstrumentShape {
+                name: "PHQ-9",
+                len: 9,
+                max: 3,
+            },
+        )?;
+        check(
+            &gad7_answers,
+            InstrumentShape {
+                name: "GAD-7",
+                len: 7,
+                max: 3,
+            },
+        )?;
+        check(
+            &who5_answers,
+            InstrumentShape {
+                name: "WHO-5",
+                len: 5,
+                max: 5,
+            },
+        )?;
+        check(
+            &phq15_answers,
+            InstrumentShape {
+                name: "PHQ-15",
+                len: 15,
+                max: 2,
+            },
+        )?;
+        check(
+            &ptsd5_answers,
+            InstrumentShape {
+                name: "PC-PTSD-5",
+                len: 5,
+                max: 1,
+            },
+        )?;
+        check(
+            &auditc_answers,
+            InstrumentShape {
+                name: "AUDIT-C",
+                len: 3,
+                max: 4,
+            },
+        )?;
+        check(
+            &cageaid_answers,
+            InstrumentShape {
+                name: "CAGE-AID",
+                len: 4,
+                max: 1,
+            },
+        )?;
 
         let crisis_flag = phq9_answers[PHQ9_SELF_HARM_ITEM] > 0;
         Ok(Self {

@@ -39,7 +39,14 @@ impl From<PersonMemory> for MemoryView {
     fn from(memory: PersonMemory) -> Self {
         Self {
             enabled: memory.enabled,
-            items: memory.items.into_iter().map(|i| MemoryItemView { kind: i.kind, text: i.text }).collect(),
+            items: memory
+                .items
+                .into_iter()
+                .map(|i| MemoryItemView {
+                    kind: i.kind,
+                    text: i.text,
+                })
+                .collect(),
             generated_at: memory.generated_at,
         }
     }
@@ -87,7 +94,13 @@ async fn set_enabled(
 
     // Either direction starts from nothing: off means forget, and back on
     // means building up fresh rather than resuming a stale memory.
-    let memory = PersonMemory { user_id: auth.user_id, enabled: req.enabled, items: Vec::new(), language, generated_at: None };
+    let memory = PersonMemory {
+        user_id: auth.user_id,
+        enabled: req.enabled,
+        items: Vec::new(),
+        language,
+        generated_at: None,
+    };
 
     state
         .person_memory
@@ -104,9 +117,22 @@ async fn clear_memory(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<MemoryView>, (axum::http::StatusCode, String)> {
-    let enabled = state.person_memory.get(auth.user_id).await.ok().flatten().map(|m| m.enabled).unwrap_or(true);
+    let enabled = state
+        .person_memory
+        .get(auth.user_id)
+        .await
+        .ok()
+        .flatten()
+        .map(|m| m.enabled)
+        .unwrap_or(true);
 
-    let memory = PersonMemory { user_id: auth.user_id, enabled, items: Vec::new(), language: "tr".to_string(), generated_at: None };
+    let memory = PersonMemory {
+        user_id: auth.user_id,
+        enabled,
+        items: Vec::new(),
+        language: "tr".to_string(),
+        generated_at: None,
+    };
 
     state
         .person_memory

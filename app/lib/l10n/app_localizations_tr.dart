@@ -2001,14 +2001,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationsTitle => 'Bildirimler';
 
   @override
-  String get notificationsCheckinTitle => 'Akşam kontrolü';
+  String get notificationsCheckinTitle => 'Günlük hatırlatmalar';
 
   @override
   String get notificationsCheckinBody =>
-      'O gün ruh halini kaydetmediysen, seçtiğin saatte tek bir nazik hatırlatma gelir. Kaydettiysen hiç rahatsız etmez.';
+      'Ruh halini henüz kaydetmediysen 09:00, 14:00 ve seçtiğin akşam saatinde hatırlatma alırsın. Günlük kaydını yaptığında o günün kalan hatırlatmaları atlanır.';
 
   @override
-  String get notificationsTimeLabel => 'Saat';
+  String get notificationsTimeLabel => 'Akşam hatırlatma saati';
 
   @override
   String get notificationsPreviewLabel => 'Bildirim böyle görünür';
@@ -2029,11 +2029,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String settingsNotificationsOn(String time) {
-    return 'Akşam kontrolü · $time';
+    return 'Günlük hatırlatmalar · $time';
   }
 
   @override
-  String get settingsNotificationsOff => 'Akşam kontrolü kapalı';
+  String get settingsNotificationsOff => 'Günlük hatırlatmalar kapalı';
 
   @override
   String get metooButton => 'Bende de oldu';

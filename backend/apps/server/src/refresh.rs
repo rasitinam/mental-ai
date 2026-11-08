@@ -53,7 +53,10 @@ pub struct RefreshGuard {
 
 impl RefreshGuard {
     pub fn new() -> Self {
-        Self { state_next: Mutex::new(HashMap::new()), memory_next: Mutex::new(HashMap::new()) }
+        Self {
+            state_next: Mutex::new(HashMap::new()),
+            memory_next: Mutex::new(HashMap::new()),
+        }
     }
 
     fn try_begin_state(&self, user_id: Uuid) -> bool {
@@ -67,7 +70,11 @@ impl RefreshGuard {
     /// True at most once per `interval` for one user. Checking and reserving
     /// the next slot happen under the same lock, so two triggers arriving at
     /// once for the same person cannot both pass.
-    fn try_begin(map: &Mutex<HashMap<Uuid, DateTime<Utc>>>, user_id: Uuid, interval: ChronoDuration) -> bool {
+    fn try_begin(
+        map: &Mutex<HashMap<Uuid, DateTime<Utc>>>,
+        user_id: Uuid,
+        interval: ChronoDuration,
+    ) -> bool {
         let mut map = map.lock().unwrap_or_else(|e| e.into_inner());
         let now = Utc::now();
         let allowed = map.get(&user_id).map_or(true, |next| now >= *next);
@@ -140,10 +147,22 @@ async fn maybe_refresh_person_memory(state: &AppState, user_id: Uuid) -> anyhow:
     }
 
     let journal = state.journals.list_all(user_id).await.unwrap_or_default();
-    let chat = state.chats.history_for_user(user_id, MEMORY_CHAT_MESSAGES).await.unwrap_or_default();
+    let chat = state
+        .chats
+        .history_for_user(user_id, MEMORY_CHAT_MESSAGES)
+        .await
+        .unwrap_or_default();
     let moods = state.moods.list_all(user_id).await.unwrap_or_default();
-    let assessments = state.assessments.list_for_user(user_id, 12).await.unwrap_or_default();
-    let stories = state.life_stories.list_for_user(user_id).await.unwrap_or_default();
+    let assessments = state
+        .assessments
+        .list_for_user(user_id, 12)
+        .await
+        .unwrap_or_default();
+    let stories = state
+        .life_stories
+        .list_for_user(user_id)
+        .await
+        .unwrap_or_default();
     let previous_items = existing.map(|m| m.items).unwrap_or_default();
 
     let inputs = MemoryInputs {
@@ -160,7 +179,10 @@ async fn maybe_refresh_person_memory(state: &AppState, user_id: Uuid) -> anyhow:
     }
 
     let user = user_for(state, user_id).await;
-    let person = user.as_ref().map(PersonContext::from_user).unwrap_or_else(PersonContext::unknown);
+    let person = user
+        .as_ref()
+        .map(PersonContext::from_user)
+        .unwrap_or_else(PersonContext::unknown);
 
     let Some(items) = generate_person_memory(&inputs, &person, state.llm.as_ref()).await? else {
         return Ok(());
@@ -185,7 +207,10 @@ mod tests {
         let guard = RefreshGuard::new();
         let user = Uuid::new_v4();
         assert!(guard.try_begin_state(user));
-        assert!(!guard.try_begin_state(user), "a second trigger right after the first must be refused");
+        assert!(
+            !guard.try_begin_state(user),
+            "a second trigger right after the first must be refused"
+        );
         // A different user is unaffected by the first one's slot.
         assert!(guard.try_begin_state(Uuid::new_v4()));
     }

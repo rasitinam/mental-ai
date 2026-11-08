@@ -25,7 +25,12 @@ pub struct PubMedSource {
 }
 
 impl PubMedSource {
-    pub fn new(label: &'static str, query: impl Into<String>, max_results: u32, tags: Vec<String>) -> Self {
+    pub fn new(
+        label: &'static str,
+        query: impl Into<String>,
+        max_results: u32,
+        tags: Vec<String>,
+    ) -> Self {
         Self {
             client: reqwest::Client::new(),
             label,
@@ -75,7 +80,11 @@ impl ResearchSource for PubMedSource {
         let fetch_url = format!("{EUTILS_BASE}/efetch.fcgi?db=pubmed&retmode=xml&id={ids}");
         let xml = self.client.get(&fetch_url).send().await?.text().await?;
 
-        Ok(parse_pubmed_xml(&xml, self.max_results as usize, &self.tags))
+        Ok(parse_pubmed_xml(
+            &xml,
+            self.max_results as usize,
+            &self.tags,
+        ))
     }
 }
 

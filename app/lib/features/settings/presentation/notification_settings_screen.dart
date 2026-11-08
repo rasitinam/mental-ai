@@ -145,6 +145,14 @@ class _NotificationSettingsScreenState extends ConsumerState<NotificationSetting
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 24),
+                            _ReminderSchedule(
+                              morningLabel: l10n.notificationsMorningLabel,
+                              afternoonLabel: l10n.notificationsAfternoonLabel,
+                              eveningLabel: l10n.notificationsEveningLabel,
+                              eveningTime: reminderTimeLabel(hour),
+                              palette: palette,
+                            ),
+                            const SizedBox(height: 24),
                             SectionLabel(l10n.notificationsTimeLabel),
                             const SizedBox(height: 10),
                             Wrap(
@@ -294,3 +302,90 @@ class _NotificationPreview extends StatelessWidget {
     );
   }
 }
+
+/// Shows the three reminder slots configured by the backend. Only the
+/// evening slot is user-selectable; morning and afternoon are fixed.
+class _ReminderSchedule extends StatelessWidget {
+  final String morningLabel;
+  final String afternoonLabel;
+  final String eveningLabel;
+  final String eveningTime;
+  final AppPalette palette;
+
+  const _ReminderSchedule({
+    required this.morningLabel,
+    required this.afternoonLabel,
+    required this.eveningLabel,
+    required this.eveningTime,
+    required this.palette,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      radius: 18,
+      child: Column(
+        children: [
+          _ReminderScheduleRow(
+            icon: Icons.wb_sunny_outlined,
+            label: morningLabel,
+            time: '09:00',
+            palette: palette,
+          ),
+          Divider(height: 22, color: palette.separator),
+          _ReminderScheduleRow(
+            icon: Icons.wb_twilight_rounded,
+            label: afternoonLabel,
+            time: '14:00',
+            palette: palette,
+          ),
+          Divider(height: 22, color: palette.separator),
+          _ReminderScheduleRow(
+            icon: Icons.nights_stay_outlined,
+            label: eveningLabel,
+            time: eveningTime,
+            palette: palette,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReminderScheduleRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String time;
+  final AppPalette palette;
+
+  const _ReminderScheduleRow({
+    required this.icon,
+    required this.label,
+    required this.time,
+    required this.palette,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 19, color: palette.accent),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: AppTypography.label.copyWith(color: palette.textPrimary),
+          ),
+        ),
+        Text(
+          time,
+          style: AppTypography.label.copyWith(
+            color: palette.textSecondary,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+}
+

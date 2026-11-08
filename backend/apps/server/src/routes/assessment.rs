@@ -1,8 +1,4 @@
-use axum::{
-    extract::State,
-    routing::post,
-    Json, Router,
-};
+use axum::{extract::State, routing::post, Json, Router};
 use mental_domain::repository::AssessmentRepository;
 use mental_domain::WellbeingAssessment;
 use serde::{Deserialize, Serialize};

@@ -10,11 +10,10 @@ use uuid::Uuid;
 
 use crate::report::LifeAnalysis;
 use crate::{
-    BlockRecord, ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, DmMessage, DmPolicy,
-    EmailCodeRecord, PersonMemory,
-    DmStatus, DmThread, Insight, JournalEntry, LifeStory, LifeStoryReport, MoodEntry, PushToken,
-    ResearchArticle, Session, StoryFeedItem, StoryStatus, Subscription, User, UserState,
-    WellbeingAssessment,
+    BlockRecord, ChatMessageRecord, Credentials, DailyMentalReport, DisorderExplainer, DmMessage,
+    DmPolicy, DmStatus, DmThread, EmailCodeRecord, Insight, JournalEntry, LifeStory,
+    LifeStoryReport, MoodEntry, PersonMemory, PushToken, ResearchArticle, Session, StoryFeedItem,
+    StoryStatus, Subscription, User, UserState, WellbeingAssessment,
 };
 
 #[async_trait]
@@ -52,13 +51,21 @@ pub trait UserRepository: Send + Sync {
     async fn set_avatar(&self, user_id: Uuid, content_type: Option<&str>) -> anyhow::Result<()>;
     /// Turns the evening check-in reminder on or off and sets the local
     /// hour it goes out at.
-    async fn set_checkin_reminder(&self, user_id: Uuid, enabled: bool, hour: u8) -> anyhow::Result<()>;
+    async fn set_checkin_reminder(
+        &self,
+        user_id: Uuid,
+        enabled: bool,
+        hour: u8,
+    ) -> anyhow::Result<()>;
     /// Stores the device's current offset from UTC, in minutes.
     async fn set_utc_offset(&self, user_id: Uuid, minutes: i32) -> anyhow::Result<()>;
-    /// Atomically marks today's reminder as sent for `local_date`,
-    /// returning `false` if it already was — what stops an hourly job (or
-    /// a restart, or a second server process) from sending one day twice.
-    async fn claim_checkin_reminder(&self, user_id: Uuid, local_date: NaiveDate) -> anyhow::Result<bool>;
+    /// Atomically claims one reminder slot for a user and local date.
+    async fn claim_checkin_reminder(
+        &self,
+        user_id: Uuid,
+        local_date: NaiveDate,
+        slot: &str,
+    ) -> anyhow::Result<bool>;
 
     /// Permanently erases the account and everything it owns — every mood
     /// entry, journal entry, chat message, story, DM, reaction, follow,
@@ -114,7 +121,11 @@ pub trait ChatRepository: Send + Sync {
     /// The full durable transcript for a user, oldest first — used to
     /// rehydrate the chat screen on login/app restart so the conversation
     /// reads as one continuous thread instead of resetting every session.
-    async fn history_for_user(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<ChatMessageRecord>>;
+    async fn history_for_user(
+        &self,
+        user_id: Uuid,
+        limit: u32,
+    ) -> anyhow::Result<Vec<ChatMessageRecord>>;
 }
 
 #[async_trait]
@@ -140,7 +151,11 @@ pub trait ReportRepository: Send + Sync {
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<DailyMentalReport>>;
     /// Past reports, newest first. Feeds two things: the "compared to previous
     /// days" line in a new daily report, and the life analysis.
-    async fn list_recent(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<DailyMentalReport>>;
+    async fn list_recent(
+        &self,
+        user_id: Uuid,
+        limit: u32,
+    ) -> anyhow::Result<Vec<DailyMentalReport>>;
 }
 
 #[async_trait]
@@ -250,7 +265,11 @@ pub trait AssessmentRepository: Send + Sync {
     async fn latest_for_user(&self, user_id: Uuid) -> anyhow::Result<Option<WellbeingAssessment>>;
     /// The most recent `limit` screenings, oldest first, so a change over
     /// time can be read off them (the latest alone cannot show one).
-    async fn list_for_user(&self, user_id: Uuid, limit: u32) -> anyhow::Result<Vec<WellbeingAssessment>>;
+    async fn list_for_user(
+        &self,
+        user_id: Uuid,
+        limit: u32,
+    ) -> anyhow::Result<Vec<WellbeingAssessment>>;
 }
 
 #[async_trait]
@@ -308,7 +327,10 @@ pub trait LifeStoryRepository: Send + Sync {
     /// Every "Bende de oldu" left on this author's stories, as (story,
     /// note). Deliberately no reader id: the author gets counts and
     /// notes, never who.
-    async fn metoo_for_author(&self, author_id: Uuid) -> anyhow::Result<Vec<(Uuid, Option<String>)>>;
+    async fn metoo_for_author(
+        &self,
+        author_id: Uuid,
+    ) -> anyhow::Result<Vec<(Uuid, Option<String>)>>;
 
     /// A cached translation, if this story has already been translated
     /// into `target_language` for a previous reader.
@@ -353,9 +375,13 @@ pub trait SocialRepository: Send + Sync {
     /// [`crate::life_story::METOO_NOTES`]. Returns `true` only the first
     /// time for this (story, reader): changing the note later must not
     /// notify the author a second time.
-    async fn set_metoo(&self, story_id: Uuid, user_id: Uuid, note: Option<&str>) -> anyhow::Result<bool>;
+    async fn set_metoo(
+        &self,
+        story_id: Uuid,
+        user_id: Uuid,
+        note: Option<&str>,
+    ) -> anyhow::Result<bool>;
     async fn remove_metoo(&self, story_id: Uuid, user_id: Uuid) -> anyhow::Result<()>;
-
 }
 
 /// Direct messages, with the request gate built into the thread's own
@@ -418,8 +444,15 @@ pub trait ChatUsageRepository: Send + Sync {
 /// Cached "Seni iyi hissettirenler" cards — see [`crate::discovery`].
 #[async_trait]
 pub trait DiscoveryRepository: Send + Sync {
-    async fn get(&self, user_id: Uuid) -> anyhow::Result<Option<crate::discovery::CachedDiscoveries>>;
-    async fn save(&self, user_id: Uuid, cached: &crate::discovery::CachedDiscoveries) -> anyhow::Result<()>;
+    async fn get(
+        &self,
+        user_id: Uuid,
+    ) -> anyhow::Result<Option<crate::discovery::CachedDiscoveries>>;
+    async fn save(
+        &self,
+        user_id: Uuid,
+        cached: &crate::discovery::CachedDiscoveries,
+    ) -> anyhow::Result<()>;
 }
 
 /// Blocking between accounts (App Store Guideline 1.2 for user-generated

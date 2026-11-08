@@ -1,4 +1,4 @@
-use tracing_subscriber::{EnvFilter, fmt, prelude::*};
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 /// Initializes structured logging. Reads `RUST_LOG` (default: "info"),
 /// call once from each binary's `main`.

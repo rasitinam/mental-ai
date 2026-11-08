@@ -2005,14 +2005,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsTitle => 'Notifications';
 
   @override
-  String get notificationsCheckinTitle => 'Evening check-in';
+  String get notificationsCheckinTitle => 'Daily reminders';
 
   @override
   String get notificationsCheckinBody =>
-      'If you haven\'t logged your mood that day, one gentle reminder arrives at the time you pick. If you have, it never bothers you.';
+      'If you have not logged your mood, reminders arrive at 09:00, 14:00 and your chosen evening time. Once you check in, the remaining reminders for that day are skipped.';
 
   @override
-  String get notificationsTimeLabel => 'Time';
+  String get notificationsTimeLabel => 'Evening reminder time';
 
   @override
   String get notificationsPreviewLabel => 'What it looks like';
@@ -2033,11 +2033,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsNotificationsOn(String time) {
-    return 'Evening check-in · $time';
+    return 'Daily reminders · $time';
   }
 
   @override
-  String get settingsNotificationsOff => 'Evening check-in is off';
+  String get settingsNotificationsOff => 'Daily reminders are off';
 
   @override
   String get metooButton => 'This happened to me too';

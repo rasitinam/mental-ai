@@ -31,7 +31,10 @@ pub async fn retrieve_context(
         return vec![];
     }
 
-    let hits = vector_store.search(&embedding, top_k).await.unwrap_or_default();
+    let hits = vector_store
+        .search(&embedding, top_k)
+        .await
+        .unwrap_or_default();
     let ids: Vec<_> = hits.iter().map(|hit| hit.article_id).collect();
 
     research.get_many(&ids).await.unwrap_or_default()

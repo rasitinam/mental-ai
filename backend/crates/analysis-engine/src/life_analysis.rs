@@ -1,7 +1,8 @@
 use chrono::{DateTime, Utc};
 use mental_domain::report::LifeAnalysis;
 use mental_domain::{
-    ChatMessageRecord, DailyMentalReport, JournalEntry, LifeStory, MoodEntry, UserState, WellbeingAssessment,
+    ChatMessageRecord, DailyMentalReport, JournalEntry, LifeStory, MoodEntry, UserState,
+    WellbeingAssessment,
 };
 use mental_llm_connector::{prompts, ChatMessage, ChatRequest, LlmProvider, Role};
 use uuid::Uuid;
@@ -104,11 +105,21 @@ pub fn build_user_content(
 
     // Reports arrive newest-first from the repository; the model reads the
     // history more naturally oldest-first, like the other sections.
-    let mut recent_reports = inputs.reports.iter().take(MAX_REPORTS * k).collect::<Vec<_>>();
+    let mut recent_reports = inputs
+        .reports
+        .iter()
+        .take(MAX_REPORTS * k)
+        .collect::<Vec<_>>();
     recent_reports.reverse();
     let report_excerpts = recent_reports
         .iter()
-        .map(|r| format!("{}: {}", r.report_date.format("%Y-%m-%d"), excerpt(&r.summary)))
+        .map(|r| {
+            format!(
+                "{}: {}",
+                r.report_date.format("%Y-%m-%d"),
+                excerpt(&r.summary)
+            )
+        })
         .collect::<Vec<_>>()
         .join("\n");
 
@@ -145,11 +156,23 @@ pub fn build_user_content(
 
     let stories = tail(inputs.stories, MAX_STORIES * k)
         .iter()
-        .map(|s| format!("{}: {}", s.created_at.format("%Y-%m-%d"), clip(&s.body, STORY_CHARS * k)))
+        .map(|s| {
+            format!(
+                "{}: {}",
+                s.created_at.format("%Y-%m-%d"),
+                clip(&s.body, STORY_CHARS * k)
+            )
+        })
         .collect::<Vec<_>>()
         .join("\n");
 
-    let or_none = |s: String| if s.is_empty() { "(none)".to_string() } else { s };
+    let or_none = |s: String| {
+        if s.is_empty() {
+            "(none)".to_string()
+        } else {
+            s
+        }
+    };
 
     format!(
         "{}Period covered: {} - {}\n\n\
@@ -180,7 +203,8 @@ pub async fn generate_life_analysis(
     llm: &dyn LlmProvider,
 ) -> anyhow::Result<LifeAnalysis> {
     let period_start =
-        earliest_timestamp(inputs.moods, inputs.journal_entries, inputs.chat_messages).unwrap_or_else(Utc::now);
+        earliest_timestamp(inputs.moods, inputs.journal_entries, inputs.chat_messages)
+            .unwrap_or_else(Utc::now);
     let period_end = Utc::now();
 
     let user_content = build_user_content(inputs, person, period_start, period_end);
@@ -212,8 +236,8 @@ pub async fn generate_life_analysis(
         .await?;
 
     let parsed = parse_analysis_json(&response.message.content);
-    let (narrative, key_patterns, do_list, dont_list) = parsed
-        .unwrap_or_else(|| (response.message.content.clone(), vec![], vec![], vec![]));
+    let (narrative, key_patterns, do_list, dont_list) =
+        parsed.unwrap_or_else(|| (response.message.content.clone(), vec![], vec![], vec![]));
 
     Ok(LifeAnalysis {
         id: Uuid::new_v4(),
@@ -260,7 +284,12 @@ fn earliest_timestamp(
 /// for strict JSON but occasionally wraps it in a markdown fence anyway,
 /// so that's stripped defensively before parsing.
 fn parse_analysis_json(raw: &str) -> Option<(String, Vec<String>, Vec<String>, Vec<String>)> {
-    let cleaned = raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+    let cleaned = raw
+        .trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
 
     let value: serde_json::Value = serde_json::from_str(cleaned).ok()?;
     let narrative = value.get("narrative")?.as_str()?.to_string();
@@ -277,7 +306,11 @@ fn string_list(value: &serde_json::Value, key: &str) -> Vec<String> {
     value
         .get(key)
         .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect()
+        })
         .unwrap_or_default()
 }
 
@@ -314,17 +347,22 @@ mod tests {
 
     #[test]
     fn mood_lines_carry_the_tags_and_notes_the_person_added() {
-        let moods = vec![mood(3, -0.4, &["gergin", "yorgun"], Some("sunum yüzünden")), mood(1, 0.3, &[], None)];
+        let moods = vec![
+            mood(3, -0.4, &["gergin", "yorgun"], Some("sunum yüzünden")),
+            mood(1, 0.3, &[], None),
+        ];
         let mut inputs = empty();
         inputs.moods = &moods;
-        let content = build_user_content(&inputs, &PersonContext::unknown(), Utc::now(), Utc::now());
+        let content =
+            build_user_content(&inputs, &PersonContext::unknown(), Utc::now(), Utc::now());
         assert!(content.contains("[gergin, yorgun] \"sunum yüzünden\""));
         assert!(content.contains("keyif=0.30 enerji=0.10"));
     }
 
     #[test]
     fn missing_sources_read_as_none_not_as_empty_sections() {
-        let content = build_user_content(&empty(), &PersonContext::unknown(), Utc::now(), Utc::now());
+        let content =
+            build_user_content(&empty(), &PersonContext::unknown(), Utc::now(), Utc::now());
         for label in [
             "SELF-REPORT SCREENING HISTORY (oldest first):\n(none)",
             "HOW THEY WERE READING AT THE LAST REFRESH:\n(none)",
@@ -350,6 +388,8 @@ mod tests {
         let mut inputs = empty();
         inputs.state = Some(&state);
         let content = build_user_content(&inputs, &PersonContext::unknown(), now, now);
-        assert!(content.contains("assessed 5 hours ago: Yorgun ve gergin — Son konuşma seni zorlamış."));
+        assert!(
+            content.contains("assessed 5 hours ago: Yorgun ve gergin — Son konuşma seni zorlamış.")
+        );
     }
 }

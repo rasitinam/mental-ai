@@ -4,10 +4,12 @@ use axum::{
     Json, Router,
 };
 use chrono::{Duration, Utc};
-use mental_analysis_engine::{assess_current_state, relabel_basis, translate::translate_current_state, StateInputs};
+use mental_analysis_engine::{
+    assess_current_state, relabel_basis, translate::translate_current_state, StateInputs,
+};
 use mental_domain::repository::{
-    ChatRepository, ContentTranslationRepository, JournalRepository, LifeAnalysisRepository, MoodRepository,
-    ReportRepository, UserStateRepository,
+    ChatRepository, ContentTranslationRepository, JournalRepository, LifeAnalysisRepository,
+    MoodRepository, ReportRepository, UserStateRepository,
 };
 use mental_domain::UserState;
 
@@ -91,8 +93,10 @@ async fn translated_state(
     // entry instead of overwriting the previous one's meaning.
     let content_id = format!("{}:{}", stored.user_id, stored.generated_at.timestamp());
 
-    if let Some(cached) =
-        state.content_translations.get(STATE_CONTENT_TYPE, &content_id, target_language).await?
+    if let Some(cached) = state
+        .content_translations
+        .get(STATE_CONTENT_TYPE, &content_id, target_language)
+        .await?
     {
         if let Ok(payload) = serde_json::from_str(&cached) {
             return Ok(payload);
@@ -105,15 +109,24 @@ async fn translated_state(
         anyhow::bail!("no AI consent");
     }
 
-    let (headline, note) =
-        translate_current_state(&stored.headline, &stored.note, target_language, state.llm.as_ref())
-            .await?;
+    let (headline, note) = translate_current_state(
+        &stored.headline,
+        &stored.note,
+        target_language,
+        state.llm.as_ref(),
+    )
+    .await?;
     let payload = StateTranslationPayload { headline, note };
 
     if let Ok(serialized) = serde_json::to_string(&payload) {
         if let Err(err) = state
             .content_translations
-            .save(STATE_CONTENT_TYPE, &content_id, target_language, &serialized)
+            .save(
+                STATE_CONTENT_TYPE,
+                &content_id,
+                target_language,
+                &serialized,
+            )
             .await
         {
             tracing::warn!(error = %err, user_id = %stored.user_id, "failed to cache current state translation");
@@ -129,18 +142,37 @@ async fn translated_state(
 /// paths can never drift apart. The memory lines are deliberately left out
 /// of the person context here: this is a reading of *right now*, and the
 /// chat/report/life-analysis sections already carry the longer view.
-pub(crate) async fn run_state_refresh(state: &AppState, user_id: Uuid) -> anyhow::Result<UserState> {
+pub(crate) async fn run_state_refresh(
+    state: &AppState,
+    user_id: Uuid,
+) -> anyhow::Result<UserState> {
     let now = Utc::now();
     let since = now - Duration::hours(CHAT_WINDOW_HOURS);
 
     let person_data = PersonData::load(state, user_id).await;
     let person = person_data.context(true, false);
 
-    let chat = state.chats.history_for_user(user_id, CHAT_MESSAGES).await.unwrap_or_default();
-    let moods = state.moods.list_between(user_id, since, now).await.unwrap_or_default();
+    let chat = state
+        .chats
+        .history_for_user(user_id, CHAT_MESSAGES)
+        .await
+        .unwrap_or_default();
+    let moods = state
+        .moods
+        .list_between(user_id, since, now)
+        .await
+        .unwrap_or_default();
     let journal = state.journals.list_all(user_id).await.unwrap_or_default();
-    let report = state.reports.latest_for_user(user_id).await.unwrap_or_default();
-    let life_analysis = state.life_analyses.latest_for_user(user_id).await.unwrap_or_default();
+    let report = state
+        .reports
+        .latest_for_user(user_id)
+        .await
+        .unwrap_or_default();
+    let life_analysis = state
+        .life_analyses
+        .latest_for_user(user_id)
+        .await
+        .unwrap_or_default();
 
     assess_current_state(
         user_id,

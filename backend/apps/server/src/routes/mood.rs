@@ -50,7 +50,9 @@ async fn add_mood(
         .moods
         .latest_for_user(auth.user_id)
         .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response())?;
+        .map_err(|e| {
+            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+        })?;
 
     if let Some(previous) = previous {
         let retry_after = previous.recorded_at + COOLDOWN;
@@ -73,11 +75,9 @@ async fn add_mood(
         recorded_at: Utc::now(),
     };
 
-    state
-        .moods
-        .add(&entry)
-        .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response())?;
+    state.moods.add(&entry).await.map_err(|e| {
+        (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+    })?;
 
     // A new check-in is exactly the kind of thing that should move the home
     // screen's reading and, over time, the long-term memory — see

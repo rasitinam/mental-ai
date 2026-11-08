@@ -104,10 +104,21 @@ pub fn detect_language(text: &str) -> String {
     let lower = text.to_lowercase();
     let word_count = lower.split_whitespace().count();
     let is_ascii_ish = text.chars().all(|c| c.is_ascii() || c.is_whitespace());
-    const ENGLISH_MARKERS: &[&str] =
-        &[" the ", " and ", " that ", " with ", " have ", " this ", " because ", " my "];
+    const ENGLISH_MARKERS: &[&str] = &[
+        " the ",
+        " and ",
+        " that ",
+        " with ",
+        " have ",
+        " this ",
+        " because ",
+        " my ",
+    ];
     let padded = format!(" {lower} ");
-    let english_hits = ENGLISH_MARKERS.iter().filter(|m| padded.contains(*m)).count();
+    let english_hits = ENGLISH_MARKERS
+        .iter()
+        .filter(|m| padded.contains(*m))
+        .count();
 
     if word_count >= 6 && is_ascii_ish && english_hits >= 1 {
         "en".to_string()
@@ -129,8 +140,12 @@ pub const REACTIONS: [&str; 3] = ["destek", "guclusun", "anliyorum"];
 /// stranger about their mental illness is exactly what would need a
 /// moderation queue of its own, and these four cover what people want to
 /// say.
-pub const METOO_NOTES: [&str; 4] = ["yalniz_degilsin", "ben_de_yasadim", "tesekkurler", "guc_yolluyorum"];
-
+pub const METOO_NOTES: [&str; 4] = [
+    "yalniz_degilsin",
+    "ben_de_yasadim",
+    "tesekkurler",
+    "guc_yolluyorum",
+];
 
 /// A feed row: the story plus everything the reader's copy of it needs —
 /// reaction tallies, which one *they* picked (if any), and the author's

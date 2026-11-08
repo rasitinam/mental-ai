@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
-use mental_domain::repository::ResearchRepository;
 use mental_domain::report::LifeAnalysis;
+use mental_domain::repository::ResearchRepository;
 use mental_domain::{DailyMentalReport, JournalEntry, MoodEntry, UserState};
 use mental_knowledge_base::{Embedder, VectorStore};
 use mental_llm_connector::{prompts, ChatMessage, ChatRequest, LlmProvider, Role};
@@ -69,14 +69,26 @@ pub fn background_block(background: &ChatBackground<'_>, now: DateTime<Utc>) -> 
     }
     if let Some(analysis) = background.life_analysis {
         if !analysis.key_patterns.is_empty() {
-            let patterns = analysis.key_patterns.iter().take(MAX_PATTERNS).cloned().collect::<Vec<_>>().join("; ");
+            let patterns = analysis
+                .key_patterns
+                .iter()
+                .take(MAX_PATTERNS)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("; ");
             lines.push(format!(
                 "Patterns noticed across their history ({}): {patterns}",
                 age_label(analysis.generated_at, now)
             ));
         }
         if !analysis.do_list.is_empty() {
-            let helps = analysis.do_list.iter().take(MAX_HELPS).cloned().collect::<Vec<_>>().join("; ");
+            let helps = analysis
+                .do_list
+                .iter()
+                .take(MAX_HELPS)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("; ");
             lines.push(format!("What has visibly helped them: {helps}"));
         }
     }
@@ -92,8 +104,10 @@ pub fn mood_summary(recent_moods: &[MoodEntry]) -> String {
         return "No recent check-ins.".to_string();
     }
 
-    let avg_valence: f32 = recent_moods.iter().map(|m| m.valence).sum::<f32>() / recent_moods.len() as f32;
-    let avg_arousal: f32 = recent_moods.iter().map(|m| m.arousal).sum::<f32>() / recent_moods.len() as f32;
+    let avg_valence: f32 =
+        recent_moods.iter().map(|m| m.valence).sum::<f32>() / recent_moods.len() as f32;
+    let avg_arousal: f32 =
+        recent_moods.iter().map(|m| m.arousal).sum::<f32>() / recent_moods.len() as f32;
     let mut summary = format!(
         "{} check-ins, average valence {:.2}, average energy {:.2}",
         recent_moods.len(),
@@ -182,19 +196,41 @@ pub async fn generate_chat_reply(
          Related research:\n{}",
         person.prompt_block(),
         mood_summary(recent_moods),
-        if journal_excerpts.is_empty() { "(none)".to_string() } else { journal_excerpts },
+        if journal_excerpts.is_empty() {
+            "(none)".to_string()
+        } else {
+            journal_excerpts
+        },
         format_context(&related),
     );
 
     let mut messages = vec![
-        ChatMessage { role: Role::System, content: prompts::SAFETY_SYSTEM_PROMPT.to_string() },
-        ChatMessage { role: Role::System, content: prompts::chat_instruction(person.language) },
-        ChatMessage { role: Role::System, content: format!("User context:\n{context}") },
+        ChatMessage {
+            role: Role::System,
+            content: prompts::SAFETY_SYSTEM_PROMPT.to_string(),
+        },
+        ChatMessage {
+            role: Role::System,
+            content: prompts::chat_instruction(person.language),
+        },
+        ChatMessage {
+            role: Role::System,
+            content: format!("User context:\n{context}"),
+        },
     ];
     messages.extend(conversation_history.iter().cloned());
-    messages.push(ChatMessage { role: Role::User, content: user_message.to_string() });
+    messages.push(ChatMessage {
+        role: Role::User,
+        content: user_message.to_string(),
+    });
 
-    let response = llm.chat(ChatRequest { messages, tools: vec![], temperature: None }).await?;
+    let response = llm
+        .chat(ChatRequest {
+            messages,
+            tools: vec![],
+            temperature: None,
+        })
+        .await?;
 
     Ok(ChatReplyResult {
         reply: response.message.content,
@@ -243,7 +279,11 @@ mod tests {
     fn the_reading_is_labelled_with_its_age_and_the_local_time_is_included() {
         let now = Utc::now();
         let s = state(now);
-        let bg = ChatBackground { local_time: Some("Tuesday 02:10".into()), state: Some(&s), ..Default::default() };
+        let bg = ChatBackground {
+            local_time: Some("Tuesday 02:10".into()),
+            state: Some(&s),
+            ..Default::default()
+        };
         let block = background_block(&bg, now);
         assert!(block.contains("Their local time right now: Tuesday 02:10."));
         assert!(block.contains("assessed 3 hours ago"));
@@ -265,12 +305,21 @@ mod tests {
             generated_at: now - Duration::days(5),
             language: "tr".into(),
         };
-        let bg = ChatBackground { life_analysis: Some(&analysis), ..Default::default() };
+        let bg = ChatBackground {
+            life_analysis: Some(&analysis),
+            ..Default::default()
+        };
         let block = background_block(&bg, now);
         assert!(block.contains("Patterns noticed across their history (5 days ago): pazar akşamı kaygısı; uykusuz geceler"));
         assert!(block.contains("What has visibly helped them: kısa yürüyüş"));
-        assert!(!block.contains("uzun bir anlatı"), "the narrative itself is not sent, only its patterns");
-        assert!(!block.contains("ekran"), "the do-not list is not sent as background");
+        assert!(
+            !block.contains("uzun bir anlatı"),
+            "the narrative itself is not sent, only its patterns"
+        );
+        assert!(
+            !block.contains("ekran"),
+            "the do-not list is not sent as background"
+        );
     }
 
     #[test]

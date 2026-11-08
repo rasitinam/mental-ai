@@ -59,7 +59,10 @@ async fn report_user(
     Json(req): Json<ReportUserRequest>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     if reported == auth.user_id {
-        return Err((StatusCode::BAD_REQUEST, "you can't report yourself".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "you can't report yourself".to_string(),
+        ));
     }
     let user = state
         .users
@@ -72,10 +75,16 @@ async fn report_user(
         "profile" => format!(
             "Name: {}\nProfile photo: {}",
             user.display_name,
-            if user.avatar_content_type.is_some() { "yes" } else { "no" }
+            if user.avatar_content_type.is_some() {
+                "yes"
+            } else {
+                "no"
+            }
         ),
         "dm" => {
-            let thread_id = req.thread_id.ok_or((StatusCode::BAD_REQUEST, "thread_id is required".to_string()))?;
+            let thread_id = req
+                .thread_id
+                .ok_or((StatusCode::BAD_REQUEST, "thread_id is required".to_string()))?;
             let thread = state
                 .dms
                 .get_thread(thread_id)
@@ -88,8 +97,15 @@ async fn report_user(
             if !members.contains(&auth.user_id) || !members.contains(&reported) {
                 return Err((StatusCode::NOT_FOUND, "conversation not found".to_string()));
             }
-            let messages = state.dms.messages(thread_id, DM_SCAN_LIMIT).await.map_err(internal)?;
-            let theirs: Vec<_> = messages.iter().filter(|m| m.sender_id == reported).collect();
+            let messages = state
+                .dms
+                .messages(thread_id, DM_SCAN_LIMIT)
+                .await
+                .map_err(internal)?;
+            let theirs: Vec<_> = messages
+                .iter()
+                .filter(|m| m.sender_id == reported)
+                .collect();
             let kept = &theirs[theirs.len().saturating_sub(DM_MESSAGES_KEPT)..];
             if kept.is_empty() {
                 "(no messages from them in this conversation)".to_string()
@@ -100,7 +116,12 @@ async fn report_user(
                     .join("\n")
             }
         }
-        _ => return Err((StatusCode::BAD_REQUEST, "kind must be profile or dm".to_string())),
+        _ => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "kind must be profile or dm".to_string(),
+            ))
+        }
     };
 
     let note = req
@@ -148,7 +169,10 @@ async fn open_reports(
 
     let mut views = Vec::with_capacity(reports.len());
     for report in reports {
-        let name = |user: Option<mental_domain::User>| user.map(|u| u.display_name).unwrap_or_else(|| "(deleted)".to_string());
+        let name = |user: Option<mental_domain::User>| {
+            user.map(|u| u.display_name)
+                .unwrap_or_else(|| "(deleted)".to_string())
+        };
         views.push(UserReportView {
             id: report.id.to_string(),
             kind: report.kind,

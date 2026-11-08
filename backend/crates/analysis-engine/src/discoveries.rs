@@ -35,7 +35,11 @@ pub struct DiscoveryResult {
 /// How many separate calendar days have at least one mood check-in — the
 /// gate for whether there's enough history to say anything yet.
 pub fn distinct_mood_days(moods: &[MoodEntry]) -> usize {
-    moods.iter().map(|m| m.recorded_at.date_naive()).collect::<HashSet<_>>().len()
+    moods
+        .iter()
+        .map(|m| m.recorded_at.date_naive())
+        .collect::<HashSet<_>>()
+        .len()
 }
 
 /// A `[-1, 1]` valence/arousal reading as the word the model is given in
@@ -75,15 +79,29 @@ pub async fn generate_discoveries(
     let mut days: BTreeMap<NaiveDate, DayLog> = BTreeMap::new();
 
     for mood in moods {
-        let mut line =
-            format!("mood {}, energy {}", level_word(mood.valence), level_word(mood.arousal));
+        let mut line = format!(
+            "mood {}, energy {}",
+            level_word(mood.valence),
+            level_word(mood.arousal)
+        );
         if !mood.tags.is_empty() {
             line.push_str(&format!("; felt: {}", mood.tags.join(", ")));
         }
-        if let Some(note) = mood.note.as_deref().map(str::trim).filter(|n| !n.is_empty()) {
-            line.push_str(&format!("; note: \"{}\"", excerpt(note, NOTE_EXCERPT_CHARS)));
+        if let Some(note) = mood
+            .note
+            .as_deref()
+            .map(str::trim)
+            .filter(|n| !n.is_empty())
+        {
+            line.push_str(&format!(
+                "; note: \"{}\"",
+                excerpt(note, NOTE_EXCERPT_CHARS)
+            ));
         }
-        days.entry(mood.recorded_at.date_naive()).or_default().moods.push(line);
+        days.entry(mood.recorded_at.date_naive())
+            .or_default()
+            .moods
+            .push(line);
     }
 
     for entry in journals {
@@ -114,14 +132,20 @@ pub async fn generate_discoveries(
     let response = llm
         .chat(ChatRequest {
             messages: vec![
-                ChatMessage { role: Role::System, content: prompts::SAFETY_SYSTEM_PROMPT.to_string() },
+                ChatMessage {
+                    role: Role::System,
+                    content: prompts::SAFETY_SYSTEM_PROMPT.to_string(),
+                },
                 ChatMessage {
                     role: Role::System,
                     content: prompts::discoveries_instruction(person.language),
                 },
                 ChatMessage {
                     role: Role::User,
-                    content: format!("{}DAY-BY-DAY LOG (oldest first):\n{log}", person.prompt_block()),
+                    content: format!(
+                        "{}DAY-BY-DAY LOG (oldest first):\n{log}",
+                        person.prompt_block()
+                    ),
                 },
             ],
             tools: vec![],
@@ -164,7 +188,10 @@ fn parse_cards(raw: &str) -> Vec<Discovery> {
                 _ => return None,
             };
 
-            let evidence = item.get("evidence_days").and_then(|v| v.as_u64()).unwrap_or(0);
+            let evidence = item
+                .get("evidence_days")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0);
             if evidence < MIN_EVIDENCE_DAYS {
                 return None;
             }
@@ -174,7 +201,11 @@ fn parse_cards(raw: &str) -> Vec<Discovery> {
             if title.is_empty() || body.is_empty() {
                 return None;
             }
-            if title.chars().chain(body.chars()).any(|c| c.is_ascii_digit()) {
+            if title
+                .chars()
+                .chain(body.chars())
+                .any(|c| c.is_ascii_digit())
+            {
                 return None;
             }
 

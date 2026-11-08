@@ -49,7 +49,11 @@ async fn list(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<Vec<BlockView>>, (StatusCode, String)> {
-    let records = state.blocks.list_for(auth.user_id).await.map_err(internal)?;
+    let records = state
+        .blocks
+        .list_for(auth.user_id)
+        .await
+        .map_err(internal)?;
 
     let mut views = Vec::with_capacity(records.len());
     for record in records {
@@ -64,7 +68,9 @@ async fn list(
             continue;
         }
         // A deleted account just drops off the list.
-        let Some(user) = user_for(&state, record.blocked_id).await else { continue };
+        let Some(user) = user_for(&state, record.blocked_id).await else {
+            continue;
+        };
         views.push(BlockView {
             id: record.id.to_string(),
             display_name: Some(user.display_name),
@@ -88,7 +94,11 @@ async fn block_user(
         .await
         .ok_or((StatusCode::NOT_FOUND, "user not found".to_string()))?;
 
-    state.blocks.block(auth.user_id, id, false).await.map_err(internal)?;
+    state
+        .blocks
+        .block(auth.user_id, id, false)
+        .await
+        .map_err(internal)?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -112,7 +122,11 @@ async fn block_story_author(
         return Err((StatusCode::BAD_REQUEST, "cannot block yourself".to_string()));
     }
 
-    state.blocks.block(auth.user_id, story.user_id, story.anonymous).await.map_err(internal)?;
+    state
+        .blocks
+        .block(auth.user_id, story.user_id, story.anonymous)
+        .await
+        .map_err(internal)?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -121,6 +135,10 @@ async fn unblock(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    state.blocks.unblock(auth.user_id, id).await.map_err(internal)?;
+    state
+        .blocks
+        .unblock(auth.user_id, id)
+        .await
+        .map_err(internal)?;
     Ok(StatusCode::NO_CONTENT)
 }

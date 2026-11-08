@@ -37,8 +37,13 @@ fn key_from_env() -> anyhow::Result<Option<SiwaKey>> {
     ) else {
         return Ok(None);
     };
-    let pem = std::fs::read(&path).with_context(|| format!("reading Sign in with Apple key {path}"))?;
-    Ok(Some(SiwaKey { team_id, key_id, pem }))
+    let pem =
+        std::fs::read(&path).with_context(|| format!("reading Sign in with Apple key {path}"))?;
+    Ok(Some(SiwaKey {
+        team_id,
+        key_id,
+        pem,
+    }))
 }
 
 #[derive(Serialize)]
@@ -55,8 +60,18 @@ fn client_secret(key: &SiwaKey, client_id: &str) -> anyhow::Result<String> {
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
     let mut header = Header::new(Algorithm::ES256);
     header.kid = Some(key.key_id.clone());
-    let claims = ClientSecretClaims { iss: &key.team_id, iat: now, exp: now + 300, aud: APPLE_AUDIENCE, sub: client_id };
-    Ok(encode(&header, &claims, &EncodingKey::from_ec_pem(&key.pem)?)?)
+    let claims = ClientSecretClaims {
+        iss: &key.team_id,
+        iat: now,
+        exp: now + 300,
+        aud: APPLE_AUDIENCE,
+        sub: client_id,
+    };
+    Ok(encode(
+        &header,
+        &claims,
+        &EncodingKey::from_ec_pem(&key.pem)?,
+    )?)
 }
 
 /// Exchanges `authorization_code` and revokes the resulting refresh token.
@@ -85,7 +100,10 @@ pub async fn revoke_with_code(client_id: &str, authorization_code: &str) -> anyh
 
     // A refresh token is what Apple asks to be revoked; fall back to the
     // access token if it ever comes back without one.
-    let (value, hint) = match (token["refresh_token"].as_str(), token["access_token"].as_str()) {
+    let (value, hint) = match (
+        token["refresh_token"].as_str(),
+        token["access_token"].as_str(),
+    ) {
         (Some(refresh), _) => (refresh, "refresh_token"),
         (None, Some(access)) => (access, "access_token"),
         _ => bail!("Apple returned no token to revoke"),

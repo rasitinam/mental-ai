@@ -41,7 +41,13 @@ pub struct PersonMemory {
 impl PersonMemory {
     /// A new, empty, switched-on memory.
     pub fn empty(user_id: Uuid, language: &str) -> Self {
-        Self { user_id, enabled: true, items: Vec::new(), language: language.to_string(), generated_at: None }
+        Self {
+            user_id,
+            enabled: true,
+            items: Vec::new(),
+            language: language.to_string(),
+            generated_at: None,
+        }
     }
 }
 
@@ -57,7 +63,10 @@ pub fn sanitize_items(items: Vec<MemoryItem>) -> Vec<MemoryItem> {
             if !MEMORY_KINDS.contains(&kind.as_str()) || text.is_empty() {
                 return None;
             }
-            Some(MemoryItem { kind, text: text.chars().take(MAX_MEMORY_ITEM_CHARS).collect() })
+            Some(MemoryItem {
+                kind,
+                text: text.chars().take(MAX_MEMORY_ITEM_CHARS).collect(),
+            })
         })
         .take(MAX_MEMORY_ITEMS)
         .collect()
@@ -68,7 +77,10 @@ mod tests {
     use super::*;
 
     fn item(kind: &str, text: &str) -> MemoryItem {
-        MemoryItem { kind: kind.to_string(), text: text.to_string() }
+        MemoryItem {
+            kind: kind.to_string(),
+            text: text.to_string(),
+        }
     }
 
     #[test]
@@ -79,15 +91,25 @@ mod tests {
             item("helps", "   "),
             item("HELPS", "akşam yürüyüşü"),
         ]);
-        assert_eq!(cleaned, vec![item("theme", "sınav kaygısı"), item("helps", "akşam yürüyüşü")]);
+        assert_eq!(
+            cleaned,
+            vec![
+                item("theme", "sınav kaygısı"),
+                item("helps", "akşam yürüyüşü")
+            ]
+        );
     }
 
     #[test]
     fn lines_are_cut_and_capped() {
         let long = "a".repeat(MAX_MEMORY_ITEM_CHARS + 50);
-        let many: Vec<_> = (0..MAX_MEMORY_ITEMS + 5).map(|_| item("context", &long)).collect();
+        let many: Vec<_> = (0..MAX_MEMORY_ITEMS + 5)
+            .map(|_| item("context", &long))
+            .collect();
         let cleaned = sanitize_items(many);
         assert_eq!(cleaned.len(), MAX_MEMORY_ITEMS);
-        assert!(cleaned.iter().all(|i| i.text.chars().count() == MAX_MEMORY_ITEM_CHARS));
+        assert!(cleaned
+            .iter()
+            .all(|i| i.text.chars().count() == MAX_MEMORY_ITEM_CHARS));
     }
 }

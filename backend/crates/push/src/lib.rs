@@ -145,9 +145,12 @@ impl FcmProvider {
         }
 
         let parsed: TokenResponse = response.json().await?;
-        let valid_until = Instant::now() + Duration::from_secs((parsed.expires_in - 120).max(0) as u64);
-        *self.cached_token.write().await =
-            Some(CachedToken { access_token: parsed.access_token.clone(), valid_until });
+        let valid_until =
+            Instant::now() + Duration::from_secs((parsed.expires_in - 120).max(0) as u64);
+        *self.cached_token.write().await = Some(CachedToken {
+            access_token: parsed.access_token.clone(),
+            valid_until,
+        });
 
         Ok(parsed.access_token)
     }

@@ -10,21 +10,22 @@ mod state;
 
 use std::sync::Arc;
 
+use axum::http::{header, HeaderValue};
 use mental_common::AppConfig;
 use mental_knowledge_base::{Embedder, SqliteVectorStore};
 use mental_llm_connector::openai_compatible::OpenAiCompatibleProvider;
 use mental_llm_connector::LlmProvider;
 use mental_storage::{
-    init_pool, SqliteActivityRepository, SqliteAiConsentRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
-    SqliteChatRepository, SqliteChatUsageRepository, SqliteContentTranslationRepository,
-    SqliteDiscoveryRepository,
-    SqliteDmRepository, SqliteEmailCodeRepository, SqlitePersonMemoryRepository, SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
-    SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
-    SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
-    SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
-    SqliteUserReportRepository, SqliteUserStateRepository,
+    init_pool, SqliteActivityRepository, SqliteAiConsentRepository, SqliteAssessmentRepository,
+    SqliteAuthRepository, SqliteBlockRepository, SqliteChatRepository, SqliteChatUsageRepository,
+    SqliteContentTranslationRepository, SqliteDiscoveryRepository, SqliteDmRepository,
+    SqliteEmailCodeRepository, SqliteExplainerRepository, SqliteInsightRepository,
+    SqliteJournalRepository, SqliteLifeAnalysisRepository, SqliteLifeStoryRepository,
+    SqliteMoodRepository, SqlitePersonMemoryRepository, SqlitePushTokenRepository,
+    SqliteReportRepository, SqliteResearchRepository, SqliteSocialRepository,
+    SqliteSubscriptionRepository, SqliteUserReportRepository, SqliteUserRepository,
+    SqliteUserStateRepository,
 };
-use axum::http::{header, HeaderValue};
 use tower_http::{
     cors::CorsLayer,
     services::{ServeDir, ServeFile},
@@ -45,14 +46,23 @@ async fn security_headers(
     let headers = response.headers_mut();
     // Stop a browser from guessing its way past a declared content type
     // (e.g. treating an uploaded avatar as HTML instead of an image).
-    headers.insert(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
     // Nothing in this app is meant to be framed by another site.
     headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
-    headers.insert(header::REFERRER_POLICY, HeaderValue::from_static("strict-origin-when-cross-origin"));
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
     // Ignored by a plain-HTTP response (browsers only honor this over
     // HTTPS), so it's harmless to send unconditionally here even though
     // this process itself doesn't terminate TLS.
-    headers.insert(header::STRICT_TRANSPORT_SECURITY, HeaderValue::from_static("max-age=15552000"));
+    headers.insert(
+        header::STRICT_TRANSPORT_SECURITY,
+        HeaderValue::from_static("max-age=15552000"),
+    );
     response
 }
 
@@ -80,7 +90,8 @@ async fn main() -> anyhow::Result<()> {
         config.llm.embedding_model.clone(),
     ));
 
-    let apple_shared_secret = std::env::var(&config.apple_iap.shared_secret_env).unwrap_or_default();
+    let apple_shared_secret =
+        std::env::var(&config.apple_iap.shared_secret_env).unwrap_or_default();
     if apple_shared_secret.is_empty() {
         tracing::warn!(
             "no Apple shared secret found in ${}; receipt verification will fail until it is set",
@@ -153,7 +164,8 @@ async fn main() -> anyhow::Result<()> {
     // routing (e.g. a direct link to `/stories`) still resolves.
     if let Some(web_root) = &config.server.web_root {
         let index = format!("{web_root}/index.html");
-        app = app.fallback_service(ServeDir::new(web_root).not_found_service(ServeFile::new(index)));
+        app =
+            app.fallback_service(ServeDir::new(web_root).not_found_service(ServeFile::new(index)));
     }
 
     let app = app

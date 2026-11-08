@@ -17,7 +17,12 @@ pub struct OpenAiCompatibleProvider {
 }
 
 impl OpenAiCompatibleProvider {
-    pub fn new(base_url: String, api_key: String, chat_model: String, embedding_model: String) -> Self {
+    pub fn new(
+        base_url: String,
+        api_key: String,
+        chat_model: String,
+        embedding_model: String,
+    ) -> Self {
         Self {
             client: reqwest::Client::new(),
             base_url,
@@ -92,11 +97,14 @@ impl LlmProvider for OpenAiCompatibleProvider {
         }
 
         let payload: serde_json::Value = resp.json().await?;
-        let choice = payload["choices"].get(0).ok_or_else(|| {
-            LlmError::Parse("response contained no choices".to_string())
-        })?;
+        let choice = payload["choices"]
+            .get(0)
+            .ok_or_else(|| LlmError::Parse("response contained no choices".to_string()))?;
 
-        let content = choice["message"]["content"].as_str().unwrap_or("").to_string();
+        let content = choice["message"]["content"]
+            .as_str()
+            .unwrap_or("")
+            .to_string();
 
         let tool_calls = choice["message"]["tool_calls"]
             .as_array()
@@ -155,9 +163,11 @@ impl LlmProvider for OpenAiCompatibleProvider {
         Ok(data
             .iter()
             .filter_map(|d| {
-                d["embedding"]
-                    .as_array()
-                    .map(|arr| arr.iter().filter_map(|v| v.as_f64().map(|f| f as f32)).collect())
+                d["embedding"].as_array().map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_f64().map(|f| f as f32))
+                        .collect()
+                })
             })
             .collect())
     }

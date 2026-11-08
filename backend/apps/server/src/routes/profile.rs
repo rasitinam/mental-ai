@@ -32,7 +32,10 @@ pub fn router() -> Router<AppState> {
         .route("/profile/ai-consent", put(set_ai_consent))
         .route("/profile/avatar", put(upload_avatar).get(get_avatar))
         .layer(DefaultBodyLimit::max(MAX_AVATAR_BYTES + 1024))
-        .route("/profile/push-token", put(register_push_token).delete(unregister_push_token))
+        .route(
+            "/profile/push-token",
+            put(register_push_token).delete(unregister_push_token),
+        )
         .route("/account", delete(delete_account))
 }
 
@@ -109,12 +112,26 @@ async fn profile(
         .get(auth.user_id)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-        .ok_or((axum::http::StatusCode::NOT_FOUND, "user not found".to_string()))?;
+        .ok_or((
+            axum::http::StatusCode::NOT_FOUND,
+            "user not found".to_string(),
+        ))?;
 
     // A missing email shouldn't fail the whole screen — it only means the
     // address can't be shown back.
-    let email = state.auth.find_email_for_user(auth.user_id).await.ok().flatten();
-    let signs_in_with_apple = state.auth.apple_sub_for_user(auth.user_id).await.ok().flatten().is_some();
+    let email = state
+        .auth
+        .find_email_for_user(auth.user_id)
+        .await
+        .ok()
+        .flatten();
+    let signs_in_with_apple = state
+        .auth
+        .apple_sub_for_user(auth.user_id)
+        .await
+        .ok()
+        .flatten()
+        .is_some();
     // Apple accounts that hid their email get a made-up `.invalid` address
     // to satisfy the credentials table; it isn't something to show back.
     let email = email.filter(|e| !e.ends_with(".invalid"));
@@ -164,7 +181,9 @@ async fn set_ai_consent(
         .set(auth.user_id, req.granted)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    Ok(Json(AiConsentResponse { ai_consent: req.granted }))
+    Ok(Json(AiConsentResponse {
+        ai_consent: req.granted,
+    }))
 }
 
 /// Replaces the self-reported diagnosis list. Slugs are validated against the
@@ -175,7 +194,11 @@ async fn set_diagnoses(
     auth: AuthUser,
     Json(req): Json<SetDiagnosesRequest>,
 ) -> Result<Json<ProfileResponse>, (axum::http::StatusCode, String)> {
-    if let Some(unknown) = req.diagnoses.iter().find(|slug| catalog::disorder(slug).is_none()) {
+    if let Some(unknown) = req
+        .diagnoses
+        .iter()
+        .find(|slug| catalog::disorder(slug).is_none())
+    {
         return Err((
             axum::http::StatusCode::BAD_REQUEST,
             format!("unknown diagnosis slug: {unknown}"),
@@ -203,9 +226,15 @@ async fn set_chat_boundaries(
     auth: AuthUser,
     Json(req): Json<SetChatBoundariesRequest>,
 ) -> Result<Json<ProfileResponse>, (axum::http::StatusCode, String)> {
-    if let Some(unknown) = req.boundaries.iter().find(|slug| chat_boundary::boundary(slug).is_none())
+    if let Some(unknown) = req
+        .boundaries
+        .iter()
+        .find(|slug| chat_boundary::boundary(slug).is_none())
     {
-        return Err((StatusCode::BAD_REQUEST, format!("unknown chat boundary: {unknown}")));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("unknown chat boundary: {unknown}"),
+        ));
     }
 
     let note = req.note.as_deref().map(str::trim).filter(|n| !n.is_empty());
@@ -213,7 +242,10 @@ async fn set_chat_boundaries(
         if note.chars().count() > chat_boundary::MAX_BOUNDARY_NOTE_LEN {
             return Err((
                 StatusCode::BAD_REQUEST,
-                format!("note is longer than {} characters", chat_boundary::MAX_BOUNDARY_NOTE_LEN),
+                format!(
+                    "note is longer than {} characters",
+                    chat_boundary::MAX_BOUNDARY_NOTE_LEN
+                ),
             ));
         }
     }
@@ -239,7 +271,12 @@ async fn set_preferences(
     Json(req): Json<SetPreferencesRequest>,
 ) -> Result<Json<ProfileResponse>, (axum::http::StatusCode, String)> {
     let display_name = match req.display_name.as_deref().map(str::trim) {
-        Some("") => return Err((axum::http::StatusCode::BAD_REQUEST, "name can't be empty".to_string())),
+        Some("") => {
+            return Err((
+                axum::http::StatusCode::BAD_REQUEST,
+                "name can't be empty".to_string(),
+            ))
+        }
         other => other,
     };
 
@@ -253,7 +290,11 @@ async fn set_preferences(
     }
 
     if let Some(year) = req.birth_year {
-        let this_year = chrono::Utc::now().format("%Y").to_string().parse::<i32>().unwrap_or(2026);
+        let this_year = chrono::Utc::now()
+            .format("%Y")
+            .to_string()
+            .parse::<i32>()
+            .unwrap_or(2026);
         if year < this_year - 120 || year > this_year {
             return Err((
                 axum::http::StatusCode::BAD_REQUEST,
@@ -265,7 +306,10 @@ async fn set_preferences(
     // Real-world offsets run from UTC-12:00 to UTC+14:00.
     if let Some(minutes) = req.utc_offset_minutes {
         if !(-720..=840).contains(&minutes) {
-            return Err((StatusCode::BAD_REQUEST, format!("utc offset out of range: {minutes}")));
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!("utc offset out of range: {minutes}"),
+            ));
         }
         state
             .users
@@ -279,7 +323,10 @@ async fn set_preferences(
         Some("everyone") => Some(DmPolicy::Everyone),
         Some("following") => Some(DmPolicy::Following),
         Some(other) => {
-            return Err((StatusCode::BAD_REQUEST, format!("unsupported dm policy: {other}")))
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!("unsupported dm policy: {other}"),
+            ))
         }
     };
 
@@ -317,7 +364,10 @@ async fn set_checkin_reminder(
     Json(req): Json<CheckinReminderRequest>,
 ) -> Result<Json<ProfileResponse>, (StatusCode, String)> {
     if !REMINDER_HOURS.contains(&req.hour) {
-        return Err((StatusCode::BAD_REQUEST, format!("reminder hour out of range: {}", req.hour)));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("reminder hour out of range: {}", req.hour),
+        ));
     }
 
     state
@@ -348,11 +398,20 @@ async fn upload_avatar(
         .content_type()
         .map(str::to_string)
         .ok_or((StatusCode::BAD_REQUEST, "missing content type".to_string()))?;
-    if !matches!(content_type.as_str(), "image/jpeg" | "image/png" | "image/webp") {
-        return Err((StatusCode::BAD_REQUEST, format!("unsupported image type: {content_type}")));
+    if !matches!(
+        content_type.as_str(),
+        "image/jpeg" | "image/png" | "image/webp"
+    ) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("unsupported image type: {content_type}"),
+        ));
     }
 
-    let bytes = field.bytes().await.map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
+    let bytes = field
+        .bytes()
+        .await
+        .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
     if bytes.len() > MAX_AVATAR_BYTES {
         return Err((StatusCode::BAD_REQUEST, "image too large".to_string()));
     }
@@ -388,14 +447,19 @@ async fn upload_avatar(
 /// The signed-in user's own avatar — there's no route for anyone else's:
 /// nothing in the app shows another user's photo, so there's nothing to
 /// gate beyond "you can see your own".
-async fn get_avatar(State(state): State<AppState>, auth: AuthUser) -> Result<Response, (StatusCode, String)> {
+async fn get_avatar(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Response, (StatusCode, String)> {
     let user = state
         .users
         .get(auth.user_id)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .ok_or((StatusCode::NOT_FOUND, "user not found".to_string()))?;
-    let content_type = user.avatar_content_type.ok_or((StatusCode::NOT_FOUND, "no avatar set".to_string()))?;
+    let content_type = user
+        .avatar_content_type
+        .ok_or((StatusCode::NOT_FOUND, "no avatar set".to_string()))?;
 
     let bytes = tokio::fs::read(avatar_path(auth.user_id))
         .await
@@ -525,8 +589,14 @@ async fn delete_account(
     if credentials.password_hash == crate::routes::auth::APPLE_PASSWORD_SENTINEL {
         // No password to check: make the person sign in with Apple again
         // right now and require it to be the same Apple user.
-        let (Some(token), Some(nonce)) = (req.apple_identity_token.as_deref(), req.apple_nonce.as_deref()) else {
-            return Err((StatusCode::UNAUTHORIZED, "Sign in with Apple is required to delete this account".to_string()));
+        let (Some(token), Some(nonce)) = (
+            req.apple_identity_token.as_deref(),
+            req.apple_nonce.as_deref(),
+        ) else {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                "Sign in with Apple is required to delete this account".to_string(),
+            ));
         };
         let identity = state
             .apple_keys
@@ -539,19 +609,32 @@ async fn delete_account(
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
         if linked.as_deref() != Some(identity.subject.as_str()) {
-            return Err((StatusCode::UNAUTHORIZED, "this Apple ID does not own the account".to_string()));
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                "this Apple ID does not own the account".to_string(),
+            ));
         }
 
         // Best-effort: Apple-side revocation failing (or not configured yet)
         // must not keep someone from deleting their account.
         if let Some(code) = req.apple_authorization_code.as_deref() {
             match crate::apple_revoke::revoke_with_code(&state.apple_iap.bundle_id, code).await {
-                Ok(true) => tracing::info!(user_id = %auth.user_id, "revoked Sign in with Apple tokens"),
-                Ok(false) => tracing::warn!("Sign in with Apple key not configured; tokens not revoked"),
-                Err(err) => tracing::warn!(error = %err, "could not revoke Sign in with Apple tokens"),
+                Ok(true) => {
+                    tracing::info!(user_id = %auth.user_id, "revoked Sign in with Apple tokens")
+                }
+                Ok(false) => {
+                    tracing::warn!("Sign in with Apple key not configured; tokens not revoked")
+                }
+                Err(err) => {
+                    tracing::warn!(error = %err, "could not revoke Sign in with Apple tokens")
+                }
             }
         }
-    } else if !req.password.as_deref().is_some_and(|p| verify_password(p, &credentials.password_hash)) {
+    } else if !req
+        .password
+        .as_deref()
+        .is_some_and(|p| verify_password(p, &credentials.password_hash))
+    {
         return Err((StatusCode::UNAUTHORIZED, "incorrect password".to_string()));
     }
 

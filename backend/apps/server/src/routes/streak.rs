@@ -35,7 +35,11 @@ async fn streak(
 
     // Yesterday is allowed to anchor the run so the number doesn't read
     // as 0 every morning before the day's first entry.
-    let mut cursor = if count_on(today) > 0 { today } else { today - Duration::days(1) };
+    let mut cursor = if count_on(today) > 0 {
+        today
+    } else {
+        today - Duration::days(1)
+    };
     let mut current = 0;
     while count_on(cursor) > 0 {
         current += 1;

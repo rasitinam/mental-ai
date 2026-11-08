@@ -154,16 +154,25 @@ impl<'a> PersonContext<'a> {
             // bury the two that matter most under five that don't.
             let mut extra = Vec::new();
             if a.wellbeing_band != "good" {
-                extra.push(format!("WHO-5 well-being {}/25 ({})", a.who5_score, a.wellbeing_band));
+                extra.push(format!(
+                    "WHO-5 well-being {}/25 ({})",
+                    a.who5_score, a.wellbeing_band
+                ));
             }
             if a.somatic_band != "minimal" {
-                extra.push(format!("PHQ-15 somatic symptoms {}/30 ({})", a.phq15_score, a.somatic_band));
+                extra.push(format!(
+                    "PHQ-15 somatic symptoms {}/30 ({})",
+                    a.phq15_score, a.somatic_band
+                ));
             }
             if a.ptsd_band == "positive screen" {
                 extra.push(format!("PC-PTSD-5 {}/5 (positive screen)", a.ptsd5_score));
             }
             if a.alcohol_band != "minimal" {
-                extra.push(format!("AUDIT-C alcohol use {}/12 ({})", a.auditc_score, a.alcohol_band));
+                extra.push(format!(
+                    "AUDIT-C alcohol use {}/12 ({})",
+                    a.auditc_score, a.alcohol_band
+                ));
             }
             if a.substance_band == "positive screen" {
                 extra.push(format!("CAGE-AID {}/4 (positive screen)", a.cageaid_score));
@@ -192,8 +201,10 @@ impl<'a> PersonContext<'a> {
         // above describes them, this part tells the model how it is
         // allowed to talk to them — the closer to the end of the block
         // it sits, the less the surrounding description can dilute it.
-        let boundaries =
-            mental_domain::chat_boundary::directives_block(self.chat_boundaries, self.chat_boundary_note);
+        let boundaries = mental_domain::chat_boundary::directives_block(
+            self.chat_boundaries,
+            self.chat_boundary_note,
+        );
         if !boundaries.is_empty() {
             lines.push(boundaries);
         }
@@ -240,7 +251,10 @@ mod tests {
     use super::*;
 
     fn item(kind: &str, text: &str) -> MemoryItem {
-        MemoryItem { kind: kind.to_string(), text: text.to_string() }
+        MemoryItem {
+            kind: kind.to_string(),
+            text: text.to_string(),
+        }
     }
 
     #[test]
@@ -250,7 +264,10 @@ mod tests {
 
     #[test]
     fn memory_lines_are_labelled_and_framed_as_background() {
-        let memory = vec![item("theme", "sınav kaygısı"), item("helps", "akşam yürüyüşü")];
+        let memory = vec![
+            item("theme", "sınav kaygısı"),
+            item("helps", "akşam yürüyüşü"),
+        ];
         let block = PersonContext::unknown().with_memory(&memory).prompt_block();
         assert!(block.contains("keeps coming back to: sınav kaygısı"));
         assert!(block.contains("has helped them: akşam yürüyüşü"));
@@ -268,6 +285,9 @@ mod tests {
         let block = person.prompt_block();
         let memory_at = block.find("yeni bir işe başladı").expect("memory present");
         let rules_at = block.find("lütfen nasihat verme").expect("rules present");
-        assert!(rules_at > memory_at, "binding rules must stay after the descriptive context");
+        assert!(
+            rules_at > memory_at,
+            "binding rules must stay after the descriptive context"
+        );
     }
 }

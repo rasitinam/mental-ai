@@ -23,7 +23,10 @@ pub async fn translate_text(
                         language_name(target_language)
                     ),
                 },
-                ChatMessage { role: Role::User, content: text.to_string() },
+                ChatMessage {
+                    role: Role::User,
+                    content: text.to_string(),
+                },
             ],
             tools: vec![],
             // Not every configured model accepts a non-default
@@ -130,7 +133,11 @@ pub async fn translate_daily_report(
             let translated_recommendations = value
                 .get("recommendations")
                 .and_then(|v| v.as_array())
-                .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(str::to_string))
+                        .collect()
+                })
                 .unwrap_or_default();
             return Ok((translated_summary.to_string(), translated_recommendations));
         }
@@ -237,9 +244,10 @@ pub async fn translate_current_state(
 
     let cleaned = clean_json(&response.message.content);
     if let Ok(value) = serde_json::from_str::<serde_json::Value>(cleaned) {
-        if let (Some(h), Some(n)) =
-            (value.get("headline").and_then(|v| v.as_str()), value.get("note").and_then(|v| v.as_str()))
-        {
+        if let (Some(h), Some(n)) = (
+            value.get("headline").and_then(|v| v.as_str()),
+            value.get("note").and_then(|v| v.as_str()),
+        ) {
             return Ok((h.to_string(), n.to_string()));
         }
     }
@@ -278,7 +286,10 @@ pub async fn translate_batch(
                         texts.len()
                     ),
                 },
-                ChatMessage { role: Role::User, content: serde_json::to_string(texts)? },
+                ChatMessage {
+                    role: Role::User,
+                    content: serde_json::to_string(texts)?,
+                },
             ],
             tools: vec![],
             temperature: None,
@@ -296,14 +307,22 @@ pub async fn translate_batch(
 }
 
 fn clean_json(raw: &str) -> &str {
-    raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim()
+    raw.trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim()
 }
 
 fn string_array(value: &serde_json::Value, key: &str) -> Vec<String> {
     value
         .get(key)
         .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect()
+        })
         .unwrap_or_default()
 }
 

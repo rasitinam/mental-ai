@@ -1,8 +1,8 @@
 use chrono::Utc;
 use mental_domain::repository::ResearchRepository;
 use mental_domain::{ChatMessageRecord, ChatRole, DailyMentalReport, JournalEntry, MoodEntry};
-use mental_llm_connector::{prompts, ChatMessage, ChatRequest, LlmProvider, Role};
 use mental_knowledge_base::{Embedder, VectorStore};
+use mental_llm_connector::{prompts, ChatMessage, ChatRequest, LlmProvider, Role};
 use uuid::Uuid;
 
 use crate::person::PersonContext;
@@ -193,7 +193,10 @@ fn comparison_phrase(label: &str, diff: f32) -> String {
         return format!("{label} ortalamayla aynı düzeyde");
     }
     let direction = if rounded > 0.0 { "yüksek" } else { "düşük" };
-    format!("{label} ortalamadan {} {direction}", magnitude_word(rounded))
+    format!(
+        "{label} ortalamadan {} {direction}",
+        magnitude_word(rounded)
+    )
 }
 
 /// Computed directly from the actual mood entries rather than asked of
@@ -259,14 +262,23 @@ fn averages<'a>(moods: impl IntoIterator<Item = &'a MoodEntry>) -> (f32, f32) {
 /// for strict JSON but occasionally wraps it in a markdown fence anyway,
 /// so that's stripped defensively before parsing.
 fn parse_report_json(raw: &str) -> Option<(String, Vec<String>)> {
-    let cleaned = raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+    let cleaned = raw
+        .trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
 
     let value: serde_json::Value = serde_json::from_str(cleaned).ok()?;
     let summary = value.get("summary")?.as_str()?.to_string();
     let recommendations = value
         .get("recommendations")
         .and_then(|r| r.as_array())
-        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect()
+        })
         .unwrap_or_default();
 
     Some((summary, recommendations))

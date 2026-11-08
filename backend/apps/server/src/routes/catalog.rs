@@ -54,7 +54,10 @@ async fn explainer(
     Query(query): Query<LangQuery>,
 ) -> Result<Json<DisorderExplainer>, (axum::http::StatusCode, String)> {
     if catalog::disorder(&slug).is_none() {
-        return Err((axum::http::StatusCode::NOT_FOUND, "unknown disorder".to_string()));
+        return Err((
+            axum::http::StatusCode::NOT_FOUND,
+            "unknown disorder".to_string(),
+        ));
     }
 
     let language = if query.lang == "en" { "en" } else { "tr" };

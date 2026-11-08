@@ -1,6 +1,8 @@
 use chrono::{DateTime, Duration, Utc};
 use mental_domain::report::LifeAnalysis;
-use mental_domain::{ChatMessageRecord, ChatRole, DailyMentalReport, JournalEntry, MoodEntry, UserState};
+use mental_domain::{
+    ChatMessageRecord, ChatRole, DailyMentalReport, JournalEntry, MoodEntry, UserState,
+};
 use mental_llm_connector::{prompts, ChatMessage, ChatRequest, LlmProvider, Role};
 use uuid::Uuid;
 
@@ -54,7 +56,11 @@ pub async fn assess_current_state(
                     ChatRole::User => "Person",
                     ChatRole::Assistant => "App",
                 };
-                format!("[{}] {speaker}: {}", age_label(m.created_at, now), m.content)
+                format!(
+                    "[{}] {speaker}: {}",
+                    age_label(m.created_at, now),
+                    m.content
+                )
             })
             .collect::<Vec<_>>()
             .join("\n");
@@ -74,7 +80,10 @@ pub async fn assess_current_state(
                     age_label(m.recorded_at, now),
                     m.valence,
                     m.arousal,
-                    m.note.as_deref().map(|n| format!(" — \"{n}\"")).unwrap_or_default()
+                    m.note
+                        .as_deref()
+                        .map(|n| format!(" — \"{n}\""))
+                        .unwrap_or_default()
                 )
             })
             .collect::<Vec<_>>()

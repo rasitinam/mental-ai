@@ -32,11 +32,17 @@ fn user(id: Uuid) -> User {
 #[tokio::test]
 async fn chat_history_is_the_newest_messages_oldest_first() {
     let path = std::env::temp_dir().join(format!("hearth-history-{}.db", Uuid::new_v4()));
-    let url = format!("sqlite://{}?mode=rwc", path.display().to_string().replace('\\', "/"));
+    let url = format!(
+        "sqlite://{}?mode=rwc",
+        path.display().to_string().replace('\\', "/")
+    );
     let pool = init_pool(&url).await.expect("pool");
 
     let user_id = Uuid::new_v4();
-    SqliteUserRepository::new(pool.clone()).upsert(&user(user_id)).await.expect("user");
+    SqliteUserRepository::new(pool.clone())
+        .upsert(&user(user_id))
+        .await
+        .expect("user");
 
     let chats = SqliteChatRepository::new(pool.clone());
     let start = Utc::now() - Duration::hours(1);
@@ -45,7 +51,11 @@ async fn chat_history_is_the_newest_messages_oldest_first() {
             .add(&ChatMessageRecord {
                 id: Uuid::new_v4(),
                 user_id,
-                role: if i % 2 == 0 { ChatRole::User } else { ChatRole::Assistant },
+                role: if i % 2 == 0 {
+                    ChatRole::User
+                } else {
+                    ChatRole::Assistant
+                },
                 content: format!("m{i}"),
                 crisis_flag: false,
                 created_at: start + Duration::minutes(i),
@@ -55,11 +65,23 @@ async fn chat_history_is_the_newest_messages_oldest_first() {
     }
 
     // The newest three, in reading order — not the oldest three.
-    let latest: Vec<String> = chats.history_for_user(user_id, 3).await.expect("history").into_iter().map(|m| m.content).collect();
+    let latest: Vec<String> = chats
+        .history_for_user(user_id, 3)
+        .await
+        .expect("history")
+        .into_iter()
+        .map(|m| m.content)
+        .collect();
     assert_eq!(latest, ["m7", "m8", "m9"]);
 
     // A limit above the count returns everything, still oldest first.
-    let all: Vec<String> = chats.history_for_user(user_id, 500).await.expect("history").into_iter().map(|m| m.content).collect();
+    let all: Vec<String> = chats
+        .history_for_user(user_id, 500)
+        .await
+        .expect("history")
+        .into_iter()
+        .map(|m| m.content)
+        .collect();
     assert_eq!(all.len(), 10);
     assert_eq!(all.first().map(String::as_str), Some("m0"));
     assert_eq!(all.last().map(String::as_str), Some("m9"));

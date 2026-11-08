@@ -25,10 +25,16 @@ const REFRESH_AFTER_HOURS: i64 = 24;
 enum DiscoveriesResponse {
     /// Not enough history yet — the client shows how far along they are
     /// instead of an empty section.
-    Locked { days_logged: usize, days_needed: usize },
+    Locked {
+        days_logged: usize,
+        days_needed: usize,
+    },
     /// `cards` can be empty: enough days, but nothing the model could
     /// honestly call a pattern. That's a different message from "locked".
-    Ready { cards: Vec<Discovery>, generated_at: DateTime<Utc> },
+    Ready {
+        cards: Vec<Discovery>,
+        generated_at: DateTime<Utc>,
+    },
 }
 
 async fn discoveries(
@@ -54,7 +60,10 @@ async fn discoveries(
     }
 
     let user = user_for(&state, auth.user_id).await;
-    let language = user.as_ref().map(|u| u.language.clone()).unwrap_or_else(|| "tr".to_string());
+    let language = user
+        .as_ref()
+        .map(|u| u.language.clone())
+        .unwrap_or_else(|| "tr".to_string());
 
     let cached = state.discoveries.get(auth.user_id).await.ok().flatten();
     if let Some(cached) = &cached {
@@ -67,17 +76,28 @@ async fn discoveries(
         }
     }
 
-    let journals = state.journals.list_between(auth.user_id, since, now).await.unwrap_or_default();
+    let journals = state
+        .journals
+        .list_between(auth.user_id, since, now)
+        .await
+        .unwrap_or_default();
     let person_data = PersonData::load(&state, auth.user_id).await;
     let person = person_data.context(false, true);
 
     match generate_discoveries(&moods, &journals, &person, state.llm.as_ref()).await {
         Ok(result) => {
-            let fresh = CachedDiscoveries { language, cards: result.cards, generated_at: now };
+            let fresh = CachedDiscoveries {
+                language,
+                cards: result.cards,
+                generated_at: now,
+            };
             if let Err(err) = state.discoveries.save(auth.user_id, &fresh).await {
                 tracing::warn!(error = %err, "failed to cache discoveries");
             }
-            Ok(Json(DiscoveriesResponse::Ready { cards: fresh.cards, generated_at: now }))
+            Ok(Json(DiscoveriesResponse::Ready {
+                cards: fresh.cards,
+                generated_at: now,
+            }))
         }
         // A stale set of cards is still true about the person; showing it
         // beats an error on the home screen because one refresh failed.

@@ -11,7 +11,11 @@ pub struct ScoredArticle {
 #[async_trait]
 pub trait VectorStore: Send + Sync {
     async fn upsert(&self, article_id: Uuid, embedding: &[f32]) -> anyhow::Result<()>;
-    async fn search(&self, query_embedding: &[f32], top_k: usize) -> anyhow::Result<Vec<ScoredArticle>>;
+    async fn search(
+        &self,
+        query_embedding: &[f32],
+        top_k: usize,
+    ) -> anyhow::Result<Vec<ScoredArticle>>;
 }
 
 pub struct SqliteVectorStore {
@@ -67,7 +71,11 @@ impl VectorStore for SqliteVectorStore {
 
     /// Brute-force scan. Fine up to tens of thousands of rows; see the
     /// module doc for the scaling plan if that stops being true.
-    async fn search(&self, query_embedding: &[f32], top_k: usize) -> anyhow::Result<Vec<ScoredArticle>> {
+    async fn search(
+        &self,
+        query_embedding: &[f32],
+        top_k: usize,
+    ) -> anyhow::Result<Vec<ScoredArticle>> {
         let rows: Vec<(String, Vec<u8>)> =
             sqlx::query_as("SELECT article_id, embedding FROM research_embeddings")
                 .fetch_all(&self.pool)
@@ -84,7 +92,11 @@ impl VectorStore for SqliteVectorStore {
             })
             .collect();
 
-        scored.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        scored.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         scored.truncate(top_k);
         Ok(scored)
     }

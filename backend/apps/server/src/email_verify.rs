@@ -51,7 +51,11 @@ pub fn hash_code(email: &str, code: &str) -> String {
 
 /// Compares in time that does not depend on where the strings first differ.
 fn constant_time_eq(a: &str, b: &str) -> bool {
-    a.len() == b.len() && a.bytes().zip(b.bytes()).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+    a.len() == b.len()
+        && a.bytes()
+            .zip(b.bytes())
+            .fold(0u8, |acc, (x, y)| acc | (x ^ y))
+            == 0
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -149,7 +153,9 @@ pub struct SendBudget {
 
 impl SendBudget {
     pub fn new() -> Self {
-        Self { state: Mutex::new((NaiveDate::MIN, 0)) }
+        Self {
+            state: Mutex::new((NaiveDate::MIN, 0)),
+        }
     }
 
     /// Takes one send from today's allowance, or returns false when it is used up.
@@ -200,7 +206,10 @@ pub fn message_for(code: &str, language: &str) -> (String, String) {
 /// Password), optionally `MENTAL_AI_SMTP_HOST` (default `smtp.gmail.com`) and
 /// `MENTAL_AI_SMTP_FROM` (default: the user).
 pub enum Mailer {
-    Smtp { transport: AsyncSmtpTransport<Tokio1Executor>, from: Mailbox },
+    Smtp {
+        transport: AsyncSmtpTransport<Tokio1Executor>,
+        from: Mailbox,
+    },
     /// No SMTP account configured: the message is written to the server log
     /// instead, which is what local development and the smoke test rely on.
     Log,
@@ -241,7 +250,9 @@ impl Mailer {
         let builder = match AsyncSmtpTransport::<Tokio1Executor>::relay(&host) {
             Ok(builder) => builder,
             Err(e) => {
-                tracing::error!("cannot set up SMTP for {host} ({e}); verification codes will only be logged");
+                tracing::error!(
+                    "cannot set up SMTP for {host} ({e}); verification codes will only be logged"
+                );
                 return Mailer::Log;
             }
         };
@@ -282,7 +293,6 @@ mod tests {
         "2026-09-21T12:00:00Z".parse().unwrap()
     }
 
-
     #[test]
     fn only_real_looking_addresses_are_deliverable() {
         assert!(is_deliverable("person@gmail.com"));
@@ -303,9 +313,18 @@ mod tests {
 
     #[test]
     fn hash_is_bound_to_the_address() {
-        assert_eq!(hash_code("a@x.com", "123456"), hash_code("a@x.com", "123456"));
-        assert_ne!(hash_code("a@x.com", "123456"), hash_code("b@x.com", "123456"));
-        assert_ne!(hash_code("a@x.com", "123456"), hash_code("a@x.com", "123457"));
+        assert_eq!(
+            hash_code("a@x.com", "123456"),
+            hash_code("a@x.com", "123456")
+        );
+        assert_ne!(
+            hash_code("a@x.com", "123456"),
+            hash_code("b@x.com", "123456")
+        );
+        assert_ne!(
+            hash_code("a@x.com", "123456"),
+            hash_code("a@x.com", "123457")
+        );
     }
 
     #[test]
@@ -320,10 +339,26 @@ mod tests {
     #[test]
     fn resend_inside_the_cooldown_is_refused() {
         let first = plan_send(None, "a@x.com", "111111", now()).unwrap();
-        let denied = plan_send(Some(&first), "a@x.com", "222222", now() + Duration::seconds(20));
-        assert_eq!(denied, Err(SendDenied::Cooldown { retry_after_secs: 40 }));
+        let denied = plan_send(
+            Some(&first),
+            "a@x.com",
+            "222222",
+            now() + Duration::seconds(20),
+        );
+        assert_eq!(
+            denied,
+            Err(SendDenied::Cooldown {
+                retry_after_secs: 40
+            })
+        );
 
-        let again = plan_send(Some(&first), "a@x.com", "222222", now() + Duration::seconds(61)).unwrap();
+        let again = plan_send(
+            Some(&first),
+            "a@x.com",
+            "222222",
+            now() + Duration::seconds(61),
+        )
+        .unwrap();
         assert_eq!(again.sends_in_window, 2);
         assert_eq!(again.window_started_at, first.window_started_at);
         // A new code starts with a clean slate of guesses.
@@ -340,7 +375,12 @@ mod tests {
         }
         assert_eq!(record.sends_in_window, MAX_SENDS_PER_HOUR);
         assert_eq!(
-            plan_send(Some(&record), "a@x.com", "000000", t + Duration::seconds(61)),
+            plan_send(
+                Some(&record),
+                "a@x.com",
+                "000000",
+                t + Duration::seconds(61)
+            ),
             Err(SendDenied::HourlyLimit)
         );
 
@@ -353,34 +393,64 @@ mod tests {
     #[test]
     fn correct_code_is_accepted_even_with_spaces() {
         let record = plan_send(None, "a@x.com", "048291", now()).unwrap();
-        assert_eq!(check_code(Some(&record), "a@x.com", "048291", now()), CodeCheck::Accepted);
-        assert_eq!(check_code(Some(&record), "a@x.com", " 048 291 ", now()), CodeCheck::Accepted);
+        assert_eq!(
+            check_code(Some(&record), "a@x.com", "048291", now()),
+            CodeCheck::Accepted
+        );
+        assert_eq!(
+            check_code(Some(&record), "a@x.com", " 048 291 ", now()),
+            CodeCheck::Accepted
+        );
     }
 
     #[test]
     fn wrong_malformed_or_foreign_codes_are_rejected() {
         let record = plan_send(None, "a@x.com", "048291", now()).unwrap();
-        assert_eq!(check_code(Some(&record), "a@x.com", "048292", now()), CodeCheck::Wrong);
-        assert_eq!(check_code(Some(&record), "a@x.com", "48291", now()), CodeCheck::Wrong);
-        assert_eq!(check_code(Some(&record), "a@x.com", "04829a", now()), CodeCheck::Wrong);
-        assert_eq!(check_code(Some(&record), "a@x.com", "", now()), CodeCheck::Wrong);
+        assert_eq!(
+            check_code(Some(&record), "a@x.com", "048292", now()),
+            CodeCheck::Wrong
+        );
+        assert_eq!(
+            check_code(Some(&record), "a@x.com", "48291", now()),
+            CodeCheck::Wrong
+        );
+        assert_eq!(
+            check_code(Some(&record), "a@x.com", "04829a", now()),
+            CodeCheck::Wrong
+        );
+        assert_eq!(
+            check_code(Some(&record), "a@x.com", "", now()),
+            CodeCheck::Wrong
+        );
         // The same digits against another address do not match.
-        assert_eq!(check_code(Some(&record), "b@x.com", "048291", now()), CodeCheck::Wrong);
+        assert_eq!(
+            check_code(Some(&record), "b@x.com", "048291", now()),
+            CodeCheck::Wrong
+        );
     }
 
     #[test]
     fn missing_or_expired_codes_do_not_count_as_wrong() {
-        assert_eq!(check_code(None, "a@x.com", "048291", now()), CodeCheck::NoValidCode);
+        assert_eq!(
+            check_code(None, "a@x.com", "048291", now()),
+            CodeCheck::NoValidCode
+        );
         let record = plan_send(None, "a@x.com", "048291", now()).unwrap();
         let late = now() + Duration::minutes(CODE_TTL_MINUTES) + Duration::seconds(1);
-        assert_eq!(check_code(Some(&record), "a@x.com", "048291", late), CodeCheck::NoValidCode);
+        assert_eq!(
+            check_code(Some(&record), "a@x.com", "048291", late),
+            CodeCheck::NoValidCode
+        );
     }
 
     #[test]
     fn guessing_is_capped_even_for_the_right_code() {
         let mut record = plan_send(None, "a@x.com", "048291", now()).unwrap();
         record.attempts = MAX_WRONG_GUESSES;
-        assert_eq!(check_code(Some(&record), "a@x.com", "048291", now()), CodeCheck::TooManyAttempts);
+        assert_eq!(
+            check_code(Some(&record), "a@x.com", "048291", now()),
+            CodeCheck::TooManyAttempts
+        );
     }
 
     #[test]

@@ -24,11 +24,13 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/stories", post(submit).get(public_feed))
         .route("/stories/mine", get(mine))
-        .route("/stories/:id", axum::routing::delete(withdraw).put(update_story))
+        .route(
+            "/stories/:id",
+            axum::routing::delete(withdraw).put(update_story),
+        )
         .route("/stories/:id/report", post(report))
         .route("/stories/:id/react", post(react).delete(remove_reaction))
         .route("/stories/:id/metoo", post(metoo).delete(remove_metoo))
-
         .route("/stories/:id/translate", get(translate))
         .route("/stories/pending", get(pending))
         .route("/stories/reports", get(reports))
@@ -131,8 +133,10 @@ struct AdminStoryView {
 }
 
 async fn admin_view(state: &AppState, story: &LifeStory) -> AdminStoryView {
-    let display_name =
-        user_for(state, story.user_id).await.map(|u| u.display_name).unwrap_or_else(|| "?".to_string());
+    let display_name = user_for(state, story.user_id)
+        .await
+        .map(|u| u.display_name)
+        .unwrap_or_else(|| "?".to_string());
 
     AdminStoryView {
         id: story.id.to_string(),
@@ -170,7 +174,10 @@ async fn submit(
     Json(req): Json<SubmitRequest>,
 ) -> Result<Json<LifeStory>, (StatusCode, String)> {
     if !req.consent {
-        return Err((StatusCode::BAD_REQUEST, "consent to public sharing is required".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "consent to public sharing is required".to_string(),
+        ));
     }
 
     let body = req.body.trim().to_string();
@@ -179,7 +186,10 @@ async fn submit(
     }
 
     if catalog::disorder(&req.diagnosis_slug).is_none() {
-        return Err((StatusCode::BAD_REQUEST, format!("unknown diagnosis slug: {}", req.diagnosis_slug)));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("unknown diagnosis slug: {}", req.diagnosis_slug),
+        ));
     }
 
     let now = Utc::now();
@@ -243,7 +253,10 @@ async fn public_feed(
     Ok(Json(
         items
             .iter()
-            .map(|item| PublicStory { is_mine: item.story.user_id == auth.user_id, ..PublicStory::from(item) })
+            .map(|item| PublicStory {
+                is_mine: item.story.user_id == auth.user_id,
+                ..PublicStory::from(item)
+            })
             .collect(),
     ))
 }
@@ -262,7 +275,10 @@ async fn react(
     Json(req): Json<ReactRequest>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     if !REACTIONS.contains(&req.reaction.as_str()) {
-        return Err((StatusCode::BAD_REQUEST, format!("unknown reaction: {}", req.reaction)));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("unknown reaction: {}", req.reaction),
+        ));
     }
 
     state
@@ -324,7 +340,10 @@ async fn metoo(
         return Err((StatusCode::NOT_FOUND, "story not found".to_string()));
     }
     if story.user_id == auth.user_id {
-        return Err((StatusCode::BAD_REQUEST, "cannot mark your own story".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "cannot mark your own story".to_string(),
+        ));
     }
 
     let first_time = state
@@ -357,18 +376,30 @@ async fn remove_metoo(
 /// Best-effort, like every other push here: an unconfigured or failed push
 /// must never fail the tap that caused it.
 async fn notify_metoo_author(state: &AppState, author: Uuid, note: Option<&str>) {
-    let tokens = state.push_tokens.tokens_for_user(author).await.unwrap_or_default();
+    let tokens = state
+        .push_tokens
+        .tokens_for_user(author)
+        .await
+        .unwrap_or_default();
     if tokens.is_empty() {
         return;
     }
 
-    let language = user_for(state, author).await.map(|u| u.language).unwrap_or_else(|| "tr".to_string());
+    let language = user_for(state, author)
+        .await
+        .map(|u| u.language)
+        .unwrap_or_else(|| "tr".to_string());
     let (title, body) = metoo_push_text(&language, note);
     let mut data = HashMap::new();
     data.insert("type".to_string(), "story_metoo".to_string());
 
     for token in tokens {
-        let request = PushRequest { token, title: title.clone(), body: body.clone(), data: data.clone() };
+        let request = PushRequest {
+            token,
+            title: title.clone(),
+            body: body.clone(),
+            data: data.clone(),
+        };
         if let Err(err) = state.push.send(request).await {
             tracing::warn!(error = %err, "failed to send me-too push");
         }
@@ -379,9 +410,15 @@ fn metoo_push_text(language: &str, note: Option<&str>) -> (String, String) {
     if language == "en" {
         let note_line = match note {
             Some("yalniz_degilsin") => " They left you a note: \u{201c}You're not alone.\u{201d}",
-            Some("ben_de_yasadim") => " They left you a note: \u{201c}I went through something similar.\u{201d}",
-            Some("tesekkurler") => " They left you a note: \u{201c}Thank you for sharing this.\u{201d}",
-            Some("guc_yolluyorum") => " They left you a note: \u{201c}Sending you strength.\u{201d}",
+            Some("ben_de_yasadim") => {
+                " They left you a note: \u{201c}I went through something similar.\u{201d}"
+            }
+            Some("tesekkurler") => {
+                " They left you a note: \u{201c}Thank you for sharing this.\u{201d}"
+            }
+            Some("guc_yolluyorum") => {
+                " They left you a note: \u{201c}Sending you strength.\u{201d}"
+            }
             _ => "",
         };
         (
@@ -391,8 +428,12 @@ fn metoo_push_text(language: &str, note: Option<&str>) -> (String, String) {
     } else {
         let note_line = match note {
             Some("yalniz_degilsin") => " Sana bir not bıraktı: \u{201c}Yalnız değilsin.\u{201d}",
-            Some("ben_de_yasadim") => " Sana bir not bıraktı: \u{201c}Ben de benzerini yaşadım.\u{201d}",
-            Some("tesekkurler") => " Sana bir not bıraktı: \u{201c}Paylaştığın için teşekkürler.\u{201d}",
+            Some("ben_de_yasadim") => {
+                " Sana bir not bıraktı: \u{201c}Ben de benzerini yaşadım.\u{201d}"
+            }
+            Some("tesekkurler") => {
+                " Sana bir not bıraktı: \u{201c}Paylaştığın için teşekkürler.\u{201d}"
+            }
             Some("guc_yolluyorum") => " Sana bir not bıraktı: \u{201c}Sana güç yolluyorum.\u{201d}",
             _ => "",
         };
@@ -402,7 +443,6 @@ fn metoo_push_text(language: &str, note: Option<&str>) -> (String, String) {
         )
     }
 }
-
 
 #[derive(Debug, Serialize)]
 struct TranslationResponse {
@@ -427,8 +467,10 @@ async fn translate(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
         .ok_or((StatusCode::NOT_FOUND, "story not found".to_string()))?;
 
-    let reader_language =
-        user_for(&state, auth.user_id).await.map(|u| u.language).unwrap_or_else(|| "tr".to_string());
+    let reader_language = user_for(&state, auth.user_id)
+        .await
+        .map(|u| u.language)
+        .unwrap_or_else(|| "tr".to_string());
 
     if story.language == reader_language {
         return Ok(Json(TranslationResponse {
@@ -443,13 +485,19 @@ async fn translate(
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
     {
-        return Ok(Json(TranslationResponse { body: cached, source_language: story.language }));
+        return Ok(Json(TranslationResponse {
+            body: cached,
+            source_language: story.language,
+        }));
     }
 
     // Translating sends the author's words to the AI service: only when the
     // author allowed that. Otherwise the reader gets the original.
     if !crate::routes::has_ai_consent(&state, story.user_id).await {
-        return Ok(Json(TranslationResponse { body: story.body, source_language: story.language }));
+        return Ok(Json(TranslationResponse {
+            body: story.body,
+            source_language: story.language,
+        }));
     }
 
     let translated = translate_text(&story.body, &reader_language, state.llm.as_ref())
@@ -462,7 +510,10 @@ async fn translate(
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    Ok(Json(TranslationResponse { body: translated, source_language: story.language }))
+    Ok(Json(TranslationResponse {
+        body: translated,
+        source_language: story.language,
+    }))
 }
 
 /// The caller's own submissions, whatever their status — so someone can
@@ -480,7 +531,11 @@ async fn mine(
 
     // A failed tally must not hide someone's own stories from them: they
     // just show without counts until the next load.
-    let metoo = state.life_stories.metoo_for_author(auth.user_id).await.unwrap_or_default();
+    let metoo = state
+        .life_stories
+        .metoo_for_author(auth.user_id)
+        .await
+        .unwrap_or_default();
     let mut tallies: HashMap<Uuid, (u32, HashMap<String, u32>)> = HashMap::new();
     for (story_id, note) in metoo {
         let tally = tallies.entry(story_id).or_default();
@@ -495,7 +550,11 @@ async fn mine(
             .into_iter()
             .map(|story| {
                 let (metoo_count, metoo_notes) = tallies.remove(&story.id).unwrap_or_default();
-                MineStory { story, metoo_count, metoo_notes }
+                MineStory {
+                    story,
+                    metoo_count,
+                    metoo_notes,
+                }
             })
             .collect(),
     ))
@@ -565,7 +624,10 @@ async fn update_story(
         return Err((StatusCode::BAD_REQUEST, "story cannot be empty".to_string()));
     }
     if catalog::disorder(&req.diagnosis_slug).is_none() {
-        return Err((StatusCode::BAD_REQUEST, format!("unknown diagnosis slug: {}", req.diagnosis_slug)));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("unknown diagnosis slug: {}", req.diagnosis_slug),
+        ));
     }
 
     let crisis = screen_for_crisis_language(&body);

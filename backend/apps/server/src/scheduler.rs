@@ -56,7 +56,11 @@ pub fn spawn_explainer_warmup_job(state: AppState) {
         // and warming a second language would double a job that already
         // spends ~150 LLM calls. English cards generate on first request
         // and are cached from then on (see `routes::catalog::explainer`).
-        let cached = match state.explainers.cached_slugs(EXPLAINER_WARMUP_LANGUAGE).await {
+        let cached = match state
+            .explainers
+            .cached_slugs(EXPLAINER_WARMUP_LANGUAGE)
+            .await
+        {
             Ok(slugs) => slugs,
             Err(err) => {
                 tracing::warn!(error = %err, "explainer warm-up: could not read cache, skipping");
@@ -177,7 +181,12 @@ async fn run_cycle(state: &AppState, sources: &[Arc<dyn ResearchSource>]) {
     );
 
     if !summary.added_articles.is_empty() {
-        let insights = synthesize_insights(&summary.added_articles, MAX_INSIGHTS_PER_CYCLE, state.llm.as_ref()).await;
+        let insights = synthesize_insights(
+            &summary.added_articles,
+            MAX_INSIGHTS_PER_CYCLE,
+            state.llm.as_ref(),
+        )
+        .await;
 
         for insight in &insights {
             if let Err(err) = state.insights.save(insight).await {
@@ -334,15 +343,19 @@ async fn run_checkin_nudge(state: &AppState) {
 
         let offset = ChronoDuration::minutes(i64::from(user.utc_offset_minutes));
         let local_now = now + offset;
-        if local_now.hour() != u32::from(user.checkin_reminder_hour) {
-            continue;
-        }
+        let slot = match local_now.hour() {
+            9 => "morning",
+            14 => "afternoon",
+            hour if hour == u32::from(user.checkin_reminder_hour) => "evening",
+            _ => continue,
+        };
 
         let local_date = local_now.date_naive();
         let Some(local_midnight) = local_date.and_hms_opt(0, 0, 0) else {
             continue;
         };
-        let day_start = chrono::DateTime::<Utc>::from_naive_utc_and_offset(local_midnight, Utc) - offset;
+        let day_start =
+            chrono::DateTime::<Utc>::from_naive_utc_and_offset(local_midnight, Utc) - offset;
 
         // "Couldn't tell" counts as "already logged": a failed lookup must
         // never turn into a reminder someone didn't need.
@@ -356,12 +369,20 @@ async fn run_checkin_nudge(state: &AppState) {
             continue;
         }
 
-        let tokens = state.push_tokens.tokens_for_user(user_id).await.unwrap_or_default();
+        let tokens = state
+            .push_tokens
+            .tokens_for_user(user_id)
+            .await
+            .unwrap_or_default();
         if tokens.is_empty() {
             continue;
         }
 
-        match state.users.claim_checkin_reminder(user_id, local_date).await {
+        match state
+            .users
+            .claim_checkin_reminder(user_id, local_date, slot)
+            .await
+        {
             Ok(true) => {}
             Ok(false) => continue,
             Err(err) => {
@@ -370,12 +391,18 @@ async fn run_checkin_nudge(state: &AppState) {
             }
         }
 
-        let (title, body) = checkin_nudge_text(&user.language);
+        let (title, body) = checkin_nudge_text(&user.language, slot);
         let mut data = HashMap::new();
         data.insert("type".to_string(), "checkin_nudge".to_string());
+        data.insert("slot".to_string(), slot.to_string());
 
         for token in tokens {
-            let request = PushRequest { token, title: title.clone(), body: body.clone(), data: data.clone() };
+            let request = PushRequest {
+                token,
+                title: title.clone(),
+                body: body.clone(),
+                data: data.clone(),
+            };
             if let Err(err) = state.push.send(request).await {
                 tracing::warn!(error = %err, "check-in nudge: send failed");
             }
@@ -388,15 +415,31 @@ async fn run_checkin_nudge(state: &AppState) {
     }
 }
 
-fn checkin_nudge_text(language: &str) -> (String, String) {
-    match language {
-        "en" => (
+fn checkin_nudge_text(language: &str, slot: &str) -> (String, String) {
+    match (language, slot) {
+        ("en", "morning") => (
+            "Good morning".to_string(),
+            "Take a moment to notice how you are feeling as the day begins.".to_string(),
+        ),
+        ("en", "afternoon") => (
+            "Midday check-in".to_string(),
+            "How has your day been going so far?".to_string(),
+        ),
+        ("en", _) => (
             "How was today?".to_string(),
-            "Half a minute is enough — how today felt shapes tomorrow's note.".to_string(),
+            "A short check-in can help you reflect on your day.".to_string(),
+        ),
+        (_, "morning") => (
+            "Günaydın".to_string(),
+            "Güne nasıl başladığını fark etmek için kendine kısa bir mola ver.".to_string(),
+        ),
+        (_, "afternoon") => (
+            "Günün nasıl gidiyor?".to_string(),
+            "Şu ana kadar nasıl hissettiğini fark etmek için kendine zaman ayır.".to_string(),
         ),
         _ => (
             "Bugün nasıldı?".to_string(),
-            "Yarım dakika yeter — bugün nasıl hissettiğin, yarınki notunu şekillendirir.".to_string(),
+            "Bugünü değerlendirmek için kendine kısa bir zaman ayır.".to_string(),
         ),
     }
 }

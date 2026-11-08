@@ -12,13 +12,13 @@ mod history_tests;
 
 pub use pool::init_pool;
 pub use repositories::{
-    SqliteActivityRepository, SqliteAiConsentRepository, SqliteAssessmentRepository, SqliteAuthRepository, SqliteBlockRepository,
-    SqliteChatRepository,
-    SqliteChatUsageRepository, SqliteContentTranslationRepository, SqliteDiscoveryRepository,
-    SqliteDmRepository, SqliteEmailCodeRepository, SqlitePersonMemoryRepository,
-    SqliteExplainerRepository, SqliteInsightRepository, SqliteJournalRepository,
-    SqliteLifeAnalysisRepository, SqliteLifeStoryRepository, SqliteMoodRepository,
-    SqlitePushTokenRepository, SqliteReportRepository, SqliteResearchRepository,
-    SqliteSocialRepository, SqliteSubscriptionRepository, SqliteUserRepository,
-    SqliteUserReportRepository, SqliteUserStateRepository, UserReport,
+    SqliteActivityRepository, SqliteAiConsentRepository, SqliteAssessmentRepository,
+    SqliteAuthRepository, SqliteBlockRepository, SqliteChatRepository, SqliteChatUsageRepository,
+    SqliteContentTranslationRepository, SqliteDiscoveryRepository, SqliteDmRepository,
+    SqliteEmailCodeRepository, SqliteExplainerRepository, SqliteInsightRepository,
+    SqliteJournalRepository, SqliteLifeAnalysisRepository, SqliteLifeStoryRepository,
+    SqliteMoodRepository, SqlitePersonMemoryRepository, SqlitePushTokenRepository,
+    SqliteReportRepository, SqliteResearchRepository, SqliteSocialRepository,
+    SqliteSubscriptionRepository, SqliteUserReportRepository, SqliteUserRepository,
+    SqliteUserStateRepository, UserReport,
 };

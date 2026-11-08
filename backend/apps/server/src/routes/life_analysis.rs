@@ -5,12 +5,15 @@ use axum::{
     Json, Router,
 };
 use chrono::{DateTime, Duration, Utc};
-use mental_analysis_engine::{generate_life_analysis, translate::translate_life_analysis, LifeAnalysisInputs};
-use mental_domain::repository::{
-    AssessmentRepository, ChatRepository, ContentTranslationRepository, JournalRepository, LifeAnalysisRepository,
-    LifeStoryRepository, MoodRepository, ReportRepository, UserStateRepository,
+use mental_analysis_engine::{
+    generate_life_analysis, translate::translate_life_analysis, LifeAnalysisInputs,
 };
 use mental_domain::report::LifeAnalysis;
+use mental_domain::repository::{
+    AssessmentRepository, ChatRepository, ContentTranslationRepository, JournalRepository,
+    LifeAnalysisRepository, LifeStoryRepository, MoodRepository, ReportRepository,
+    UserStateRepository,
+};
 use serde::Serialize;
 
 use crate::auth::AuthUser;
@@ -110,7 +113,6 @@ async fn translated_analysis(
         }
     }
 
-
     // Translating sends the text to the AI service — only with permission.
     // The caller falls back to the original on an error.
     if !crate::routes::has_ai_consent(state, analysis.user_id).await {
@@ -126,12 +128,22 @@ async fn translated_analysis(
         state.llm.as_ref(),
     )
     .await?;
-    let payload = LifeAnalysisTranslationPayload { narrative, key_patterns, do_list, dont_list };
+    let payload = LifeAnalysisTranslationPayload {
+        narrative,
+        key_patterns,
+        do_list,
+        dont_list,
+    };
 
     if let Ok(serialized) = serde_json::to_string(&payload) {
         if let Err(err) = state
             .content_translations
-            .save(LIFE_ANALYSIS_CONTENT_TYPE, &content_id, target_language, &serialized)
+            .save(
+                LIFE_ANALYSIS_CONTENT_TYPE,
+                &content_id,
+                target_language,
+                &serialized,
+            )
             .await
         {
             tracing::warn!(error = %err, analysis_id = %analysis.id, "failed to cache life analysis translation");
@@ -148,7 +160,9 @@ async fn generate_analysis(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<LifeAnalysis>, Response> {
-    crate::routes::require_ai_consent(&state, auth.user_id).await.map_err(IntoResponse::into_response)?;
+    crate::routes::require_ai_consent(&state, auth.user_id)
+        .await
+        .map_err(IntoResponse::into_response)?;
     let internal = |e: anyhow::Error| {
         (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
     };
@@ -177,7 +191,11 @@ async fn generate_analysis(
     }
 
     let moods = state.moods.list_all(auth.user_id).await.map_err(internal)?;
-    let journal_entries = state.journals.list_all(auth.user_id).await.map_err(internal)?;
+    let journal_entries = state
+        .journals
+        .list_all(auth.user_id)
+        .await
+        .map_err(internal)?;
     let chat_messages = state
         .chats
         .history_for_user(auth.user_id, MAX_CHAT_MESSAGES)
@@ -190,9 +208,17 @@ async fn generate_analysis(
         .map_err(internal)?;
     // Every screening on file, not only the latest — the analysis reads how
     // the scores moved, not just where they are today.
-    let assessments = state.assessments.list_for_user(auth.user_id, MAX_ASSESSMENTS).await.unwrap_or_default();
+    let assessments = state
+        .assessments
+        .list_for_user(auth.user_id, MAX_ASSESSMENTS)
+        .await
+        .unwrap_or_default();
     let current_state = state.user_states.get(auth.user_id).await.ok().flatten();
-    let stories = state.life_stories.list_for_user(auth.user_id).await.unwrap_or_default();
+    let stories = state
+        .life_stories
+        .list_for_user(auth.user_id)
+        .await
+        .unwrap_or_default();
 
     let person_data = PersonData::load(&state, auth.user_id).await;
     let person = person_data.context(true, true);
@@ -212,7 +238,11 @@ async fn generate_analysis(
         .await
         .map_err(|e| (axum::http::StatusCode::BAD_GATEWAY, e.to_string()).into_response())?;
 
-    state.life_analyses.save(&analysis).await.map_err(internal)?;
+    state
+        .life_analyses
+        .save(&analysis)
+        .await
+        .map_err(internal)?;
 
     Ok(Json(analysis))
 }
