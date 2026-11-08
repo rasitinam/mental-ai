@@ -5,15 +5,23 @@ $ErrorActionPreference = "Stop"
 $Repo = "C:\Apps\MentalAI-GitSync"
 $Live = "C:\Apps\MentalAI"
 $TaskName = "MentalAI Backend"
+$Task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+$TaskUser = ([string]$Task.Principal.UserId -replace '^.*\\', '')
+$RunsAsSystem = $TaskUser -match "^(SYSTEM|LOCAL SERVICE|NETWORK SERVICE)$"
 
 function Import-PersistedEnvironment([string]$Name) {
     if (![string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($Name, "Process"))) {
-        return
+        if (!$RunsAsSystem) { return }
     }
 
-    $Value = [Environment]::GetEnvironmentVariable($Name, "User")
-    if ([string]::IsNullOrWhiteSpace($Value)) {
+    # SYSTEM tasks cannot inherit the interactive administrator's User scope.
+    if ($RunsAsSystem) {
         $Value = [Environment]::GetEnvironmentVariable($Name, "Machine")
+    } else {
+        $Value = [Environment]::GetEnvironmentVariable($Name, "User")
+        if ([string]::IsNullOrWhiteSpace($Value)) {
+            $Value = [Environment]::GetEnvironmentVariable($Name, "Machine")
+        }
     }
 
     if (![string]::IsNullOrWhiteSpace($Value)) {
@@ -56,8 +64,12 @@ if (!(Test-Path "$Live\backend\firebase-service-account.json")) {
     throw "Firebase service-account JSON is missing from the live backend folder."
 }
 
-Write-Host "LLM API key: present (hidden)"
-Write-Host "SMTP credentials: present (hidden)"
+Write-Host "LLM API key: present for backend task (value hidden)" -ForegroundColor Green
+if (![string]::IsNullOrWhiteSpace($env:MENTAL_AI_SMTP_USER) -and ![string]::IsNullOrWhiteSpace($env:MENTAL_AI_SMTP_PASSWORD)) {
+    Write-Host "SMTP credentials: present for backend task (values hidden)" -ForegroundColor Green
+} else {
+    Write-Host "SMTP credentials: MISSING for backend task; email verification cannot send mail." -ForegroundColor Yellow
+}
 Write-Host "Firebase service account: present (file only; never printed)"
 
 Write-Host "`n=== 3. Send one real SMTP self-test ===" -ForegroundColor Cyan
@@ -100,17 +112,18 @@ Write-Host "`n=== 5. Restart backend ===" -ForegroundColor Cyan
 $Log = "$Live\logs\backend.log"
 New-Item -ItemType Directory -Force -Path (Split-Path $Log) | Out-Null
 $Marker = "SERVICE_ACTIVATION_MARKER $([guid]::NewGuid().ToString())"
-"$Marker $(Get-Date -Format o)" | Out-File $Log -Append
 if ((Get-ScheduledTask -TaskName $TaskName).State -eq "Running") {
     Stop-ScheduledTask -TaskName $TaskName
 }
-for ($i = 0; $i -lt 30; $i++) {
+for ($i = 0; $i -lt 45; $i++) {
     if (!(Get-Process -Name "mental-ai-server" -ErrorAction SilentlyContinue)) { break }
     Start-Sleep -Seconds 1
 }
 if (Get-Process -Name "mental-ai-server" -ErrorAction SilentlyContinue) {
-    throw "Backend process did not stop; refusing to start a second copy."
+    throw "Backend process did not stop after 45 seconds; refusing to start a second copy."
 }
+# The backend holds an append handle on backend.log. Only append the marker after it exits.
+"$Marker $(Get-Date -Format o)" | Out-File $Log -Append
 Start-ScheduledTask -TaskName $TaskName
 
 $Healthy = $false
