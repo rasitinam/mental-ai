@@ -5,7 +5,6 @@ $ErrorActionPreference = "Stop"
 $Repo = "C:\Apps\MentalAI-GitSync"
 $Live = "C:\Apps\MentalAI"
 $TaskName = "MentalAI Backend"
-$StartedAt = Get-Date
 
 function Import-PersistedEnvironment([string]$Name) {
     if (![string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($Name, "Process"))) {
@@ -82,10 +81,20 @@ $ActionText = ($Task.Actions | ForEach-Object { "$($_.Execute) $($_.Arguments)" 
 if ($ActionText -notmatch [regex]::Escape("$Live\start-mental-ai.ps1")) {
     throw "Scheduled Task does not point to $Live\start-mental-ai.ps1. No restart was attempted. Current action: $ActionText"
 }
+$CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name.Split("\\")[-1]
+$TaskUser = ([string]$Task.Principal.UserId).Split("\\")[-1]
+if ($TaskUser -and $TaskUser -notmatch "^(SYSTEM|LOCAL SERVICE|NETWORK SERVICE)$" -and
+    $CurrentUser -ine $TaskUser) {
+    throw "Scheduled Task runs as '$($Task.Principal.UserId)' but this shell is '$([Security.Principal.WindowsIdentity]::GetCurrent().Name)'. Run this helper under the task account so its User-scoped SMTP/LLM secrets can be verified."
+}
 Write-Host "Task principal: $($Task.Principal.UserId)"
 Write-Host "Research ingestion: enabled by startup script"
 
 Write-Host "`n=== 5. Restart backend ===" -ForegroundColor Cyan
+$Log = "$Live\\logs\\backend.log"
+New-Item -ItemType Directory -Force -Path (Split-Path $Log) | Out-Null
+$Marker = "SERVICE_ACTIVATION_MARKER $([guid]::NewGuid().ToString())"
+"$Marker $(Get-Date -Format o)" | Out-File $Log -Append
 if ((Get-ScheduledTask -TaskName $TaskName).State -eq "Running") {
     Stop-ScheduledTask -TaskName $TaskName
 }
