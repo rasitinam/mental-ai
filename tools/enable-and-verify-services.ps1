@@ -81,8 +81,8 @@ $ActionText = ($Task.Actions | ForEach-Object { "$($_.Execute) $($_.Arguments)" 
 if ($ActionText -notmatch [regex]::Escape("$Live\start-mental-ai.ps1")) {
     throw "Scheduled Task does not point to $Live\start-mental-ai.ps1. No restart was attempted. Current action: $ActionText"
 }
-$CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name.Split("\\")[-1]
-$TaskUser = ([string]$Task.Principal.UserId).Split("\\")[-1]
+$CurrentUser = ([Security.Principal.WindowsIdentity]::GetCurrent().Name -replace '^.*\\', '')
+$TaskUser = ([string]$Task.Principal.UserId -replace '^.*\\', '')
 if ($TaskUser -and $TaskUser -notmatch "^(SYSTEM|LOCAL SERVICE|NETWORK SERVICE)$" -and
     $CurrentUser -ine $TaskUser) {
     throw "Scheduled Task runs as '$($Task.Principal.UserId)' but this shell is '$([Security.Principal.WindowsIdentity]::GetCurrent().Name)'. Run this helper under the task account so its User-scoped SMTP/LLM secrets can be verified."
@@ -91,7 +91,7 @@ Write-Host "Task principal: $($Task.Principal.UserId)"
 Write-Host "Research ingestion: enabled by startup script"
 
 Write-Host "`n=== 5. Restart backend ===" -ForegroundColor Cyan
-$Log = "$Live\\logs\\backend.log"
+$Log = "$Live\logs\backend.log"
 New-Item -ItemType Directory -Force -Path (Split-Path $Log) | Out-Null
 $Marker = "SERVICE_ACTIVATION_MARKER $([guid]::NewGuid().ToString())"
 "$Marker $(Get-Date -Format o)" | Out-File $Log -Append
@@ -127,9 +127,16 @@ $Log = "$Live\logs\backend.log"
 $ResearchLine = $null
 for ($i = 0; $i -lt 180; $i++) {
     if (Test-Path $Log) {
-        $ResearchLine = Get-Content $Log -Tail 5000 |
-            Select-String "research ingest cycle complete" |
-            Select-Object -Last 1
+        $Lines = @(Get-Content $Log -Tail 10000)
+        $MarkerIndex = -1
+        for ($j = $Lines.Count - 1; $j -ge 0; $j--) {
+            if ($Lines[$j] -like "*$Marker*") { $MarkerIndex = $j; break }
+        }
+        if ($MarkerIndex -ge 0 -and $MarkerIndex + 1 -lt $Lines.Count) {
+            $ResearchLine = $Lines[($MarkerIndex + 1)..($Lines.Count - 1)] |
+                Select-String "research ingest cycle complete" |
+                Select-Object -Last 1
+        }
         if ($ResearchLine) { break }
     }
     Start-Sleep -Seconds 2
