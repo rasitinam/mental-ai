@@ -202,11 +202,18 @@ for ($i = 0; $i -lt 300; $i++) {
 if (!$ResearchLine) {
     Write-Host "Research cycle has not logged completion within 10 minutes. Backend is healthy; inspect the latest backend log." -ForegroundColor Yellow
 } else {
-    Write-Host $ResearchLine.Line
-    if ($ResearchLine.Line -match 'errors=\[\]') {
-        Write-Host "Research ingest cycle: completed without source/embedding errors." -ForegroundColor Green
+    $ResearchLogText = [string]$ResearchLine.Line
+    Write-Host $ResearchLogText
+    # Match the serialized empty vector as plain text. This avoids PowerShell
+    # regex/property coercion differences with Select-String MatchInfo objects.
+    if ($ResearchLogText.Contains("errors=[]")) {
+        if ($ResearchLogText -match 'new_articles=0') {
+            Write-Host "Research ingest cycle: SUCCESS; sources fetched without reported errors. No new unique articles were added in this cycle." -ForegroundColor Green
+        } else {
+            Write-Host "Research ingest cycle: completed without source/embedding errors." -ForegroundColor Green
+        }
     } else {
-        Write-Host "Research ingest logged errors. Read the line above; the scheduler remains active." -ForegroundColor Yellow
+        Write-Host "Research ingest returned a non-empty or unrecognized errors field. Read the line above; the scheduler remains active." -ForegroundColor Yellow
     }
 }
 
