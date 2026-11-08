@@ -277,19 +277,19 @@ fn pubmed(label: &'static str, query: &str, tags: Vec<&str>) -> Arc<dyn Research
     ))
 }
 
-/// Evening check-in reminder, sent at the local hour each person picked
+/// Daily check-in reminders at 09:00, 14:00 and the evening hour each person picked
 /// (Ayarlar → Bildirimler; 21:00 unless they changed it).
 ///
-/// Runs at the top of every hour. For each account with a registered
-/// device it checks, before sending anything, that the reminder is on,
-/// that it is currently that person's chosen hour on their own clock, and
-/// that they haven't logged a mood yet that local day.
-/// `claim_checkin_reminder` then marks the day as done atomically, so a
-/// restart mid-hour or a second server process can't send it twice.
+/// Runs every minute so users in half-hour and quarter-hour time zones
+/// still receive reminders exactly on the hour in their local time. For
+/// each account with a registered device it checks that the reminder is
+/// on, that the local time matches one of the three slots, and that they
+/// haven't logged a mood yet that local day.
+/// `claim_checkin_reminder` claims that date+slot atomically, so a restart
+/// or a second server process can't send the same slot twice.
 ///
-/// This replaced one nudge at 16:00 UTC for everybody, which arrived at
-/// the same moment whatever anyone's evening looked like and couldn't be
-/// turned off.
+/// The morning and afternoon slots are fixed; the evening slot is
+/// configurable and all three are controlled by the same setting.
 pub fn spawn_checkin_nudge_job(state: AppState) {
     tokio::spawn(async move {
         let scheduler = match JobScheduler::new().await {
@@ -300,7 +300,7 @@ pub fn spawn_checkin_nudge_job(state: AppState) {
             }
         };
 
-        let job = match Job::new_async("0 0 * * * *", move |_uuid, _lock| {
+        let job = match Job::new_async("0 * * * * *", move |_uuid, _lock| {
             let state = state.clone();
             Box::pin(async move { run_checkin_nudge(&state).await })
         }) {
@@ -343,11 +343,12 @@ async fn run_checkin_nudge(state: &AppState) {
 
         let offset = ChronoDuration::minutes(i64::from(user.utc_offset_minutes));
         let local_now = now + offset;
-        let slot = match local_now.hour() {
-            9 => "morning",
-            14 => "afternoon",
-            hour if hour == u32::from(user.checkin_reminder_hour) => "evening",
-            _ => continue,
+        let Some(slot) = checkin_reminder_slot(
+            local_now.hour(),
+            local_now.minute(),
+            user.checkin_reminder_hour,
+        ) else {
+            continue;
         };
 
         let local_date = local_now.date_naive();
@@ -441,5 +442,40 @@ fn checkin_nudge_text(language: &str, slot: &str) -> (String, String) {
             "Bugün nasıldı?".to_string(),
             "Bugünü değerlendirmek için kendine kısa bir zaman ayır.".to_string(),
         ),
+    }
+}
+
+
+/// Returns a reminder slot only at the exact local minute, not merely
+/// somewhere within the hour. This matters for UTC offsets such as +05:30.
+fn checkin_reminder_slot(hour: u32, minute: u32, evening_hour: u8) -> Option<&'static str> {
+    if minute != 0 {
+        return None;
+    }
+    match hour {
+        9 => Some("morning"),
+        14 => Some("afternoon"),
+        h if h == u32::from(evening_hour) => Some("evening"),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod checkin_reminder_tests {
+    use super::checkin_reminder_slot;
+
+    #[test]
+    fn reminder_slots_match_exact_local_hours() {
+        assert_eq!(checkin_reminder_slot(9, 0, 21), Some("morning"));
+        assert_eq!(checkin_reminder_slot(14, 0, 21), Some("afternoon"));
+        assert_eq!(checkin_reminder_slot(21, 0, 21), Some("evening"));
+        assert_eq!(checkin_reminder_slot(19, 0, 19), Some("evening"));
+    }
+
+    #[test]
+    fn reminder_slots_do_not_match_other_minutes_or_hours() {
+        assert_eq!(checkin_reminder_slot(9, 30, 21), None);
+        assert_eq!(checkin_reminder_slot(14, 1, 21), None);
+        assert_eq!(checkin_reminder_slot(20, 0, 21), None);
     }
 }
