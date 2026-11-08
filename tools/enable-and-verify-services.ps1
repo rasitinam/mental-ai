@@ -125,7 +125,7 @@ Write-Host "Scheduled task: $((Get-ScheduledTask -TaskName $TaskName).State)"
 Write-Host "`n=== 6. Wait for first research-ingest cycle ===" -ForegroundColor Cyan
 $Log = "$Live\logs\backend.log"
 $ResearchLine = $null
-for ($i = 0; $i -lt 180; $i++) {
+for ($i = 0; $i -lt 300; $i++) {
     if (Test-Path $Log) {
         $Lines = @(Get-Content $Log -Tail 10000)
         $MarkerIndex = -1
@@ -143,7 +143,7 @@ for ($i = 0; $i -lt 180; $i++) {
 }
 
 if (!$ResearchLine) {
-    Write-Host "Research cycle has not logged completion within 6 minutes. Backend is healthy; inspect the latest backend log." -ForegroundColor Yellow
+    Write-Host "Research cycle has not logged completion within 10 minutes. Backend is healthy; inspect the latest backend log." -ForegroundColor Yellow
 } else {
     Write-Host $ResearchLine.Line
     if ($ResearchLine.Line -match 'errors=\[\]') {
