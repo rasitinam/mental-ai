@@ -3734,6 +3734,12 @@ abstract class AppLocalizations {
   /// **'Bildirimler'**
   String get notificationsTitle;
 
+  String get notificationsMorningLabel;
+
+  String get notificationsAfternoonLabel;
+
+  String get notificationsEveningLabel;
+
   /// No description provided for @notificationsCheckinTitle.
   ///
   /// In tr, this message translates to:

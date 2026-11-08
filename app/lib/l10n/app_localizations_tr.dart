@@ -2001,6 +2001,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationsTitle => 'Bildirimler';
 
   @override
+  String get notificationsMorningLabel => 'Sabah';
+
+  @override
+  String get notificationsAfternoonLabel => 'Öğleden sonra';
+
+  @override
+  String get notificationsEveningLabel => 'Akşam';
+
+  @override
   String get notificationsCheckinTitle => 'Günlük hatırlatmalar';
 
   @override

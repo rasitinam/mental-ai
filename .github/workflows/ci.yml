@@ -1,3 +1,4 @@
+
 name: CI
 
 on:
@@ -36,41 +37,113 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 
-  # Unsigned build-verification only — catches "the Android/iOS build is
-  # actually broken" on every push/PR without needing any signing secrets.
-  # The signed, publishable build lives in release-android.yml /
-  # release-ios.yml and only runs when you trigger it — see docs/CI_CD.md.
   app-build-android:
-    name: Flutter app (Android build check)
+    name: Flutter app (Android release APKs)
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: app
+
     steps:
       - uses: actions/checkout@v7
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - run: flutter pub get
-      # google-services.json is gitignored (it holds the Firebase project's
-      # keys), and the Google Services Gradle plugin refuses to build
-      # without one. This check only needs a file that parses for the app's
-      # package name, so it writes a placeholder when none is present.
-      - name: Placeholder Firebase config
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      # Real Firebase config is required on pushes to main.
+      - name: Restore production Firebase configuration
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          FIREBASE_CONFIG_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
         run: |
-          [ -f android/app/google-services.json ] || cat > android/app/google-services.json <<'JSON'
+          set -euo pipefail
+
+          if [ -z "${FIREBASE_CONFIG_BASE64:-}" ]; then
+            echo "::error::GOOGLE_SERVICES_JSON_BASE64 secret is missing"
+            exit 1
+          fi
+
+          printf '%s' "$FIREBASE_CONFIG_BASE64" | base64 --decode > android/app/google-services.json
+
+          python - <<'PY'
+          import json
+
+          path = "android/app/google-services.json"
+
+          with open(path, encoding="utf-8") as f:
+              config = json.load(f)
+
+          project_id = config.get("project_info", {}).get("project_id")
+
+          packages = [
+              client.get("client_info", {})
+                    .get("android_client_info", {})
+                    .get("package_name")
+              for client in config.get("client", [])
+          ]
+
+          if project_id != "myproject-fd076":
+              raise SystemExit("Firebase project ID does not match the backend.")
+
+          if "com.mentalai.mental_ai" not in packages:
+              raise SystemExit("Firebase Android package name does not match.")
+
+          print("Firebase configuration validated successfully.")
+          PY
+
+      # Pull requests may come from forks without repository secrets.
+      # Use a placeholder only for CI verification, never for main release builds.
+      - name: Placeholder Firebase config for pull requests
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ ! -f android/app/google-services.json ]; then
+            cat > android/app/google-services.json <<'JSON'
           {
-            "project_info": {"project_number": "000000000000", "project_id": "ci-placeholder", "storage_bucket": "ci-placeholder.appspot.com"},
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "ci-placeholder",
+              "storage_bucket": "ci-placeholder.appspot.com"
+            },
             "client": [{
-              "client_info": {"mobilesdk_app_id": "1:000000000000:android:0000000000000000", "android_client_info": {"package_name": "com.mentalai.mental_ai"}},
+              "client_info": {
+                "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+                "android_client_info": {
+                  "package_name": "com.mentalai.mental_ai"
+                }
+              },
               "oauth_client": [],
               "api_key": [{"current_key": "ci-placeholder"}],
-              "services": {"appinvite_service": {"other_platform_oauth_client": []}}
+              "services": {
+                "appinvite_service": {
+                  "other_platform_oauth_client": []
+                }
+              }
             }],
             "configuration_version": "1"
           }
           JSON
-      - run: flutter build apk --debug
+          fi
+
+      - name: Build Android release APKs
+        run: |
+          flutter build apk \
+            --release \
+            --split-per-abi \
+            --dart-define=API_BASE_URL=https://status-enticing-easeful.ngrok-free.dev
+
+      - name: Upload Android release APKs
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v7
+        with:
+          name: mental-ai-android-release
+          path: app/build/app/outputs/flutter-apk/*-release.apk
+          if-no-files-found: error
+          retention-days: 7
 
   app-build-ios:
     name: Flutter app (iOS build check)

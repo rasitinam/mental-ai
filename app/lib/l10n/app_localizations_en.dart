@@ -2005,6 +2005,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsTitle => 'Notifications';
 
   @override
+  String get notificationsMorningLabel => 'Morning';
+
+  @override
+  String get notificationsAfternoonLabel => 'Afternoon';
+
+  @override
+  String get notificationsEveningLabel => 'Evening';
+
+  @override
   String get notificationsCheckinTitle => 'Daily reminders';
 
   @override
