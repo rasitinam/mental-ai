@@ -40,6 +40,7 @@ workflows:
         # but keeping infra config in one place (the Codemagic dashboard)
         # beats splitting it between here and there.
         API_BASE_URL: "$API_BASE_URL"
+        IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64: "$IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64"
     integrations:
       app_store_connect: hearth_app_store
     working_directory: app
@@ -52,6 +53,24 @@ workflows:
     scripts:
       - name: Install Flutter dependencies
         script: flutter packages pub get
+      - name: Restore and validate Firebase iOS configuration
+        script: |
+          set -euo pipefail
+          if [[ -z "${IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64:-}" ]]; then
+            echo "IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 is missing in Codemagic environment variables."
+            exit 1
+          fi
+          printf '%s' "$IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 --decode > ios/Runner/GoogleService-Info.plist
+          python3 - <<'PY'
+          import plistlib
+          with open("ios/Runner/GoogleService-Info.plist", "rb") as f:
+              config = plistlib.load(f)
+          if config.get("BUNDLE_ID") != "com.rasitinam.hearth":
+              raise SystemExit("Firebase iOS bundle ID mismatch.")
+          if config.get("PROJECT_ID") != "myproject-fd076":
+              raise SystemExit("Firebase iOS project ID mismatch.")
+          print("Firebase iOS configuration validated.")
+          PY
       - name: Set up code signing (automatic, via the App Store Connect API key)
         script: |
           xcode-project use-profiles
