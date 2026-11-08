@@ -53,13 +53,14 @@ $EnvironmentNames = @(
     "MENTAL_AI_SMTP_TEST_TO",
     "MENTAL_AI_APPLE_SHARED_SECRET"
 )
+$InteractiveLlmCandidate = [Environment]::GetEnvironmentVariable("MENTAL_AI_LLM_API_KEY", "User")
+if ([string]::IsNullOrWhiteSpace($InteractiveLlmCandidate)) {
+    $InteractiveLlmCandidate = [Environment]::GetEnvironmentVariable("MENTAL_AI_LLM_API_KEY", "Process")
+}
 foreach ($Name in $EnvironmentNames) { Import-PersistedEnvironment $Name }
 
 if ($RunsAsSystem -and [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable("MENTAL_AI_LLM_API_KEY", "Machine"))) {
-    $LlmCandidate = [Environment]::GetEnvironmentVariable("MENTAL_AI_LLM_API_KEY", "User")
-    if ([string]::IsNullOrWhiteSpace($LlmCandidate)) {
-        $LlmCandidate = [Environment]::GetEnvironmentVariable("MENTAL_AI_LLM_API_KEY", "Process")
-    }
+    $LlmCandidate = $InteractiveLlmCandidate
     if (![string]::IsNullOrWhiteSpace($LlmCandidate)) {
         $Answer = Read-Host "LLM API key exists only in this interactive account. Copy it to Machine scope for the SYSTEM backend task? Type YES"
         if ($Answer -ceq "YES") {
